@@ -24,32 +24,68 @@ cd bin && ./mockuma
 ```json
 [
   {
-    "uri": "/api/get",
+    "uri": "/api/hello",
     "method": "GET",
     "policies": [
       {
         "when": {
           "params": {
-            "value1": [
-              1
-            ],
-            "value2": 2
+            "lang": [
+              "en",
+              "cn"
+            ]
           }
         },
         "returns": {
           "headers": {
-            "Server": "MocKuma-Mappings/1.0"
+            "Server": "HelloMock/1.0"
           },
           "body": "{\"code\": 2000, \"message\": \"Hello, 世界!\"}"
         }
       },
       {
         "returns": {
-          "statusCode": 201,
+          "statusCode": 204
+        }
+      }
+    ]
+  },
+  {
+    "uri": "/api/books",
+    "policies": [
+      {
+        "when": {
+          "params": {
+            "page": 2,
+            "perPage": 20
+          }
+        },
+        "returns": {
           "headers": {
             "Content-Type": "application/json; charset=utf8"
           },
-          "body": "{\"code\": 2000, \"message\": \"Hello, World!\"}"
+          "body": {
+            "code": 2000,
+            "message": "Succeed",
+            "data": {
+              "page": 2,
+              "perPage": 20,
+              "total": 21,
+              "list": [
+                {
+                  "id": 21,
+                  "name": "Catch Me If You Can: The True Story of a Real Fake",
+                  "authors": ["Frank W. Abagnale", "Stan Redding"],
+                  "publiser": "Broadway Books",
+                  "isbn": "978-0767905381",
+                  "releaseDate": "2000-08-01",
+                  "price": 15.99,
+                  "language": "English",
+                  "pages": 277
+                }
+              ]
+            }
+          }
         }
       }
     ]
