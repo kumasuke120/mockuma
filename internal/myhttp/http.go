@@ -1,6 +1,8 @@
 package myhttp
 
-import "strings"
+import (
+	"strings"
+)
 
 type HttpMethod int
 
@@ -12,16 +14,21 @@ const (
 	Delete
 )
 
-func ToHttpMethod(method string) HttpMethod {
-	switch strings.ToUpper(method) {
-	case "GET":
-		return Get
-	case "POST":
-		return Post
-	case "PUT":
-		return Put
-	case "DELETE":
-		return Delete
+func ToHttpMethod(method interface{}) HttpMethod {
+	switch method.(type) {
+	case string:
+		switch strings.ToUpper(method.(string)) {
+		case "GET":
+			return Get
+		case "POST":
+			return Post
+		case "PUT":
+			return Put
+		case "DELETE":
+			return Delete
+		default:
+			return Any
+		}
 	default:
 		return Any
 	}

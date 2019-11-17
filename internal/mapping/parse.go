@@ -21,7 +21,7 @@ func parseAsMockuMappingMap(data []interface{}) (map[string][]*MockuMapping, err
 func parseAsMockuMapping(mappingData map[string]interface{}) *MockuMapping {
 	mapping := new(MockuMapping)
 	mapping.Uri = mappingData["uri"].(string)
-	method := myhttp.ToHttpMethod(mappingData["method"].(string))
+	method := myhttp.ToHttpMethod(mappingData["method"])
 	mapping.Method = method
 
 	var policies []*Policy
@@ -52,7 +52,12 @@ func parseAsPolicyWhen(policyData map[string]interface{}) *PolicyWhen {
 	}
 
 	whenData := policyData["when"].(map[string]interface{})
-	paramsData := whenData["params"].(map[string]interface{})
+	var paramsData map[string]interface{}
+	if whenData["params"] == nil {
+		paramsData = make(map[string]interface{}, 0)
+	} else {
+		paramsData = whenData["params"].(map[string]interface{})
+	}
 
 	params := make(map[string][]string)
 	for name, rawValue := range paramsData {
@@ -80,7 +85,12 @@ func parseAsPolicyReturns(policyData map[string]interface{}) *PolicyReturns {
 		headers[name] = parseAsValues(rawValue)
 	}
 
-	body := returnsData["body"].(string)
+	var body string
+	if returnsData["body"] == nil {
+		body = ""
+	} else {
+		body = returnsData["body"].(string)
+	}
 
 	returns := new(PolicyReturns)
 	returns.StatusCode = myhttp.StatusCode(statusCode.(int))

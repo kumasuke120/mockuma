@@ -8,7 +8,11 @@ func (pr *PolicyReturns) Render(w http.ResponseWriter) error {
 	w.WriteHeader(int(pr.StatusCode))
 	pr.Headers.render(w)
 
-	_, err := w.Write([]byte(pr.Body))
+	var err error
+	if pr.Body != "" {
+		_, err = w.Write([]byte(pr.Body))
+	}
+
 	return err
 }
 
