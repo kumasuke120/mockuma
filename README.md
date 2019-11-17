@@ -5,10 +5,12 @@
 ## 构建与运行
 使用 `go get` 命令或下载压缩包解压在 `$GOPATH/github.com/kumasuke120/mockuma` 中，进入该目录并执行以下代码进行构建：
 ```
-go build -o bin/mockuma github.com/kumasuke120/mockuma/cmd
+cd cmd && go build -o ../bin/mockuma
 ```
 
-构建成功后，使用以下命令运行：
+如果想要避免麻烦或者没有 Go 的开发环境，[点此](https://github.com/kumasuke120/mockuma/releases)下载发布版本。
+
+构建成功或下载后，使用以下命令运行：
 ```
 cd bin && ./mockuma
 ```
