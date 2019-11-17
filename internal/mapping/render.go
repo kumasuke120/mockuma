@@ -4,20 +4,21 @@ import (
 	"net/http"
 )
 
-func (pr *PolicyReturns) Render(w http.ResponseWriter) error {
-	w.WriteHeader(int(pr.StatusCode))
+func (pr *PolicyReturns) Render(w *http.ResponseWriter) error {
 	pr.Headers.render(w)
+
+	(*w).WriteHeader(int(pr.StatusCode)) // must be called after (*w).Header() modifications
 
 	var err error
 	if pr.Body != "" {
-		_, err = w.Write([]byte(pr.Body))
+		_, err = (*w).Write([]byte(pr.Body))
 	}
 
 	return err
 }
 
-func (h *Headers) render(w http.ResponseWriter) {
-	outHeader := w.Header()
+func (h *Headers) render(w *http.ResponseWriter) {
+	outHeader := (*w).Header()
 
 	for name, values := range h.headers {
 		if _, ok := outHeader[name]; ok {
