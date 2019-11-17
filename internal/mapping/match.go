@@ -33,7 +33,7 @@ func getUriWithoutQuery(url0 *url.URL) string {
 func (p *Policies) MatchFirst(r *http.Request) *Policy {
 	err := r.ParseForm()
 	if err != nil {
-		log.Println("http: Fail to parse form: ", err)
+		log.Println("http: Fail to parse form:", err)
 		return nil
 	}
 

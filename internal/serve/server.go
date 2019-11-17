@@ -18,7 +18,7 @@ func (s *MockServer) Start() error {
 	handler.listAllMappings()
 
 	portStr := strconv.Itoa(s.Port)
-	log.Println("[server] Listening on " + portStr + "...")
+	log.Println("[server] listening on " + portStr + "...")
 
 	addr := ":" + portStr
 	err := http.ListenAndServe(addr, handler)
