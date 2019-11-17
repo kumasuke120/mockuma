@@ -10,8 +10,8 @@ func (pr *PolicyReturns) Render(w *http.ResponseWriter) error {
 	(*w).WriteHeader(int(pr.StatusCode)) // must be called after (*w).Header() modifications
 
 	var err error
-	if pr.Body != "" {
-		_, err = (*w).Write([]byte(pr.Body))
+	if pr.Body != nil && len(pr.Body) != 0 {
+		_, err = (*w).Write(pr.Body)
 	}
 
 	return err

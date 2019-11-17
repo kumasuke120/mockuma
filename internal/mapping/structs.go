@@ -32,7 +32,18 @@ type Headers struct {
 type PolicyReturns struct {
 	StatusCode myhttp.StatusCode
 	Headers    *Headers
-	Body       string
+	Body       []byte
+}
+
+type ReturnsBodyDirectiveType string
+
+const (
+	ReadFile = ReturnsBodyDirectiveType("@file")
+)
+
+type ReturnsBodyDirective struct {
+	directiveType ReturnsBodyDirectiveType
+	argument      interface{}
 }
 
 var PolicyReturnsNotFound = PolicyReturns{
@@ -40,7 +51,7 @@ var PolicyReturnsNotFound = PolicyReturns{
 	Headers: &Headers{headers: map[string][]string{
 		myhttp.HeaderContentType: {myhttp.ContentTypeJson},
 	}},
-	Body: `{"statusCode": 404, "message": "Not Found"}`,
+	Body: []byte(`{"statusCode": 404, "message": "Not Found"}`),
 }
 
 var PolicyReturnsNoPolicyMatch = PolicyReturns{
@@ -48,5 +59,5 @@ var PolicyReturnsNoPolicyMatch = PolicyReturns{
 	Headers: &Headers{headers: map[string][]string{
 		myhttp.HeaderContentType: {myhttp.ContentTypeJson},
 	}},
-	Body: `{"statusCode": 400, "message": "No policy matched"}`,
+	Body: []byte(`{"statusCode": 400, "message": "No policy matched"}`),
 }

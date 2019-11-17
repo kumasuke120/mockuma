@@ -3,6 +3,7 @@ package mapping
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 
 	"github.com/kumasuke120/mockuma/internal/myhttp"
 )
@@ -193,29 +194,74 @@ func parseAsPolicyReturns(idx []interface{}, policyData map[string]interface{}) 
 	return returns, nil
 }
 
-func parseAsBody(idx []interface{}, returnsData map[string]interface{}) (string, error) {
+func parseAsBody(idx []interface{}, returnsData map[string]interface{}) ([]byte, error) {
 	bodyData := returnsData["body"]
 
 	switch bodyData.(type) {
 	case nil:
-		return "", nil
+		return nil, nil
 	case string:
-		return bodyData.(string), nil
+		return []byte(bodyData.(string)), nil
 	case map[string]interface{}:
-		return marshalJsonBodyData(bodyData)
+		return parseAsBodyWhenJsonObject(idx, bodyData)
 	case []interface{}:
 		return marshalJsonBodyData(bodyData)
 	}
 
-	return "", &JsonParseError{jsonpath: fmt.Sprintf("$[%d].policies[%d].returns.body", idx...)}
+	return nil, &JsonParseError{jsonpath: fmt.Sprintf("$[%d].policies[%d].returns.body", idx...)}
 }
 
-func marshalJsonBodyData(bodyData interface{}) (string, error) {
+func parseAsBodyWhenJsonObject(idx []interface{}, bodyData interface{}) ([]byte, error) {
+	directive, err := getBodyDirective(idx, bodyData.(map[string]interface{}))
+	if err != nil {
+		return nil, err
+	}
+
+	if directive != nil {
+		body, err := directive.getBody()
+		if err != nil {
+			return nil, err
+		}
+		return body, nil
+	}
+
+	return marshalJsonBodyData(bodyData)
+}
+
+func getBodyDirective(idx []interface{}, bodyData map[string]interface{}) (*ReturnsBodyDirective, error) {
+	if len(bodyData) == 1 {
+		var arg interface{}
+		if arg = bodyData[string(ReadFile)]; arg != nil {
+			if _, ok := arg.(string); !ok {
+				return nil,
+					&JsonParseError{jsonpath: fmt.Sprintf("$[%d].policies[%d].returns.body", idx...)}
+			}
+			return &ReturnsBodyDirective{directiveType: ReadFile, argument: arg}, nil
+		}
+	}
+
+	return nil, nil
+}
+
+func (d *ReturnsBodyDirective) getBody() ([]byte, error) {
+	switch d.directiveType {
+	case ReadFile:
+		bytes, err := ioutil.ReadFile(d.argument.(string))
+		if err != nil {
+			return nil, err
+		}
+		return bytes, nil
+	}
+
+	panic("Should't happen")
+}
+
+func marshalJsonBodyData(bodyData interface{}) ([]byte, error) {
 	bytes, err := json.Marshal(bodyData)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return string(bytes), nil
+	return bytes, nil
 }
 
 func parseAsValues(rawValue interface{}) []string {
