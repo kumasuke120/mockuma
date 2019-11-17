@@ -64,11 +64,11 @@ func parseAsMockuMapping(i int, mappingData map[string]interface{}) (*MockuMappi
 	method := myhttp.ToHttpMethod(mappingData["method"])
 	mapping.Method = method
 
-	var policies []*Policy
-	var policiesData []interface{}
-	if policiesData, ok = mappingData["policies"].([]interface{}); !ok {
-		return nil, &JsonParseError{jsonpath: fmt.Sprintf("$[%d].policies", i)}
+	policiesData, err := parseAsPoliciesData(i, mappingData)
+	if err != nil {
+		return nil, err
 	}
+	var policies []*Policy
 	for j, policyData := range policiesData {
 		var _policyData map[string]interface{}
 		if _policyData, ok = policyData.(map[string]interface{}); !ok {
@@ -84,6 +84,19 @@ func parseAsMockuMapping(i int, mappingData map[string]interface{}) (*MockuMappi
 	mapping.Policies = &Policies{policies: policies}
 
 	return mapping, nil
+}
+
+func parseAsPoliciesData(i int, mappingData map[string]interface{}) ([]interface{}, error) {
+	policiesData := mappingData["policies"]
+
+	switch policiesData.(type) {
+	case []interface{}:
+		return policiesData.([]interface{}), nil
+	case map[string]interface{}:
+		return []interface{}{policiesData}, nil
+	}
+
+	return nil, &JsonParseError{jsonpath: fmt.Sprintf("$[%d].policies", i)}
 }
 
 func parseAsPolicy(idx []interface{}, policyData map[string]interface{}) (*Policy, error) {
