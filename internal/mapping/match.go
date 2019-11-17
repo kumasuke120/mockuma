@@ -74,18 +74,18 @@ func valuesMatches(l, r []string) bool {
 	}
 
 	diff := make(map[string]int, len(l))
-	for _, x := range l {
-		diff[x]++
+	for _, _x := range l {
+		diff[_x]++
 	}
 
-	for _, y := range r {
-		if _, ok := diff[y]; !ok {
+	for _, _y := range r {
+		if _, ok := diff[_y]; !ok {
 			return false
 		}
 
-		diff[y] -= 1
-		if diff[y] == 0 {
-			delete(diff, y)
+		diff[_y] -= 1
+		if diff[_y] == 0 {
+			delete(diff, _y)
 		}
 	}
 

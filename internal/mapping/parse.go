@@ -1,62 +1,126 @@
 package mapping
 
 import (
+	"encoding/json"
 	"fmt"
 	"go/types"
 
 	"github.com/kumasuke120/mockuma/internal/myhttp"
 )
 
+type JsonParseError struct {
+	jsonpath string
+}
+
+func (e *JsonParseError) Error() string {
+	return fmt.Sprintf("Cannot parse value on jsonpath '%s", e.jsonpath)
+}
+
+func parseFromJson(jsonData []byte) (*MockuMappings, error) {
+	var v interface{}
+	err := json.Unmarshal(jsonData, &v)
+	if err != nil {
+		return nil, err
+	}
+
+	data, ok := v.([]interface{})
+	if !ok {
+		return nil, &JsonParseError{jsonpath: "$"}
+	}
+	mappingsMap, err := parseAsMockuMappingMap(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &MockuMappings{mappings: mappingsMap}, nil
+}
+
 func parseAsMockuMappingMap(data []interface{}) (map[string][]*MockuMapping, error) {
 	mappings := make(map[string][]*MockuMapping)
-	for _, mappingData := range data {
-		mapping := parseAsMockuMapping(mappingData.(map[string]interface{}))
+	for i, mappingData := range data {
+		_mappingData, ok := mappingData.(map[string]interface{})
+		if !ok {
+			return nil, &JsonParseError{jsonpath: fmt.Sprintf("$[%d]", i)}
+		}
+		mapping, err := parseAsMockuMapping(i, _mappingData)
+		if err != nil {
+			return nil, err
+		}
+
 		mappingsOfUri := mappings[mapping.Uri]
 		mappingsOfUri = append(mappingsOfUri, mapping)
 		mappings[mapping.Uri] = mappingsOfUri
 	}
+
 	return mappings, nil
 }
 
-func parseAsMockuMapping(mappingData map[string]interface{}) *MockuMapping {
+func parseAsMockuMapping(i int, mappingData map[string]interface{}) (*MockuMapping, error) {
+	var ok bool
+
 	mapping := new(MockuMapping)
-	mapping.Uri = mappingData["uri"].(string)
+	if mapping.Uri, ok = mappingData["uri"].(string); !ok {
+		return nil, &JsonParseError{jsonpath: fmt.Sprintf("$[%d].uri", i)}
+	}
 	method := myhttp.ToHttpMethod(mappingData["method"])
 	mapping.Method = method
 
 	var policies []*Policy
-	policiesData := mappingData["policies"].([]interface{})
-	for _, policyData := range policiesData {
-		policy := parseAsMockPolicy(policyData.(map[string]interface{}))
+	var policiesData []interface{}
+	if policiesData, ok = mappingData["policies"].([]interface{}); !ok {
+		return nil, &JsonParseError{jsonpath: fmt.Sprintf("$[%d].policies", i)}
+	}
+	for j, policyData := range policiesData {
+		var _policyData map[string]interface{}
+		if _policyData, ok = policyData.(map[string]interface{}); !ok {
+			return nil, &JsonParseError{jsonpath: fmt.Sprintf("$[%d].policies[%d]", i, j)}
+		}
+
+		policy, err := parseAsMockPolicy([]interface{}{i, j}, _policyData)
+		if err != nil {
+			return nil, err
+		}
 		policies = append(policies, policy)
 	}
 	mapping.Policies = &Policies{policies: policies}
 
-	return mapping
+	return mapping, nil
 }
 
-func parseAsMockPolicy(policyData map[string]interface{}) *Policy {
-	when := parseAsPolicyWhen(policyData)
-	returns := parseAsPolicyReturns(policyData)
+func parseAsMockPolicy(idx []interface{}, policyData map[string]interface{}) (*Policy, error) {
+	when, err := parseAsPolicyWhen(idx, policyData)
+	if err != nil {
+		return nil, err
+	}
+	returns, err := parseAsPolicyReturns(idx, policyData)
+	if err != nil {
+		return nil, err
+	}
 
 	policy := new(Policy)
 	policy.When = when
 	policy.Returns = returns
-
-	return policy
+	return policy, nil
 }
 
-func parseAsPolicyWhen(policyData map[string]interface{}) *PolicyWhen {
+func parseAsPolicyWhen(idx []interface{}, policyData map[string]interface{}) (*PolicyWhen, error) {
+	var ok bool
+
 	if policyData["when"] == nil {
-		return nil
+		return nil, nil
 	}
 
-	whenData := policyData["when"].(map[string]interface{})
+	var whenData map[string]interface{}
+	if whenData, ok = policyData["when"].(map[string]interface{}); !ok {
+		return nil, &JsonParseError{jsonpath: fmt.Sprintf("$[%d].policies[%d].when", idx...)}
+	}
 	var paramsData map[string]interface{}
 	if whenData["params"] == nil {
 		paramsData = make(map[string]interface{}, 0)
 	} else {
-		paramsData = whenData["params"].(map[string]interface{})
+		if paramsData, ok = whenData["params"].(map[string]interface{}); !ok {
+			return nil, &JsonParseError{jsonpath: fmt.Sprintf("$[%d].policies[%d].when.params", idx...)}
+		}
 	}
 
 	params := make(map[string][]string)
@@ -66,20 +130,40 @@ func parseAsPolicyWhen(policyData map[string]interface{}) *PolicyWhen {
 
 	when := new(PolicyWhen)
 	when.Params = params
-	return when
+	return when, nil
 }
 
-func parseAsPolicyReturns(policyData map[string]interface{}) *PolicyReturns {
-	returnsData := policyData["returns"].(map[string]interface{})
+func parseAsPolicyReturns(idx []interface{}, policyData map[string]interface{}) (*PolicyReturns, error) {
+	var ok bool
+
+	var returnsData map[string]interface{}
+	if policyData["returns"] == nil {
+		returnsData = make(map[string]interface{}, 0)
+	} else {
+		if returnsData, ok = policyData["returns"].(map[string]interface{}); !ok {
+			return nil, &JsonParseError{jsonpath: fmt.Sprintf("$[%d].policies[%d].returns", idx...)}
+		}
+	}
 
 	statusCode := returnsData["statusCode"]
 	if statusCode == nil {
 		statusCode = int(myhttp.Ok)
 	} else {
-		statusCode = int(statusCode.(float64))
+		var _statusCode float64
+		if _statusCode, ok = statusCode.(float64); !ok {
+			return nil, &JsonParseError{jsonpath: fmt.Sprintf("$[%d].policies[%d].statusCode", idx...)}
+		}
+		statusCode = int(_statusCode)
 	}
 
-	headersData := returnsData["headers"].(map[string]interface{})
+	var headersData map[string]interface{}
+	if returnsData["headers"] == nil {
+		headersData = make(map[string]interface{}, 0)
+	} else {
+		if returnsData, ok = returnsData["headers"].(map[string]interface{}); !ok {
+			return nil, &JsonParseError{jsonpath: fmt.Sprintf("$[%d].policies[%d].returns.headers", idx...)}
+		}
+	}
 	headers := make(map[string][]string)
 	for name, rawValue := range headersData {
 		headers[name] = parseAsValues(rawValue)
@@ -96,7 +180,7 @@ func parseAsPolicyReturns(policyData map[string]interface{}) *PolicyReturns {
 	returns.StatusCode = myhttp.StatusCode(statusCode.(int))
 	returns.Headers = &Headers{headers: headers}
 	returns.Body = body
-	return returns
+	return returns, nil
 }
 
 func parseAsValues(rawValue interface{}) []string {
