@@ -4,8 +4,8 @@ import (
 	"flag"
 	"log"
 
-	"kumasuke.app/mockuma/mapping"
-	"kumasuke.app/mockuma/serve"
+	"github.com/kumasuke120/mockuma/mapping"
+	"github.com/kumasuke120/mockuma/serve"
 )
 
 func main() {

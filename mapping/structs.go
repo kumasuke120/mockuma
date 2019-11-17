@@ -1,6 +1,6 @@
 package mapping
 
-import "kumasuke.app/mockuma/myhttp"
+import "github.com/kumasuke120/mockuma/myhttp"
 
 type MockuMappings struct {
 	mappings map[string][]*MockuMapping
