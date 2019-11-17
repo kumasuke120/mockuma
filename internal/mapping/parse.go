@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"go/types"
 
-	"github.com/kumasuke120/mockuma/myhttp"
+	"github.com/kumasuke120/mockuma/internal/myhttp"
 )
 
 func parseAsMockuMappingMap(data []interface{}) (map[string][]*MockuMapping, error) {

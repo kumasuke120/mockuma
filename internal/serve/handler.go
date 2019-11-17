@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/kumasuke120/mockuma/mapping"
-	"github.com/kumasuke120/mockuma/myhttp"
+	"github.com/kumasuke120/mockuma/internal/mapping"
+	"github.com/kumasuke120/mockuma/internal/myhttp"
 )
 
 type mockHandler struct {

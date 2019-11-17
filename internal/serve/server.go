@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/kumasuke120/mockuma/mapping"
+	"github.com/kumasuke120/mockuma/internal/mapping"
 )
 
 type MockServer struct {
