@@ -31,7 +31,7 @@ func parseFromJson(jsonData []byte) (*MockuMappings, error) {
 		return nil, err
 	}
 
-	return &MockuMappings{mappings: mappingsMap}, nil
+	return &MockuMappings{Mappings: mappingsMap}, nil
 }
 
 func parseAsMockuMappingMap(data []interface{}) (map[string][]*MockuMapping, error) {

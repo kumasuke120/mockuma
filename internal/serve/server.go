@@ -15,9 +15,10 @@ type MockServer struct {
 
 func (s *MockServer) Start() error {
 	handler := &mockHandler{mappings: s.Mappings}
+	handler.listAllMappings()
 
 	portStr := strconv.Itoa(s.Port)
-	log.Println("Listening on " + portStr + "...")
+	log.Println("[server] Listening on " + portStr + "...")
 
 	addr := ":" + portStr
 	err := http.ListenAndServe(addr, handler)

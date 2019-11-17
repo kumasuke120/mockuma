@@ -9,7 +9,7 @@ import (
 func (m *MockuMappings) Match(r *http.Request) *MockuMapping {
 	uri := getUriWithoutQuery(r.URL)
 
-	mappingsOfUri := m.mappings[uri]
+	mappingsOfUri := m.Mappings[uri]
 	if mappingsOfUri != nil {
 		for _, mappingOfUri := range mappingsOfUri {
 			if mappingOfUri.Method.Matches(r.Method) {

@@ -3,7 +3,7 @@ package mapping
 import "github.com/kumasuke120/mockuma/internal/myhttp"
 
 type MockuMappings struct {
-	mappings map[string][]*MockuMapping
+	Mappings map[string][]*MockuMapping
 }
 
 type MockuMapping struct {

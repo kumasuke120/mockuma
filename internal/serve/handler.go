@@ -16,9 +16,9 @@ func (h *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set(myhttp.HeaderServer, serverName)
 	returns := &mapping.PolicyReturnsNotFound
 
-	theMapping := h.mappings.Match(r)
-	if theMapping != nil {
-		policy := theMapping.Policies.MatchFirst(r)
+	_mapping := h.mappings.Match(r)
+	if _mapping != nil {
+		policy := _mapping.Policies.MatchFirst(r)
 
 		if policy != nil {
 			returns = policy.Returns
@@ -27,10 +27,29 @@ func (h *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err := returns.Render(w)
+	err := returns.Render(&w)
 	if err != nil {
-		log.Println("Fail to write response: ", err)
+		log.Printf("[handler] (err) %s %s: Fail to render response: %v\n",
+			r.Method, r.URL, err)
 	}
 
-	log.Println(returns.StatusCode, r.URL)
+	log.Printf("[handler] (%d) %s %s\n", returns.StatusCode, r.Method, r.URL)
+}
+
+func (h *mockHandler) listAllMappings() {
+	for uri, mappings := range h.mappings.Mappings {
+		log.Printf("[handler] mapped: %s, methods = %s\n", uri, getSupportedMethods(mappings))
+	}
+}
+
+func getSupportedMethods(mappingsOfUri []*mapping.MockuMapping) []myhttp.HttpMethod {
+	if mappingsOfUri == nil {
+		return []myhttp.HttpMethod{}
+	} else {
+		var result []myhttp.HttpMethod
+		for _, _mapping := range mappingsOfUri {
+			result = append(result, _mapping.Method)
+		}
+		return result
+	}
 }

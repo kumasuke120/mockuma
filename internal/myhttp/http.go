@@ -14,6 +14,21 @@ const (
 	Delete
 )
 
+type StatusCode int
+
+const (
+	Ok         = StatusCode(200)
+	BadRequest = StatusCode(400)
+	NotFound   = StatusCode(404)
+)
+
+const (
+	HeaderServer      = "Server"
+	HeaderContentType = "Content-Type"
+)
+
+const ContentTypeJson = "application/json; charset=utf8"
+
 func ToHttpMethod(method interface{}) HttpMethod {
 	switch method.(type) {
 	case string:
@@ -38,17 +53,19 @@ func (m HttpMethod) Matches(s string) bool {
 	return m == Any || m == ToHttpMethod(s)
 }
 
-type StatusCode int
-
-const (
-	Ok         = StatusCode(200)
-	BadRequest = StatusCode(400)
-	NotFound   = StatusCode(404)
-)
-
-const (
-	HeaderServer      = "Server"
-	HeaderContentType = "Content-Type"
-)
-
-const ContentTypeJson = "application/json; charset=utf8"
+func (m HttpMethod) String() string {
+	switch m {
+	case Any:
+		return "Any"
+	case Get:
+		return "GET"
+	case Post:
+		return "POST"
+	case Put:
+		return "PUT"
+	case Delete:
+		return "DELETE"
+	default:
+		panic("Should't happen")
+	}
+}
