@@ -10,7 +10,7 @@ cd cmd && go build -o ../bin/mockuma
 
 如果想要避免麻烦或者没有 Go 的开发环境，[点此](https://github.com/kumasuke120/mockuma/releases)下载发布版本。
 
-构建成功或下载后，使用以下命令运行：
+构建或下载成功并重命名后，可以使用以下命令运行：
 ```
 cd bin && ./mockuma
 ```
