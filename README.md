@@ -15,7 +15,7 @@ cd bin && ./mockuma
 
 | **参数** | **说明** | **默认值** | **示例** |
 |----------|------------------------------------------------|--------------------|-----------------------------|
-| -mapfile | MockuMappings 映射配置文件 | mockuMappings.json | -mapfile=C:\mockuMappings.json |
+| -mapfile | MockuMappings 映射配置文件<br>特别的，MocKuma 的工作目录将会被设为配置文件所在目录 | mockuMappings.json | -mapfile=xxx.json |
 | -p | 工具程序监听端口号 | 3214 | -p=3214 |
 | --help | 查看帮助，内容为英文 | -- | -- |
 
@@ -26,7 +26,7 @@ cd bin && ./mockuma
 [
   {
     "uri": "/api/hello",
-    "method": "GET",
+    "method": "POST",
     "policies": [
       {
         "when": {
@@ -53,43 +53,34 @@ cd bin && ./mockuma
   },
   {
     "uri": "/api/books",
-    "policies": [
-      {
-        "when": {
-          "params": {
-            "page": 2,
-            "perPage": 20
-          }
+    "policies": {
+      "when": {
+        "params": {
+          "page": 2,
+          "perPage": 20
+        }
+      },
+      "returns": {
+        "headers": {
+          "Content-Type": "application/json; charset=utf8"
         },
-        "returns": {
-          "headers": {
-            "Content-Type": "application/json; charset=utf8"
-          },
-          "body": {
-            "code": 2000,
-            "message": "Succeed",
-            "data": {
-              "page": 2,
-              "perPage": 20,
-              "total": 21,
-              "list": [
-                {
-                  "id": 21,
-                  "name": "Catch Me If You Can: The True Story of a Real Fake",
-                  "authors": ["Frank W. Abagnale", "Stan Redding"],
-                  "publiser": "Broadway Books",
-                  "isbn": "978-0767905381",
-                  "releaseDate": "2000-08-01",
-                  "price": 15.99,
-                  "language": "English",
-                  "pages": 277
-                }
-              ]
-            }
-          }
+        "body": {
+          "@file": "books-page2.json"
         }
       }
-    ]
+    }
+  },
+  {
+    "uri": "/whoami",
+    "method": "GET",
+    "policies": {
+      "headers": {
+        "Content-Type": "text/html; charset=utf8"
+      },
+      "returns": {
+        "body": "<!DOCTYPE html><h1>I am MocKuma</h1>"
+      }
+    }
   }
 ]
 ```
@@ -121,16 +112,16 @@ cd bin && ./mockuma
 |------------|--------------------------------|----------------------------------------------------|
 | statusCode | （选填，默认 200）Http 状态码 | `503` |
 | headers | （选填）Http 响应头 | `"Content-Type": "text/html"` |
-| body | （选填，默认为 ""）Http 响应体，可以为字符串，也可以是展开的 Json 对象或数组 | `"{\"code\": 2000, \"message\": \"Hello, World!\"}"` |
+| body | （选填，默认为 ""）Http 响应体，可以为字符串，也可以是展开的 Json 对象或数组<br> 特别的，如果响应的内容过大可以使用 `@file` 指令<br>该指令指定一个文件路径（相对路径是相对 `mapfile` 所在路径），并读取其内容作为该参数的值 | `"{\"code\": 2000, \"message\": \"Hello, World!\"}"` |
 
 ### 示例配置返回展示
 使用默认配置以及上述示例配置，在本地启动 MocKuma，运行结果如下：
 
-- 请求 `GET http://localhost:3214/api/hello?lang=cn&lang=en`，返回：
+- 请求 `POST http://localhost:3214/api/hello?lang=cn&lang=en`，返回：
 ```
 HTTP/1.1 200 OK
 Server: HelloMock/1.0
-Date: Sun, 17 Nov 2019 13:08:34 GMT
+Date: Sun, 17 Nov 2019 18:08:34 GMT
 Content-Length: 43
 Content-Type: text/plain; charset=utf-8
 
@@ -142,34 +133,10 @@ Content-Type: text/plain; charset=utf-8
 HTTP/1.1 200 OK
 Content-Type: application/json; charset=utf8
 Server: MocKuma/1.0
-Date: Sun, 17 Nov 2019 13:09:52 GMT
-Content-Length: 327
+Date: Sun, 17 Nov 2019 18:09:52 GMT
+Content-Length: 531
 
-{
-  "code": 2000,
-  "data": {
-    "list": [
-      {
-        "authors": [
-          "Frank W. Abagnale",
-          "Stan Redding"
-        ],
-        "id": 21,
-        "isbn": "978-0767905381",
-        "language": "English",
-        "name": "Catch Me If You Can: The True Story of a Real Fake",
-        "pages": 277,
-        "price": 15.99,
-        "publiser": "Broadway Books",
-        "releaseDate": "2000-08-01"
-      }
-    ],
-    "page": 2,
-    "perPage": 20,
-    "total": 21
-  },
-  "message": "Succeed"
-}
+<文件 'books-page2.json' 的内容>
 ```
 
 - 请求 `DELETE http://localhost:3214/api/notexists`，返回：
@@ -177,7 +144,7 @@ Content-Length: 327
 HTTP/1.1 404 Not Found
 Content-Type: application/json; charset=utf8
 Server: MocKuma/1.0
-Date: Sun, 17 Nov 2019 13:11:42 GMT
+Date: Sun, 17 Nov 2019 18:11:42 GMT
 Content-Length: 43
 
 {
