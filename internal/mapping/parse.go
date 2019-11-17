@@ -3,7 +3,6 @@ package mapping
 import (
 	"encoding/json"
 	"fmt"
-	"go/types"
 
 	"github.com/kumasuke120/mockuma/internal/myhttp"
 )
@@ -76,7 +75,7 @@ func parseAsMockuMapping(i int, mappingData map[string]interface{}) (*MockuMappi
 			return nil, &JsonParseError{jsonpath: fmt.Sprintf("$[%d].policies[%d]", i, j)}
 		}
 
-		policy, err := parseAsMockPolicy([]interface{}{i, j}, _policyData)
+		policy, err := parseAsPolicy([]interface{}{i, j}, _policyData)
 		if err != nil {
 			return nil, err
 		}
@@ -87,7 +86,7 @@ func parseAsMockuMapping(i int, mappingData map[string]interface{}) (*MockuMappi
 	return mapping, nil
 }
 
-func parseAsMockPolicy(idx []interface{}, policyData map[string]interface{}) (*Policy, error) {
+func parseAsPolicy(idx []interface{}, policyData map[string]interface{}) (*Policy, error) {
 	when, err := parseAsPolicyWhen(idx, policyData)
 	if err != nil {
 		return nil, err
@@ -145,12 +144,12 @@ func parseAsPolicyReturns(idx []interface{}, policyData map[string]interface{}) 
 		}
 	}
 
-	statusCode := returnsData["statusCode"]
-	if statusCode == nil {
+	var statusCode int
+	if returnsData["statusCode"] == nil {
 		statusCode = int(myhttp.Ok)
 	} else {
 		var _statusCode float64
-		if _statusCode, ok = statusCode.(float64); !ok {
+		if _statusCode, ok = returnsData["statusCode"].(float64); !ok {
 			return nil, &JsonParseError{jsonpath: fmt.Sprintf("$[%d].policies[%d].statusCode", idx...)}
 		}
 		statusCode = int(_statusCode)
@@ -160,7 +159,7 @@ func parseAsPolicyReturns(idx []interface{}, policyData map[string]interface{}) 
 	if returnsData["headers"] == nil {
 		headersData = make(map[string]interface{}, 0)
 	} else {
-		if returnsData, ok = returnsData["headers"].(map[string]interface{}); !ok {
+		if headersData, ok = returnsData["headers"].(map[string]interface{}); !ok {
 			return nil, &JsonParseError{jsonpath: fmt.Sprintf("$[%d].policies[%d].returns.headers", idx...)}
 		}
 	}
@@ -169,25 +168,48 @@ func parseAsPolicyReturns(idx []interface{}, policyData map[string]interface{}) 
 		headers[name] = parseAsValues(rawValue)
 	}
 
-	var body string
-	if returnsData["body"] == nil {
-		body = ""
-	} else {
-		body = returnsData["body"].(string)
+	body, err := parseAsBody(idx, returnsData)
+	if err != nil {
+		return nil, err
 	}
 
 	returns := new(PolicyReturns)
-	returns.StatusCode = myhttp.StatusCode(statusCode.(int))
+	returns.StatusCode = myhttp.StatusCode(statusCode)
 	returns.Headers = &Headers{headers: headers}
 	returns.Body = body
 	return returns, nil
+}
+
+func parseAsBody(idx []interface{}, returnsData map[string]interface{}) (string, error) {
+	bodyData := returnsData["body"]
+
+	switch bodyData.(type) {
+	case nil:
+		return "", nil
+	case string:
+		return bodyData.(string), nil
+	case map[string]interface{}:
+		return marshalJsonBodyData(bodyData)
+	case []interface{}:
+		return marshalJsonBodyData(bodyData)
+	}
+
+	return "", &JsonParseError{jsonpath: fmt.Sprintf("$[%d].policies[%d].returns.body", idx...)}
+}
+
+func marshalJsonBodyData(bodyData interface{}) (string, error) {
+	bytes, err := json.Marshal(bodyData)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes), nil
 }
 
 func parseAsValues(rawValue interface{}) []string {
 	var result []string
 
 	switch rawValue.(type) {
-	case types.Nil:
+	case nil:
 		result = append(result, "")
 	case []interface{}:
 		result = append(result, toStringSlice(rawValue.([]interface{}))...)
