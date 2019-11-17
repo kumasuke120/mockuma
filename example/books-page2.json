@@ -1,0 +1,25 @@
+{
+  "code": 2000,
+  "message": "Succeed",
+  "data": {
+    "page": 2,
+    "perPage": 20,
+    "total": 21,
+    "list": [
+      {
+        "id": 21,
+        "name": "Catch Me If You Can: The True Story of a Real Fake",
+        "authors": [
+          "Frank W. Abagnale",
+          "Stan Redding"
+        ],
+        "publiser": "Broadway Books",
+        "isbn": "978-0767905381",
+        "releaseDate": "2000-08-01",
+        "price": 15.99,
+        "language": "English",
+        "pages": 277
+      }
+    ]
+  }
+}

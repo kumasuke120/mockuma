@@ -1,0 +1,112 @@
+[
+  {
+    "uri": "/api/hello",
+    "policies": [
+      {
+        "when": {
+          "params": {
+            "lang": [
+              "en",
+              "cn"
+            ]
+          }
+        },
+        "returns": {
+          "headers": {
+            "Server": "HelloMock/1.0",
+            "Content-Type": "application/json; charset=utf8"
+          },
+          "body": "{\"code\": 2000, \"message\": \"Hello, 世界!\"}"
+        }
+      },
+      {
+        "returns": {
+          "headers": {
+            "Server": "HelloMock/1.0",
+            "Content-Type": "application/json; charset=utf8"
+          },
+          "body": "{\"code\": 2000, \"message\": \"Hello, World!\"}"
+        }
+      }
+    ]
+  },
+  {
+    "uri": "/api/books",
+    "method": "GET",
+    "policies": {
+      "when": {
+        "params": {
+          "page": 2,
+          "perPage": 20
+        }
+      },
+      "returns": {
+        "headers": {
+          "Content-Type": "application/json; charset=utf8"
+        },
+        "body": {
+          "@file": "books-page2.json"
+        }
+      }
+    }
+  },
+  {
+    "uri": "/whoami",
+    "method": "GET",
+    "policies": {
+      "returns": {
+        "headers": {
+          "Content-Type": "text/html; charset=utf8"
+        },
+        "body": "<!DOCTYPE html><h1>I am MocKuma</h1>"
+      }
+    }
+  },
+  {
+    "uri": "/api/login",
+    "method": "POST",
+    "policies": [
+      {
+        "when": {
+          "params": {
+            "username": "kumasuke120"
+          },
+          "headers": {
+            "Authorization": "Basic a3VtYXN1a2UxMjAvcGEkJHcwcmQ="
+          }
+        },
+        "returns": {
+          "headers": {
+            "Content-Type": "application/json; charset=utf8"
+          },
+          "body": {
+            "code": 2000,
+            "message": "Welcome, kumasuke120!"
+          }
+        }
+      },
+      {
+        "when": {
+          "headers": {
+            "Authorization": "Basic a3VtYXN1a2UxMjAvcGEkJHcwcmQ="
+          }
+        },
+        "returns": {
+          "statusCode": 400,
+          "headers": {
+            "Content-Type": "application/json; charset=utf8"
+          },
+          "body": {
+            "code": 4001,
+            "message": "Missing parameter 'username'"
+          }
+        }
+      },
+      {
+        "returns": {
+          "statusCode": 401
+        }
+      }
+    ]
+  }
+]
