@@ -60,8 +60,8 @@ cd bin && ./mockuma
 
 | **参数** | **说明** | **示例** |
 |----------|-------------------------------------------------------------------|--------------|
-| uri | （必填）Mock 接口的 Uri，必须以 / 开头 | /api/example |
-| method | （选填，默认 Any）Mock 接口绑定的请求方式，支持 GET、POST、PUT、DELETE 以及 Any；<br>其中前四项为单独绑定， Any 为绑定所有请求方式 | GET |
+| uri | （必填）Mock 接口的 Uri，必须以 / 开头 | `"/api/example"` |
+| method | （选填，默认 Any）Mock 接口绑定的请求方式，支持 GET、POST、PUT、DELETE 以及 Any；<br>其中前四项为单独绑定， Any 为绑定所有请求方式 | `"GET"` |
 | policies | （必填）Mock 接口的映射策略，返回 Mock 数据时，从上到下依次执行，返回匹配到的第一个结果 | -- |
 
 此外，不同的 `uri` 和 `method` 组合，可以生成不同的 Mock 接口。当配置中出现多个相同的`uri` 和 `method` 组合时，只有数组下标最小的有效。
