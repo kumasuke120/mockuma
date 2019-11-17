@@ -15,7 +15,7 @@ cd bin && ./mockuma
 
 | **参数** | **说明** | **默认值** | **示例** |
 |----------|------------------------------------------------|--------------------|-----------------------------|
-| -mapfile | MockuMappings 映射配置文件，支持相对和绝对路径 | mockuMappings.json | -mapfile=mockuMappings.json |
+| -mapfile | MockuMappings 映射配置文件 | mockuMappings.json | -mapfile=C:\mockuMappings.json |
 | -p | 工具程序监听端口号 | 3214 | -p=3214 |
 | --help | 查看帮助，内容为英文 | -- | -- |
 
@@ -61,7 +61,7 @@ cd bin && ./mockuma
 | **参数** | **说明** | **示例** |
 |----------|-------------------------------------------------------------------|--------------|
 | uri | （必填）Mock 接口的 Uri，必须以 / 开头 | /api/example |
-| method | （选填，默认 Any）Mock 接口绑定的请求方式，支持 GET、POST、PUT、DELETE 以及 Any。<br>其中前四项为单独绑定， Any 为绑定所有请求方式 | GET |
+| method | （选填，默认 Any）Mock 接口绑定的请求方式，支持 GET、POST、PUT、DELETE 以及 Any；<br>其中前四项为单独绑定， Any 为绑定所有请求方式 | GET |
 | policies | （必填）Mock 接口的映射策略，返回 Mock 数据时，从上到下依次执行，返回匹配到的第一个结果 | -- |
 
 此外，不同的 `uri` 和 `method` 组合，可以生成不同的 Mock 接口。当配置中出现多个相同的`uri` 和 `method` 组合时，只有数组下标最小的有效。
@@ -73,7 +73,7 @@ cd bin && ./mockuma
 
 | **条件** | **说明** | **示例** |
 |--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
-| params | 匹配请求中的 Url 参数，形如 `/uri?key=value`；<br>或是匹配 POST、PUT、DELETE 且`Content-Type` 为 `application/x-www-form-urlencoded` 的参数。<br> 形式为 Json 对象，其中 `key` 为参数名称，`value` 为参数值。<br>如果需要匹配多个同名参数，`value` 须为 Json 数组| `"params": {"value1": [1, 2], "value2": 2}` |
+| params | 匹配请求中的 Url 参数，形如 `/uri?key=value`；<br>或是匹配 POST、PUT、DELETE 且`Content-Type` 为 `application/x-www-form-urlencoded` 的参数；<br> 形式为 Json 对象，其中 `key` 为参数名称，`value` 为参数值；<br>如果需要匹配多个同名参数，`value` 须为 Json 数组| `"params": {"value1": [1, 2], "value2": 2}` |
 
 
 - `returns` 指定了 `when` 匹配后的返回内容，`returns` 中有如下参数：
