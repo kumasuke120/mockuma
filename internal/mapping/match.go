@@ -37,14 +37,15 @@ func (p *Policies) MatchFirst(r *http.Request) *Policy {
 		return nil
 	}
 
-	form := r.Form
-
 	var policy *Policy
 	for _, p := range p.policies {
 		when := p.When
 
 		if when != nil {
-			if !paramsMatches(when.Params, form) {
+			if !paramsMatch(when.Params, r.Form) {
+				continue
+			}
+			if !headersMatch(when.Headers, r.Header) {
 				continue
 			}
 		}
@@ -56,11 +57,11 @@ func (p *Policies) MatchFirst(r *http.Request) *Policy {
 	return policy
 }
 
-func paramsMatches(params map[string][]string, form url.Values) bool {
+func paramsMatch(params map[string][]string, form url.Values) bool {
 	for name, values := range params {
 		formValues := form[name]
 
-		if !valuesMatches(values, formValues) {
+		if !valuesMatch(values, formValues) {
 			return false
 		}
 	}
@@ -68,7 +69,19 @@ func paramsMatches(params map[string][]string, form url.Values) bool {
 	return true
 }
 
-func valuesMatches(l, r []string) bool {
+func headersMatch(headers *Headers, header http.Header) bool {
+	for name, values := range headers.headers {
+		headerValues := header[name]
+
+		if !valuesMatch(values, headerValues) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func valuesMatch(l, r []string) bool {
 	if len(l) != len(r) {
 		return false
 	}

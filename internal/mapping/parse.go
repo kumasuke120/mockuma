@@ -127,22 +127,22 @@ func parseAsPolicyWhen(idx []interface{}, policyData map[string]interface{}) (*P
 	if whenData, ok = policyData["when"].(map[string]interface{}); !ok {
 		return nil, &JsonParseError{jsonpath: fmt.Sprintf("$[%d].policies[%d].when", idx...)}
 	}
-	var paramsData map[string]interface{}
-	if whenData["params"] == nil {
-		paramsData = make(map[string]interface{}, 0)
-	} else {
-		if paramsData, ok = whenData["params"].(map[string]interface{}); !ok {
-			return nil, &JsonParseError{jsonpath: fmt.Sprintf("$[%d].policies[%d].when.params", idx...)}
-		}
+
+	params, err := parseNameValuesPairsAsMap(idx, whenData["params"],
+		"$[%d].policies[%d].when.params")
+	if err != nil {
+		return nil, err
 	}
 
-	params := make(map[string][]string)
-	for name, rawValue := range paramsData {
-		params[name] = parseAsValues(rawValue)
+	headers, err := parseNameValuesPairsAsMap(idx, whenData["headers"],
+		"$[%d].policies[%d].when.headers")
+	if err != nil {
+		return nil, err
 	}
 
 	when := new(PolicyWhen)
 	when.Params = params
+	when.Headers = &Headers{headers: headers}
 	return when, nil
 }
 
@@ -169,17 +169,10 @@ func parseAsPolicyReturns(idx []interface{}, policyData map[string]interface{}) 
 		statusCode = int(_statusCode)
 	}
 
-	var headersData map[string]interface{}
-	if returnsData["headers"] == nil {
-		headersData = make(map[string]interface{}, 0)
-	} else {
-		if headersData, ok = returnsData["headers"].(map[string]interface{}); !ok {
-			return nil, &JsonParseError{jsonpath: fmt.Sprintf("$[%d].policies[%d].returns.headers", idx...)}
-		}
-	}
-	headers := make(map[string][]string)
-	for name, rawValue := range headersData {
-		headers[name] = parseAsValues(rawValue)
+	headers, err := parseNameValuesPairsAsMap(idx, returnsData["headers"],
+		"$[%d].policies[%d].returns.headers")
+	if err != nil {
+		return nil, err
 	}
 
 	body, err := parseAsBody(idx, returnsData)
@@ -262,6 +255,28 @@ func marshalJsonBodyData(bodyData interface{}) ([]byte, error) {
 		return nil, err
 	}
 	return bytes, nil
+}
+
+func parseNameValuesPairsAsMap(idx []interface{}, data interface{},
+	jsonpathFormat string) (map[string][]string, error) {
+	var ok bool
+	var pairsData map[string]interface{}
+
+	if data == nil {
+		pairsData = make(map[string]interface{}, 0)
+	} else {
+		pairsData, ok = data.(map[string]interface{})
+		if !ok {
+			return nil, &JsonParseError{jsonpath: fmt.Sprintf(jsonpathFormat, idx...)}
+		}
+	}
+
+	pairs := make(map[string][]string)
+	for name, rawValue := range pairsData {
+		pairs[name] = parseAsValues(rawValue)
+	}
+
+	return pairs, nil
 }
 
 func parseAsValues(rawValue interface{}) []string {

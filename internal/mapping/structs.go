@@ -22,7 +22,8 @@ type Policy struct {
 }
 
 type PolicyWhen struct {
-	Params map[string][]string
+	Params  map[string][]string
+	Headers *Headers
 }
 
 type Headers struct {
