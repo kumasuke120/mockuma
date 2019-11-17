@@ -2,7 +2,12 @@ package mapping
 
 import (
 	"io/ioutil"
+	"log"
+	"os"
+	"path/filepath"
 )
+
+const DefaultMapfile = "mockuMappings.json"
 
 func FromJsonFile(filename string) (*MockuMappings, error) {
 	mappingsJson, err := ioutil.ReadFile(filename)
@@ -10,5 +15,24 @@ func FromJsonFile(filename string) (*MockuMappings, error) {
 		return nil, err
 	}
 
+	if filename != DefaultMapfile {
+		setWorkingDirBasedOnMapfile(filename)
+	}
+
 	return parseFromJson(mappingsJson)
+}
+
+func setWorkingDirBasedOnMapfile(filename string) {
+	abs, err := filepath.Abs(filename)
+	if err != nil {
+		log.Fatal("Cannot acquire the absolute path of mockuMappings:", err)
+	}
+
+	dir := filepath.Dir(abs)
+	err = os.Chdir(dir)
+	if err != nil {
+		log.Fatal("Cannot change the working directory:", err)
+	}
+
+	log.Println("[load] working directory has been changed to:", dir)
 }
