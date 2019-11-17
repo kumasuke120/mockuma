@@ -16,13 +16,13 @@ func FromJsonFile(filename string) (*MockuMappings, error) {
 	}
 
 	if filename != DefaultMapfile {
-		setWorkingDirBasedOnMapfile(filename)
+		setWorkingDirBasedOnFilename(filename)
 	}
 
 	return parseFromJson(mappingsJson)
 }
 
-func setWorkingDirBasedOnMapfile(filename string) {
+func setWorkingDirBasedOnFilename(filename string) {
 	abs, err := filepath.Abs(filename)
 	if err != nil {
 		log.Fatal("Cannot acquire the absolute path of mockuMappings:", err)
