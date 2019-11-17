@@ -11,7 +11,7 @@ go build -o bin/mockuma github.com/kumasuke120/mockuma/cmd
 ```
 cd bin && ./mockuma
 ```
-使用默认参数运行时，工具程序将会读取当前目录下的 `mockuMappings.json`文件并生成对应 Mock 接口，以下是所有支持的命令行参数：
+使用默认参数运行时，工具程序将会读取当前目录下的 `mockuMappings.json` 文件并生成对应 Mock 接口，以下是所有支持的命令行参数：
 
 | **参数** | **说明** | **默认值** | **示例** |
 |----------|------------------------------------------------|--------------------|-----------------------------|
@@ -19,7 +19,8 @@ cd bin && ./mockuma
 | -p | 工具程序监听端口号 | 3214 | -p=3214 |
 | --help | 查看帮助，内容为英文 | -- | -- |
 
-## MockuMappings 配置
+## MockuMappings 映射配置
+### 示例配置
 `MockuMappings` 是 MocKuma 自有的配置文件格式。它是一个有着特定规则的 `.json` 格式文件，以下为示例：
 ```json
 [
@@ -92,6 +93,8 @@ cd bin && ./mockuma
   }
 ]
 ```
+
+### `MockuMappings` 详解
 `MockuMappings` 顶层为一个 Json 数组，数组的每一项均是一个 Json 对象。这种 Json 对象中有 3 个参数:
 
 | **参数** | **说明** | **示例** |
@@ -118,4 +121,67 @@ cd bin && ./mockuma
 |------------|--------------------------------|----------------------------------------------------|
 | statusCode | （选填，默认 200）Http 状态码 | `503` |
 | headers | （选填）Http 响应头 | `"Content-Type": "text/html"` |
-| body | （选填，默认为 ""）Http 响应体 | `"{\"code\": 2000, \"message\": \"Hello, World!\"}"` |
+| body | （选填，默认为 ""）Http 响应体，可以为字符串，也可以是展开的 Json 对象或数组 | `"{\"code\": 2000, \"message\": \"Hello, World!\"}"` |
+
+### 示例配置返回展示
+使用默认配置以及上述示例配置，在本地启动 MocKuma，运行结果如下：
+
+- 请求 `GET http://localhost:3214/api/hello?lang=cn&lang=en`，返回：
+```
+HTTP/1.1 200 OK
+Server: HelloMock/1.0
+Date: Sun, 17 Nov 2019 13:08:34 GMT
+Content-Length: 43
+Content-Type: text/plain; charset=utf-8
+
+{"code": 2000, "message": "Hello, 世界!"}
+```
+
+- 请求 `GET http://localhost:3214/api/books?page=2&perPage=20`，返回：
+```
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf8
+Server: MocKuma/1.0
+Date: Sun, 17 Nov 2019 13:09:52 GMT
+Content-Length: 327
+
+{
+  "code": 2000,
+  "data": {
+    "list": [
+      {
+        "authors": [
+          "Frank W. Abagnale",
+          "Stan Redding"
+        ],
+        "id": 21,
+        "isbn": "978-0767905381",
+        "language": "English",
+        "name": "Catch Me If You Can: The True Story of a Real Fake",
+        "pages": 277,
+        "price": 15.99,
+        "publiser": "Broadway Books",
+        "releaseDate": "2000-08-01"
+      }
+    ],
+    "page": 2,
+    "perPage": 20,
+    "total": 21
+  },
+  "message": "Succeed"
+}
+```
+
+- 请求 `DELETE http://localhost:3214/api/notexists`，返回：
+```
+HTTP/1.1 404 Not Found
+Content-Type: application/json; charset=utf8
+Server: MocKuma/1.0
+Date: Sun, 17 Nov 2019 13:11:42 GMT
+Content-Length: 43
+
+{
+  "statusCode": 404,
+  "message": "Not Found"
+}
+```
