@@ -35,7 +35,7 @@ func ToHttpMethod(method interface{}) HttpMethod {
 }
 
 func (m HttpMethod) Matches(s string) bool {
-	return m == ToHttpMethod(s)
+	return m == Any || m == ToHttpMethod(s)
 }
 
 type StatusCode int
