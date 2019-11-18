@@ -4,18 +4,18 @@ import (
 	"strings"
 )
 
-type HttpMethod int
+type HttpMethod string
 
 const (
-	Any = iota
-	Options
-	Get
-	Head
-	Post
-	Put
-	Delete
-	Trace
-	Connect
+	Any     = HttpMethod("")
+	Options = HttpMethod("OPTIONS")
+	Get     = HttpMethod("GET")
+	Head    = HttpMethod("HEAD")
+	Post    = HttpMethod("POST")
+	Put     = HttpMethod("PUT")
+	Delete  = HttpMethod("DELETE")
+	Trace   = HttpMethod("TRACE")
+	Connect = HttpMethod("CONNECT")
 )
 
 type StatusCode int
@@ -25,13 +25,6 @@ const (
 	BadRequest = StatusCode(400)
 	NotFound   = StatusCode(404)
 )
-
-const (
-	HeaderServer      = "Server"
-	HeaderContentType = "Content-Type"
-)
-
-const ContentTypeJson = "application/json; charset=utf8"
 
 func ToHttpMethod(method interface{}) HttpMethod {
 	switch method.(type) {
@@ -53,12 +46,10 @@ func ToHttpMethod(method interface{}) HttpMethod {
 			return Trace
 		case "CONNECT":
 			return Connect
-		default:
-			return Any
 		}
-	default:
-		return Any
 	}
+
+	return Any
 }
 
 func (m HttpMethod) Matches(s string) bool {
@@ -66,26 +57,5 @@ func (m HttpMethod) Matches(s string) bool {
 }
 
 func (m HttpMethod) String() string {
-	switch m {
-	case Any:
-		return "Any"
-	case Options:
-		return "OPTIONS"
-	case Get:
-		return "GET"
-	case Head:
-		return "HEAD"
-	case Post:
-		return "POST"
-	case Put:
-		return "PUT"
-	case Delete:
-		return "DELETE"
-	case Trace:
-		return "TRACE"
-	case Connect:
-		return "Connect"
-	default:
-		panic("Should't happen")
-	}
+	return string(m)
 }
