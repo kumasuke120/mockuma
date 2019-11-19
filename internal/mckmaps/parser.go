@@ -114,6 +114,7 @@ func (p *parser) parse() (*MockuMappings, error) {
 	if err != nil {
 		return nil, err
 	}
+	commentProcessor{v: json}.process()
 
 	switch json.(type) {
 	case myjson.Object:
@@ -189,6 +190,7 @@ func (p *mappingsParser) parse() ([]*Mapping, error) {
 		if err != nil {
 			return nil, err
 		}
+		commentProcessor{v: json}.process()
 		p.json = json
 	}
 
