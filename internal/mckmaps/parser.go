@@ -1,7 +1,6 @@
 package mckmaps
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -21,6 +20,7 @@ const (
 const (
 	dType    = "@type"
 	dInclude = "@include"
+	dFile    = "@file"
 )
 
 const (
@@ -32,9 +32,13 @@ const (
 )
 
 const (
-	pParams  = "params"
-	pHeaders = "headers"
+	pStatusCode = "statusCode"
+	pHeaders    = "headers"
+	pParams     = "params"
+	pBody       = "body"
 )
+
+var emptyWhen = new(When)
 
 type JsonParseError struct {
 	JsonPath string
@@ -68,10 +72,6 @@ func (e *ParserError) Error() string {
 	return result
 }
 
-func newParserError(filename string, jsonPath *myjson.Path) *ParserError {
-	return &ParserError{Filename: filename, JsonPath: jsonPath}
-}
-
 type parser struct {
 	filename string
 	chdir    bool
@@ -83,7 +83,7 @@ type mainParser struct {
 }
 
 type mappingsParser struct {
-	json     myjson.Object
+	json     interface{}
 	jsonPath *myjson.Path
 	parser
 }
@@ -117,8 +117,15 @@ func (p *parser) parse() (*MockuMappings, error) {
 
 	switch json.(type) {
 	case myjson.Object:
-		parser := &mainParser{parser: *p, json: json.(myjson.Object)}
+		parser := &mainParser{json: json.(myjson.Object), parser: *p}
 		return parser.parse()
+	case myjson.Array:
+		parser := &mappingsParser{json: json, parser: *p}
+		mappings, err := parser.parse()
+		if err != nil {
+			return nil, err
+		}
+		return &MockuMappings{mappings: mappings}, nil
 	}
 
 	return nil, newParserError(p.filename, nil)
@@ -137,6 +144,8 @@ func (p *parser) chdirBasedOnFilename() error {
 	}
 
 	log.Println("[load] working directory has been changed to:", dir)
+
+	return nil
 }
 
 func (p *mainParser) parse() (*MockuMappings, error) {
@@ -162,7 +171,7 @@ func (p *mainParser) parse() (*MockuMappings, error) {
 			return nil, newParserError(p.filename, myjson.NewPath(dInclude, tMappings, idx))
 		}
 
-		parser := &mappingsParser{parser: parser{filename: string(_filename)}}
+		parser := &mappingsParser{parser: parser{filename: string(_filename), chdir: p.chdir}}
 		partOfMappings, err := parser.parse()
 		if err != nil {
 			return nil, err
@@ -171,21 +180,41 @@ func (p *mainParser) parse() (*MockuMappings, error) {
 		mappings = append(mappings, partOfMappings...)
 	}
 
-	return &MockuMappings{Mappings: mappings}, nil
+	return &MockuMappings{mappings: mappings}, nil
 }
 
 func (p *mappingsParser) parse() ([]*Mapping, error) {
-	_type, err := p.json.GetString(dType)
-	if err != nil || _type != tMappings {
-		return nil, newParserError(p.filename, myjson.NewPath(dType))
+	if p.json == nil {
+		json, err := p.load()
+		if err != nil {
+			return nil, err
+		}
+		p.json = json
 	}
 
-	rawMappings, err := ensureJsonArray(p.json.Get(tMappings))
-	if err != nil {
-		return nil, newParserError(p.filename, myjson.NewPath(tMappings))
+	var rawMappings myjson.Array
+	switch p.json.(type) {
+	case myjson.Object:
+		p.jsonPath = myjson.NewPath("")
+		jsonObject := p.json.(myjson.Object)
+
+		p.jsonPath.SetLast(dType)
+		_type, err := jsonObject.GetString(dType)
+		if err != nil || _type != tMappings {
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
+
+		p.jsonPath.SetLast(tMappings)
+		rawMappings = ensureJsonArray(jsonObject.Get(tMappings))
+	case myjson.Array:
+		p.jsonPath = myjson.NewPath()
+		rawMappings = p.json.(myjson.Array)
+	default:
+		p.jsonPath = myjson.NewPath()
+		return nil, newParserError(p.filename, p.jsonPath)
 	}
 
-	p.jsonPath = myjson.NewPath(tMappings, 0)
+	p.jsonPath.Append(0)
 	var mappings []*Mapping
 	for idx, rm := range rawMappings {
 		p.jsonPath.SetLast(idx)
@@ -201,32 +230,34 @@ func (p *mappingsParser) parse() ([]*Mapping, error) {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
 	}
+	p.jsonPath.RemoveLast()
 
 	return mappings, nil
 }
 
 func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
+	p.jsonPath.Append("")
+
 	mapping := new(Mapping)
 
-	p.jsonPath.Append(mapUri)
+	p.jsonPath.SetLast(mapUri)
 	uri, err := v.GetString(mapUri)
 	if err != nil {
 		return nil, newParserError(p.filename, p.jsonPath)
 	}
-	mapping.Uri = string(uri)
+	mapping.uri = string(uri)
 
 	p.jsonPath.SetLast(mapMethod)
 	method, err := v.GetString(mapMethod)
 	if err != nil {
 		return nil, newParserError(p.filename, p.jsonPath)
 	}
-	mapping.Method = myhttp.ToHttpMethod(string(method))
+	mapping.method = myhttp.ToHttpMethod(string(method))
 
 	p.jsonPath.SetLast(mapPolicies)
-	rawPolicies, err := ensureJsonArray(p.json.Get(mapPolicies))
 	p.jsonPath.Append(0)
 	var policies []*Policy
-	for idx, rp := range rawPolicies {
+	for idx, rp := range ensureJsonArray(v.Get(mapPolicies)) {
 		p.jsonPath.SetLast(idx)
 
 		switch rp.(type) {
@@ -240,64 +271,186 @@ func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
 	}
-	mapping.Policies = policies
+	p.jsonPath.RemoveLast()
+	mapping.policies = policies
 
+	p.jsonPath.RemoveLast()
 	return mapping, nil
 }
 
 func (p *mappingsParser) parsePolicy(v myjson.Object) (*Policy, error) {
+	p.jsonPath.Append("")
+
 	policy := new(Policy)
 
-	p.jsonPath.Append(mapPolicyWhen)
+	p.jsonPath.SetLast(mapPolicyWhen)
+	var when *When
 	if v.Has(mapPolicyWhen) {
 		rawWhen, err := v.GetObject(mapPolicyWhen)
 		if err != nil {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
-		policy.When, err = p.parseWhen(rawWhen)
+		when, err = p.parseWhen(rawWhen)
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		when = emptyWhen
 	}
+	policy.when = when
 
+	p.jsonPath.SetLast(mapPolicyReturns)
+	rawReturns, err := v.GetObject(mapPolicyReturns)
+	if err != nil {
+		return nil, newParserError(p.filename, p.jsonPath)
+	}
+	returns, err := p.parseReturns(rawReturns)
+	if err != nil {
+		return nil, err
+	}
+	policy.returns = returns
+
+	p.jsonPath.RemoveLast()
+	return policy, nil
 }
 
 func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
-	p.jsonPath.Append(pParams)
+	p.jsonPath.Append("")
+
+	when := new(When)
+
+	p.jsonPath.SetLast(pHeaders)
+	if v.Has(pHeaders) {
+		rawHeaders, err := v.GetObject(pHeaders)
+		if err != nil {
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
+		when.headers = parseAsNameValuesPairs(rawHeaders)
+	}
+
+	p.jsonPath.SetLast(pParams)
 	if v.Has(pParams) {
 		rawParams, err := v.GetObject(pParams)
 		if err != nil {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
-		var params []*NameValuesPair
-		for name, rawValues := range rawParams {
-			p := parseAsNameValuesPair(name, rawValues)
-			params = append(params, p)
+		when.params = parseAsNameValuesPairs(rawParams)
+	}
+
+	p.jsonPath.RemoveLast()
+	return when, nil
+}
+
+func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
+	p.jsonPath.Append("")
+
+	returns := new(Returns)
+
+	p.jsonPath.SetLast(pStatusCode)
+	if v.Has(pStatusCode) {
+		statusCode, err := v.GetNumber(pStatusCode)
+		if err != nil {
+			return nil, newParserError(p.filename, p.jsonPath)
 		}
+		returns.statusCode = myhttp.StatusCode(int(statusCode))
+	}
+
+	p.jsonPath.SetLast(pHeaders)
+	if v.Has(pHeaders) {
+		rawHeaders, err := v.GetObject(pHeaders)
+		if err != nil {
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
+		returns.headers = parseAsNameValuesPairs(rawHeaders)
+	}
+
+	p.jsonPath.SetLast(pBody)
+	rawBody := v.Get(pBody)
+	body, err := p.parseBody(rawBody)
+	if err != nil {
+		return nil, newParserError(p.filename, p.jsonPath)
+	}
+	returns.body = body
+
+	p.jsonPath.RemoveLast()
+	return returns, nil
+}
+
+func (p *mappingsParser) parseBody(v interface{}) ([]byte, error) {
+	switch v.(type) {
+	case nil:
+		return nil, nil
+	case string:
+		return []byte(v.(string)), nil
+	case myjson.Object:
+		if ok, bytes, err := p.parseDirectiveFile(v.(myjson.Object)); ok {
+			if err != nil {
+				return nil, err
+			} else {
+				return bytes, nil
+			}
+		} else {
+			bytes, err := myjson.Marshal(v)
+			if err != nil {
+				return nil, newParserError(p.filename, p.jsonPath)
+			}
+			return bytes, nil
+		}
+	case myjson.Array:
+		bytes, err := myjson.Marshal(v)
+		if err != nil {
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
+		return bytes, nil
+	}
+
+	return nil, newParserError(p.filename, p.jsonPath)
+}
+
+func (p *mappingsParser) parseDirectiveFile(v myjson.Object) (bool, []byte, error) {
+	dFileValue, err := v.GetString(dFile)
+	if err == nil {
+		bytes, err := ioutil.ReadFile(string(dFileValue))
+		if err != nil {
+			return true, nil, err
+		}
+		return true, bytes, nil
+	}
+	return false, nil, nil
+}
+
+func ensureJsonArray(v interface{}) myjson.Array {
+	switch v.(type) {
+	case myjson.Array:
+		return v.(myjson.Array)
+	default:
+		return myjson.NewArray(v)
 	}
 }
 
-func ensureJsonArray(v interface{}) (myjson.Array, error) {
-	switch v.(type) {
-	case myjson.Object:
-		return myjson.NewArray(v), nil
-	case myjson.Array:
-		return v.(myjson.Array), nil
-	default:
-		return nil, errors.New("cannot convert to myjson.Array")
+func parseAsNameValuesPairs(o myjson.Object) []*NameValuesPair {
+	var pairs []*NameValuesPair
+	for name, rawValues := range o {
+		p := parseAsNameValuesPair(name, ensureJsonArray(rawValues))
+		pairs = append(pairs, p)
 	}
+	return pairs
 }
 
 func parseAsNameValuesPair(n string, v myjson.Array) *NameValuesPair {
 	pair := new(NameValuesPair)
 
-	pair.Name = n
+	pair.name = n
 
 	values := make([]string, len(v))
 	for i, p := range v {
 		values[i] = typeutil.ToString(p)
 	}
-	pair.Values = values
+	pair.values = values
 
 	return pair
+}
+
+func newParserError(filename string, jsonPath *myjson.Path) *ParserError {
+	return &ParserError{Filename: filename, JsonPath: jsonPath}
 }

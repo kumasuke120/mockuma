@@ -73,6 +73,11 @@ func (o Object) GetArray(name string) (Array, error) {
 	}
 }
 
+func (o Object) GetNumber(name string) (Number, error) {
+	v := o.Get(name)
+	return toNumber(v, name)
+}
+
 func (o Object) GetString(name string) (String, error) {
 	v := o.Get(name)
 	return toString(v, name)
@@ -117,6 +122,12 @@ func (p *Path) SetLast(v interface{}) {
 		p.paths[lastIdx] = v
 	case int:
 		p.paths[lastIdx] = v
+	}
+}
+
+func (p *Path) RemoveLast() {
+	if len(p.paths) != 0 {
+		p.paths = p.paths[:len(p.paths)-1]
 	}
 }
 
