@@ -17,7 +17,8 @@ type Policy struct {
 }
 
 type When struct {
-	Params []*NameValuesPair
+	Headers []*NameValuesPair
+	Params  []*NameValuesPair
 }
 
 type NameValuesPair struct {

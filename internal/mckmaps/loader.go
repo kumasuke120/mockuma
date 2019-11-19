@@ -24,6 +24,6 @@ func loadFromJsonFile(filename string, chdir bool) (*MockuMappings, error) {
 		return nil, err
 	}
 
-	parser := &Parser{filename: filename, chdir: chdir}
-	return parser.Parse()
+	parser := &parser{filename: filename, chdir: chdir}
+	return parser.parse()
 }

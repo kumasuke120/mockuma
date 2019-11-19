@@ -3,8 +3,6 @@ package myjson
 import (
 	"fmt"
 	"strconv"
-
-	"github.com/kumasuke120/mockuma/internal/typeutil"
 )
 
 type Object map[string]interface{}
@@ -40,10 +38,15 @@ type ValueError struct {
 
 func (e *ValueError) Error() string {
 	if e.Name == "" {
-		return "Cannot interpret value as json value"
+		return "cannot interpret value as json value"
 	} else {
-		return fmt.Sprintf("Cannot read value of name '%s'", e.Name)
+		return fmt.Sprintf("cannot read value of name '%s'", e.Name)
 	}
+}
+
+func (o Object) Has(name string) bool {
+	_, ok := map[string]interface{}(o)[name]
+	return ok
 }
 
 func (o Object) Get(name string) interface{} {
@@ -75,49 +78,57 @@ func (o Object) GetString(name string) (String, error) {
 	return toString(v, name)
 }
 
-func ToString(v interface{}) (String, error) {
-	return toString(v, "")
+type Path struct {
+	paths []interface{}
 }
 
-func toString(v interface{}, name string) (String, error) {
-	if v == nil {
-		return "", &ValueError{Name: name}
-	} else {
-		return String(typeutil.ToString(v)), nil
+func NewPath(paths ...interface{}) *Path {
+	var _paths []interface{}
+	for _, p := range paths {
+		switch p.(type) {
+		case string:
+			_paths = append(_paths, p)
+		case int:
+			_paths = append(_paths, p)
+		default:
+			return nil
+		}
 	}
+	return &Path{paths: _paths}
 }
 
-func toMyJson(v interface{}) interface{} {
+func (p *Path) Append(v interface{}) {
 	switch v.(type) {
-	case map[string]interface{}:
-		return toMyJsonObject(v.(map[string]interface{}))
-	case []interface{}:
-		return toMyJsonArray(v.([]interface{}))
-	case float64:
-		return Number(v.(float64))
 	case string:
-		return String(v.(string))
-	case bool:
-		return Boolean(v.(bool))
-	case nil:
-		return nil
+		p.paths = append(p.paths, p)
+	case int:
+		p.paths = append(p.paths, p)
 	}
-
-	panic("Shouldn't happen")
 }
 
-func toMyJsonObject(v map[string]interface{}) Object {
-	result := make(map[string]interface{}, len(v))
-	for key, value := range v {
-		result[key] = toMyJson(value)
+func (p *Path) SetLast(v interface{}) {
+	if len(p.paths) == 0 {
+		return
 	}
-	return result
+
+	lastIdx := len(p.paths) - 1
+	switch v.(type) {
+	case string:
+		p.paths[lastIdx] = v
+	case int:
+		p.paths[lastIdx] = v
+	}
 }
 
-func toMyJsonArray(v []interface{}) Array {
-	var result []interface{}
-	for _, _v := range v {
-		result = append(result, toMyJson(_v))
+func (p *Path) String() string {
+	result := "$"
+	for _, v := range p.paths {
+		switch v.(type) {
+		case string:
+			result += "." + v.(string)
+		case int:
+			result += fmt.Sprintf("[%d]", v.(int))
+		}
 	}
 	return result
 }
