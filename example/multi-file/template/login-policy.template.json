@@ -1,0 +1,23 @@
+{
+  "@type": "template",
+  "template": {
+    "when": {
+      "params": {
+        "username": "@var{username}"
+      },
+      "headers": {
+        "Authorization": "Basic @var{authToken}"
+      }
+    },
+    "returns": {
+      "headers": {
+        "Content-Type": "application/json; charset=utf8"
+      },
+      "body": {
+        "@comment": "'$' is the short form for '@var'",
+        "code": 2000,
+        "message": "Welcome, ${username}!"
+      }
+    }
+  }
+}

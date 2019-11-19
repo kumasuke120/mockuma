@@ -1,0 +1,12 @@
+{
+  "@type": "main",
+  "@comment": "there can only be one main file",
+  "@include": {
+    "mappings": [
+      "mappings/whoami.mappings.json"
+      "mappings/hello.mappings.json",
+      "mappings/login.mappings.json",
+      "mappings/books.mappings.json"
+    ]
+  }
+}

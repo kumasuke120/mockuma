@@ -1,0 +1,47 @@
+{
+  "@type": "mappings",
+  "@comment": "the suffix '.mappings' of this file is not required",
+  "mappings": [
+    {
+      "uri": "/api/login",
+      "method": "POST",
+      "policies": [
+        {
+          "@template": "template/login-policy.template.json",
+          "@vars": {
+            "username": "kumasuke120",
+            "authToken": "a3VtYXN1a2UxMjAvcGEkJHcwcmQ="
+          }
+        },
+        {
+          "@template": "template/login-policy.template.json",
+          "@expandAs": "object",
+          "@vars": "vars/login-policy.vars.json"
+        },
+        {
+          "when": {
+            "headers": {
+              "@comment": "use regexp /^.+$/ to match header 'Authorization'",
+              "Authorization": "@regexp{^.+$}"
+            }
+          },
+          "returns": {
+            "statusCode": 400,
+            "headers": {
+              "Content-Type": "application/json; charset=utf8"
+            },
+            "body": {
+              "code": 4001,
+              "message": "Missing parameter 'username'"
+            }
+          }
+        },
+        {
+          "returns": {
+            "statusCode": 401
+          }
+        }
+      ]
+    }
+  ]
+}

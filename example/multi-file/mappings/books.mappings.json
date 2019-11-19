@@ -1,0 +1,28 @@
+{
+  "@type": "mappings",
+  "@comment": "api mocks for /api/books",
+  "mappings": [
+    {
+      "@comment": "show books list for page 2",
+      "uri": "/api/books",
+      "method": "GET",
+      "policies": {
+        "when": {
+          "params": {
+            "page": 2,
+            "perPage": 20
+          }
+        },
+        "returns": {
+          "headers": {
+            "@comment": "the type of body is '.json'",
+            "Content-Type": "application/json; charset=utf8"
+          },
+          "body": {
+            "@file": "static/books-page2.json"
+          }
+        }
+      }
+    }
+  ]
+}

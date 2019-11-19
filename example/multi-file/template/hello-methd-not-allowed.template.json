@@ -1,0 +1,17 @@
+{
+	"@type": "template",
+	"template": {
+		"uri": "/api/hello",
+		"method": "@var{method}",
+		"policies": {
+			"statusCode": 405,
+			"headers": {
+				"Content-Type": "application/json; charset=utf-8"
+			},
+			"body": {
+				"statusCode": 405,
+				"message": "Method Not Allowed"
+			}
+		}
+	}
+}

@@ -1,0 +1,14 @@
+{
+  "@type": "vars",
+  "@comment": "variables for /api/login",
+  "vars": [
+    {
+      "username": "user1",
+      "authToken": "token1"
+    },
+    {
+      "username": "user2",
+      "authToken": "token2"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "@type": "mappings",
+  "mappings": [
+    {
+      "@comment": "will be matched first, to override the next @any mapping",
+      "@template": "template/hello-methd-not-allowed.template.json",
+      "@expandAs": "object",
+      "@vars": [
+        {
+          "method": "OPTIONS"
+        },
+        {
+          "method": "HEAD"
+        },
+        {
+          "method": "TRACE"
+        },
+        {
+          "method": "CONNECT"
+        }
+      ]
+    },
+    {
+      "@comment": "'method' is optional, the default value is '@any'",
+      "uri": "/api/hello",
+      "method": "@any",
+      "policies": [
+        {
+          "when": {
+            "params": {
+              "lang": [
+                "en",
+                "cn"
+              ]
+            }
+          },
+          "returns": {
+            "headers": {
+              "Server": "HelloMock/1.0",
+              "Content-Type": "application/json; charset=utf8"
+            },
+            "body": "{\"code\": 2000, \"message\": \"Hello, 世界!\"}"
+          }
+        },
+        {
+          "returns": {
+            "headers": {
+              "Server": "HelloMock/1.0",
+              "Content-Type": "application/json; charset=utf8"
+            },
+            "body": "{\"code\": 2000, \"message\": \"Hello, World!\"}"
+          }
+        }
+      ]
+    }
+  ]
+}
