@@ -32,3 +32,11 @@ type NameValuesPair struct {
 	name   string
 	values []string
 }
+
+type Template struct {
+	content interface{}
+}
+
+type Vars struct {
+	table map[string]interface{}
+}

@@ -15,6 +15,7 @@ import (
 const (
 	tMain     = "main"
 	tMappings = "mappings"
+	tTemplate = "template"
 )
 
 const (
@@ -40,33 +41,21 @@ const (
 
 var emptyWhen = new(When)
 
-type JsonParseError struct {
-	JsonPath string
+type parserError struct {
+	filename string
+	jsonPath *myjson.Path
 }
 
-func (e *JsonParseError) Error() string {
-	if e.JsonPath == "" {
-		return "cannot parse json data"
-	} else {
-		return fmt.Sprintf("cannot parse value on json-path '%s", e.JsonPath)
-	}
-}
-
-type ParserError struct {
-	Filename string
-	JsonPath *myjson.Path
-}
-
-func (e *ParserError) Error() string {
+func (e *parserError) Error() string {
 	result := ""
-	if e.JsonPath == nil {
+	if e.jsonPath == nil {
 		result += "cannot parse json data"
 	} else {
-		result += fmt.Sprintf("cannot parse value on json-path '%v'", e.JsonPath)
+		result += fmt.Sprintf("cannot parse value on json-path '%v'", e.jsonPath)
 	}
 
-	if e.Filename != "" {
-		result += fmt.Sprintf(" in the file '%s'", e.Filename)
+	if e.filename != "" {
+		result += fmt.Sprintf(" in the file '%s'", e.filename)
 	}
 
 	return result
@@ -453,6 +442,51 @@ func parseAsNameValuesPair(n string, v myjson.Array) *NameValuesPair {
 	return pair
 }
 
-func newParserError(filename string, jsonPath *myjson.Path) *ParserError {
-	return &ParserError{Filename: filename, JsonPath: jsonPath}
+func newParserError(filename string, jsonPath *myjson.Path) *parserError {
+	return &parserError{filename: filename, jsonPath: jsonPath}
+}
+
+type templateParser struct {
+	json     myjson.Object
+	jsonPath *myjson.Path
+	parser
+}
+
+func (p *templateParser) parse() (*Template, error) {
+	json, err := p.load()
+	if err != nil {
+		return nil, err
+	}
+
+	p.jsonPath = myjson.NewPath()
+	switch json.(type) {
+	case myjson.Object:
+		p.jsonPath.Append("")
+		p.json = json.(myjson.Object)
+	default:
+		return nil, newParserError(p.filename, p.jsonPath)
+	}
+
+	p.jsonPath.SetLast(dType)
+	_type, err := p.json.GetString(dType)
+	if err != nil || _type != tTemplate {
+		return nil, newParserError(p.filename, p.jsonPath)
+	}
+
+	template := new(Template)
+
+	p.jsonPath.SetLast(tTemplate)
+	v := p.json.Get(tTemplate)
+	switch v.(type) {
+	case myjson.Object:
+		template.content = v
+	case myjson.Array:
+		template.content = v
+	case myjson.String:
+		template.content = v
+	default:
+		return nil, newParserError(p.filename, p.jsonPath)
+	}
+
+	return template, nil
 }
