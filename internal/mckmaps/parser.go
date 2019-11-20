@@ -457,6 +457,7 @@ func (p *templateParser) parse() (*Template, error) {
 	if err != nil {
 		return nil, err
 	}
+	commentProcessor{v: json}.process()
 
 	p.jsonPath = myjson.NewPath()
 	switch json.(type) {
