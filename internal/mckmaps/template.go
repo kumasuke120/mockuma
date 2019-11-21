@@ -43,7 +43,7 @@ type arrayContext struct {
 	*renderContext
 }
 
-func (t *Template) replaceInObject(ctx *objectContext, vars []*Vars) (myjson.Object, error) {
+func (t *Template) renderObject(ctx *objectContext, vars []*Vars) (myjson.Object, error) {
 	result := make(myjson.Object)
 
 	v, err := t.render(ctx.renderContext, vars)
@@ -72,7 +72,7 @@ func (t *Template) replaceInObject(ctx *objectContext, vars []*Vars) (myjson.Obj
 	return result, nil
 }
 
-func (t *Template) replaceInArray(ctx *arrayContext, vars []*Vars) (myjson.Array, error) {
+func (t *Template) renderArray(ctx *arrayContext, vars []*Vars) (myjson.Array, error) {
 	result := ctx.dstJson[:ctx.dstIdx]
 
 	v, err := t.render(ctx.renderContext, vars)
@@ -257,7 +257,7 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 					varName := nameBuilder.String()
 					v, err := renderTextString(ctx, jsonPath, vars, varName)
 					if err != nil {
-						return "", err
+						return nil, err
 					}
 					builder.WriteString(v)
 					nameBuilder.Reset()
@@ -276,13 +276,13 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 	}
 
 	if s != rsReady {
-		return "", &renderError{filename: ctx.filename, jsonPath: jsonPath}
+		return nil, &renderError{filename: ctx.filename, jsonPath: jsonPath}
 	}
 
 	if fromBegin && toEnd {
 		varName := nameBuilder.String()
 		if varName == "" {
-			return "", &renderError{filename: ctx.filename, jsonPath: jsonPath}
+			return nil, &renderError{filename: ctx.filename, jsonPath: jsonPath}
 		}
 
 		varV := vars.table[varName]

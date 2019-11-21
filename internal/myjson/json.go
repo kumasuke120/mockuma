@@ -55,12 +55,7 @@ func (o Object) Get(name string) interface{} {
 
 func (o Object) GetObject(name string) (Object, error) {
 	v := o.Get(name)
-	switch v.(type) {
-	case Object:
-		return v.(Object), nil
-	default:
-		return Object{}, &ValueError{Name: name}
-	}
+	return toObject(v, name)
 }
 
 func (o Object) GetArray(name string) (Array, error) {

@@ -16,12 +16,15 @@ const (
 	tMain     = "main"
 	tMappings = "mappings"
 	tTemplate = "template"
+	tVars     = "vars"
 )
 
 const (
-	dType    = "@type"
-	dInclude = "@include"
-	dFile    = "@file"
+	dType     = "@type"
+	dInclude  = "@include"
+	dFile     = "@file"
+	dTemplate = "@template"
+	dVars     = "@vars"
 )
 
 const (
@@ -410,42 +413,6 @@ func (p *mappingsParser) parseDirectiveFile(v myjson.Object) (bool, []byte, erro
 	return false, nil, nil
 }
 
-func ensureJsonArray(v interface{}) myjson.Array {
-	switch v.(type) {
-	case myjson.Array:
-		return v.(myjson.Array)
-	default:
-		return myjson.NewArray(v)
-	}
-}
-
-func parseAsNameValuesPairs(o myjson.Object) []*NameValuesPair {
-	var pairs []*NameValuesPair
-	for name, rawValues := range o {
-		p := parseAsNameValuesPair(name, ensureJsonArray(rawValues))
-		pairs = append(pairs, p)
-	}
-	return pairs
-}
-
-func parseAsNameValuesPair(n string, v myjson.Array) *NameValuesPair {
-	pair := new(NameValuesPair)
-
-	pair.name = n
-
-	values := make([]string, len(v))
-	for i, p := range v {
-		values[i] = typeutil.ToString(p)
-	}
-	pair.values = values
-
-	return pair
-}
-
-func newParserError(filename string, jsonPath *myjson.Path) *parserError {
-	return &parserError{filename: filename, jsonPath: jsonPath}
-}
-
 type templateParser struct {
 	json     myjson.Object
 	jsonPath *myjson.Path
@@ -490,4 +457,92 @@ func (p *templateParser) parse() (*Template, error) {
 	}
 
 	return template, nil
+}
+
+type varsParser struct {
+	json     myjson.Object
+	jsonPath *myjson.Path
+	parser
+}
+
+func (p *varsParser) parse() ([]*Vars, error) {
+	json, err := p.load()
+	if err != nil {
+		return nil, err
+	}
+	commentProcessor{v: json}.process()
+
+	p.jsonPath = myjson.NewPath()
+	switch json.(type) {
+	case myjson.Object:
+		p.jsonPath.Append("")
+		p.json = json.(myjson.Object)
+	default:
+		return nil, newParserError(p.filename, p.jsonPath)
+	}
+
+	p.jsonPath.SetLast(dType)
+	_type, err := p.json.GetString(dType)
+	if err != nil || _type != tVars {
+		return nil, newParserError(p.filename, p.jsonPath)
+	}
+
+	p.jsonPath.SetLast(tVars)
+	rawVarsArray := ensureJsonArray(p.json.Get(tVars))
+	varsArray := make([]*Vars, len(rawVarsArray))
+	for idx, rawVars := range rawVarsArray {
+		rVars, err := myjson.ToObject(rawVars)
+		if err != nil {
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
+		varsArray[idx] = p.parseVars(rVars)
+	}
+
+	return varsArray, nil
+}
+
+func (p *varsParser) parseVars(v myjson.Object) *Vars {
+	vars := new(Vars)
+	table := make(map[string]interface{})
+	for name, value := range v {
+		table[name] = value
+	}
+	vars.table = table
+	return vars
+}
+
+func newParserError(filename string, jsonPath *myjson.Path) *parserError {
+	return &parserError{filename: filename, jsonPath: jsonPath}
+}
+
+func ensureJsonArray(v interface{}) myjson.Array {
+	switch v.(type) {
+	case myjson.Array:
+		return v.(myjson.Array)
+	default:
+		return myjson.NewArray(v)
+	}
+}
+
+func parseAsNameValuesPairs(o myjson.Object) []*NameValuesPair {
+	var pairs []*NameValuesPair
+	for name, rawValues := range o {
+		p := parseAsNameValuesPair(name, ensureJsonArray(rawValues))
+		pairs = append(pairs, p)
+	}
+	return pairs
+}
+
+func parseAsNameValuesPair(n string, v myjson.Array) *NameValuesPair {
+	pair := new(NameValuesPair)
+
+	pair.name = n
+
+	values := make([]string, len(v))
+	for i, p := range v {
+		values[i] = typeutil.ToString(p)
+	}
+	pair.values = values
+
+	return pair
 }

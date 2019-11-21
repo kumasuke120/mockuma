@@ -6,6 +6,19 @@ import (
 	"github.com/kumasuke120/mockuma/internal/typeutil"
 )
 
+func ToObject(v interface{}) (Object, error) {
+	return toObject(v, "")
+}
+
+func toObject(v interface{}, name string) (Object, error) {
+	switch v.(type) {
+	case Object:
+		return v.(Object), nil
+	default:
+		return Object{}, &ValueError{Name: name}
+	}
+}
+
 func toNumber(v interface{}, name string) (Number, error) {
 	switch v.(type) {
 	case Number:
