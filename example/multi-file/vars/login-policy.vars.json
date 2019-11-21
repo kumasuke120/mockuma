@@ -3,12 +3,12 @@
   "@comment": "variables for /api/login",
   "vars": [
     {
-      "username": "user1",
-      "authToken": "token1"
+      "username": "jane.doe",
+      "authToken": "amFuZS5kb2Vqb25lLmRvZQ=="
     },
     {
-      "username": "user2",
-      "authToken": "token2"
+      "username": "jone.doe",
+      "authToken": "am9uZS5kb2VqYW5lLmRvZQ=="
     }
   ]
 }

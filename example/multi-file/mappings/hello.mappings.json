@@ -4,8 +4,7 @@
     {
       "@comment": "will be matched first, to override the next @any mapping",
       "@template": "template/hello-methd-not-allowed.template.json",
-      "@expandAs": "object",
-      "@vars": [
+      "vars": [
         {
           "method": "OPTIONS"
         },

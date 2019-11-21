@@ -8,14 +8,13 @@
       "policies": [
         {
           "@template": "template/login-policy.template.json",
-          "@vars": {
+          "vars": {
             "username": "kumasuke120",
             "authToken": "a3VtYXN1a2UxMjAvcGEkJHcwcmQ="
           }
         },
         {
           "@template": "template/login-policy.template.json",
-          "@expandAs": "object",
           "@vars": "vars/login-policy.vars.json"
         },
         {
