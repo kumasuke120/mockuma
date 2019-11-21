@@ -113,6 +113,8 @@ func render(ctx *renderContext, jsonPath *myjson.Path, v interface{}, vars *Vars
 	var result interface{}
 	var err error
 	switch v.(type) {
+	case nil:
+		result = nil
 	case myjson.Object:
 		result, err = renderObject(ctx, jsonPath, v.(myjson.Object), vars)
 	case myjson.Array:

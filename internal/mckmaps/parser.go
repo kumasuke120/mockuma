@@ -12,36 +12,6 @@ import (
 	"github.com/kumasuke120/mockuma/internal/typeutil"
 )
 
-const (
-	tMain     = "main"
-	tMappings = "mappings"
-	tTemplate = "template"
-	tVars     = "vars"
-)
-
-const (
-	dType     = "@type"
-	dInclude  = "@include"
-	dFile     = "@file"
-	dTemplate = "@template"
-	dVars     = "@vars"
-)
-
-const (
-	mapUri           = "uri"
-	mapMethod        = "method"
-	mapPolicies      = "policies"
-	mapPolicyWhen    = "when"
-	mapPolicyReturns = "returns"
-)
-
-const (
-	pStatusCode = "statusCode"
-	pHeaders    = "headers"
-	pParams     = "params"
-	pBody       = "body"
-)
-
 var emptyWhen = new(When)
 
 type parserError struct {
@@ -98,7 +68,7 @@ func (p *parser) load() (interface{}, error) {
 		}
 	}
 
-	return json, nil
+	return doFiltersOnV(json, fRemoveComment)
 }
 
 func (p *parser) parse() (*MockuMappings, error) {
@@ -106,7 +76,6 @@ func (p *parser) parse() (*MockuMappings, error) {
 	if err != nil {
 		return nil, err
 	}
-	commentProcessor{v: json}.process()
 
 	switch json.(type) {
 	case myjson.Object:
@@ -182,7 +151,6 @@ func (p *mappingsParser) parse() ([]*Mapping, error) {
 		if err != nil {
 			return nil, err
 		}
-		commentProcessor{v: json}.process()
 		p.json = json
 	}
 
@@ -424,7 +392,6 @@ func (p *templateParser) parse() (*Template, error) {
 	if err != nil {
 		return nil, err
 	}
-	commentProcessor{v: json}.process()
 
 	p.jsonPath = myjson.NewPath()
 	switch json.(type) {
@@ -470,7 +437,6 @@ func (p *varsParser) parse() ([]*Vars, error) {
 	if err != nil {
 		return nil, err
 	}
-	commentProcessor{v: json}.process()
 
 	p.jsonPath = myjson.NewPath()
 	switch json.(type) {
@@ -489,26 +455,19 @@ func (p *varsParser) parse() ([]*Vars, error) {
 
 	p.jsonPath.SetLast(tVars)
 	rawVarsArray := ensureJsonArray(p.json.Get(tVars))
+	p.jsonPath.Append(0)
 	varsArray := make([]*Vars, len(rawVarsArray))
 	for idx, rawVars := range rawVarsArray {
+		p.jsonPath.SetLast(idx)
 		rVars, err := myjson.ToObject(rawVars)
 		if err != nil {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
-		varsArray[idx] = p.parseVars(rVars)
+		varsArray[idx] = parseVars(rVars)
 	}
+	p.jsonPath.RemoveLast()
 
 	return varsArray, nil
-}
-
-func (p *varsParser) parseVars(v myjson.Object) *Vars {
-	vars := new(Vars)
-	table := make(map[string]interface{})
-	for name, value := range v {
-		table[name] = value
-	}
-	vars.table = table
-	return vars
 }
 
 func newParserError(filename string, jsonPath *myjson.Path) *parserError {
@@ -545,4 +504,14 @@ func parseAsNameValuesPair(n string, v myjson.Array) *NameValuesPair {
 	pair.values = values
 
 	return pair
+}
+
+func parseVars(v myjson.Object) *Vars {
+	vars := new(Vars)
+	table := make(map[string]interface{})
+	for name, value := range v {
+		table[name] = value
+	}
+	vars.table = table
+	return vars
 }
