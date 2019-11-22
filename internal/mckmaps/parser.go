@@ -68,7 +68,7 @@ func (p *parser) load() (interface{}, error) {
 		}
 	}
 
-	return doFiltersOnV(json, fRemoveComment)
+	return doFiltersOnV(json, fRemoveComment, fRenderTemplate)
 }
 
 func (p *parser) parse() (*MockuMappings, error) {
@@ -454,20 +454,30 @@ func (p *varsParser) parse() ([]*Vars, error) {
 	}
 
 	p.jsonPath.SetLast(tVars)
-	rawVarsArray := ensureJsonArray(p.json.Get(tVars))
 	p.jsonPath.Append(0)
-	varsArray := make([]*Vars, len(rawVarsArray))
+	varsSlice, err := p.parseVars(p.json)
+	if err != nil {
+		return nil, err
+	}
+	p.jsonPath.RemoveLast()
+
+	return varsSlice, nil
+}
+
+func (p *varsParser) parseVars(v myjson.Object) ([]*Vars, error) {
+	rawVarsArray := ensureJsonArray(v.Get(tVars))
+	varsSlice := make([]*Vars, len(rawVarsArray))
 	for idx, rawVars := range rawVarsArray {
-		p.jsonPath.SetLast(idx)
+		if p.json != nil {
+			p.jsonPath.SetLast(idx)
+		}
 		rVars, err := myjson.ToObject(rawVars)
 		if err != nil {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
-		varsArray[idx] = parseVars(rVars)
+		varsSlice[idx] = parseVars(rVars)
 	}
-	p.jsonPath.RemoveLast()
-
-	return varsArray, nil
+	return varsSlice, nil
 }
 
 func newParserError(filename string, jsonPath *myjson.Path) *parserError {

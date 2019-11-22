@@ -31,71 +31,13 @@ type renderContext struct {
 	filename string
 }
 
-type objectContext struct {
-	dstJson myjson.Object
-	dstKey  string
-	*renderContext
-}
-
-type arrayContext struct {
-	dstJson myjson.Array
-	dstIdx  int
-	*renderContext
-}
-
-func (t *Template) renderObject(ctx *objectContext, vars []*Vars) (myjson.Object, error) {
-	result := make(myjson.Object)
-
-	v, err := t.render(ctx.renderContext, vars)
-	if err != nil {
-		return nil, err
-	}
-
-	for name, value := range ctx.dstJson {
-		var _value interface{}
-
-		if name == ctx.dstKey {
-			if len(v) == 0 {
-				continue
-			} else if len(v) == 1 {
-				_value = v[0]
-			} else {
-				_value = v
-			}
-		} else {
-			_value = value
-		}
-
-		result[name] = _value
-	}
-
-	return result, nil
-}
-
-func (t *Template) renderArray(ctx *arrayContext, vars []*Vars) (myjson.Array, error) {
-	result := ctx.dstJson[:ctx.dstIdx]
-
-	v, err := t.render(ctx.renderContext, vars)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, _v := range v {
-		result = append(result, _v)
-	}
-
-	result = append(result, ctx.dstJson[ctx.dstIdx+1:]...)
-
-	return result, nil
-}
-
-func (t *Template) render(ctx *renderContext, vars []*Vars) ([]interface{}, error) {
-	if len(vars) == 0 {
+func (t *Template) render(ctx *renderContext, varsSlice []*Vars) ([]interface{}, error) {
+	if len(varsSlice) == 0 {
 		return []interface{}{}, nil
 	}
 
-	result := make([]interface{}, len(vars))
-	for idx, _var := range vars {
+	result := make([]interface{}, len(varsSlice))
+	for idx, _var := range varsSlice {
 		v, err := render(ctx, nil, t.content, _var)
 		if err != nil {
 			return nil, err
@@ -105,7 +47,7 @@ func (t *Template) render(ctx *renderContext, vars []*Vars) ([]interface{}, erro
 	return result, nil
 }
 
-func render(ctx *renderContext, jsonPath *myjson.Path, v interface{}, vars *Vars) (interface{}, error) {
+func render(ctx *renderContext, jsonPath *myjson.Path, v interface{}, varsSlice *Vars) (interface{}, error) {
 	if jsonPath == nil {
 		jsonPath = myjson.NewPath()
 	}
@@ -113,24 +55,17 @@ func render(ctx *renderContext, jsonPath *myjson.Path, v interface{}, vars *Vars
 	var result interface{}
 	var err error
 	switch v.(type) {
-	case nil:
-		result = nil
 	case myjson.Object:
-		result, err = renderObject(ctx, jsonPath, v.(myjson.Object), vars)
+		result, err = renderObject(ctx, jsonPath, v.(myjson.Object), varsSlice)
 	case myjson.Array:
-		result, err = renderArray(ctx, jsonPath, v.(myjson.Array), vars)
-	case myjson.Number:
-		result = v
+		result, err = renderArray(ctx, jsonPath, v.(myjson.Array), varsSlice)
 	case myjson.String:
-		result, err = renderString(ctx, jsonPath, v.(myjson.String), vars)
-	case myjson.Boolean:
-		result = v
+		result, err = renderString(ctx, jsonPath, v.(myjson.String), varsSlice)
+	default:
+		result, err = v, nil
 	}
 
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
+	return result, err
 }
 
 func renderObject(ctx *renderContext, jsonPath *myjson.Path,

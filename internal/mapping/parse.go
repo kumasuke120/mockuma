@@ -246,7 +246,7 @@ func (d *ReturnsBodyDirective) getBody() ([]byte, error) {
 		return bytes, nil
 	}
 
-	panic("Should't happen")
+	panic("Shouldn't happen")
 }
 
 func marshalJsonBodyData(bodyData interface{}) ([]byte, error) {
