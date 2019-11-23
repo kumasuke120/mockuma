@@ -31,7 +31,15 @@ type renderContext struct {
 	filename string
 }
 
-func (t *Template) render(ctx *renderContext, varsSlice []*Vars) ([]interface{}, error) {
+type template struct {
+	content interface{}
+}
+
+type vars struct {
+	table map[string]interface{}
+}
+
+func (t *template) render(ctx *renderContext, varsSlice []*vars) ([]interface{}, error) {
 	if len(varsSlice) == 0 {
 		return []interface{}{}, nil
 	}
@@ -47,7 +55,7 @@ func (t *Template) render(ctx *renderContext, varsSlice []*Vars) ([]interface{},
 	return result, nil
 }
 
-func render(ctx *renderContext, jsonPath *myjson.Path, v interface{}, varsSlice *Vars) (interface{}, error) {
+func render(ctx *renderContext, jsonPath *myjson.Path, v interface{}, varsSlice *vars) (interface{}, error) {
 	if jsonPath == nil {
 		jsonPath = myjson.NewPath()
 	}
@@ -69,7 +77,7 @@ func render(ctx *renderContext, jsonPath *myjson.Path, v interface{}, varsSlice 
 }
 
 func renderObject(ctx *renderContext, jsonPath *myjson.Path,
-	v myjson.Object, vars *Vars) (myjson.Object, error) {
+	v myjson.Object, vars *vars) (myjson.Object, error) {
 	jsonPath.Append("")
 
 	result := make(myjson.Object)
@@ -88,7 +96,7 @@ func renderObject(ctx *renderContext, jsonPath *myjson.Path,
 }
 
 func renderArray(ctx *renderContext, jsonPath *myjson.Path,
-	v myjson.Array, vars *Vars) (myjson.Array, error) {
+	v myjson.Array, vars *vars) (myjson.Array, error) {
 	jsonPath.Append(0)
 
 	result := make(myjson.Array, len(v))
@@ -106,6 +114,7 @@ func renderArray(ctx *renderContext, jsonPath *myjson.Path,
 	return result, nil
 }
 
+// states for rendering string
 const (
 	rsReady = iota
 	rsMaybeDVar
@@ -115,7 +124,7 @@ const (
 )
 
 func renderString(ctx *renderContext, jsonPath *myjson.Path,
-	v myjson.String, vars *Vars) (interface{}, error) {
+	v myjson.String, vars *vars) (interface{}, error) {
 	s := rsReady
 
 	runes := []rune(v)
@@ -230,7 +239,7 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 }
 
 func renderTextString(ctx *renderContext, jsonPath *myjson.Path,
-	vars *Vars, varName string) (string, error) {
+	vars *vars, varName string) (string, error) {
 	if varName == "" {
 		return "", &renderError{filename: ctx.filename, jsonPath: jsonPath}
 	}

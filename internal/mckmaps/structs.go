@@ -3,40 +3,32 @@ package mckmaps
 import "github.com/kumasuke120/mockuma/internal/myhttp"
 
 type MockuMappings struct {
-	mappings []*Mapping
+	Mappings []*Mapping
 }
 
 type Mapping struct {
-	uri      string
-	method   myhttp.HttpMethod
-	policies []*Policy
+	Uri      string
+	Method   myhttp.HttpMethod
+	Policies []*Policy
 }
 
 type Policy struct {
-	when    *When
-	returns *Returns
+	When    *When
+	Returns *Returns
 }
 
 type When struct {
-	headers []*NameValuesPair
-	params  []*NameValuesPair
+	Headers []*NameValuesPair
+	Params  []*NameValuesPair
 }
 
 type Returns struct {
-	statusCode myhttp.StatusCode
-	headers    []*NameValuesPair
-	body       []byte
+	StatusCode myhttp.StatusCode
+	Headers    []*NameValuesPair
+	Body       []byte
 }
 
 type NameValuesPair struct {
-	name   string
-	values []string
-}
-
-type Template struct {
-	content interface{}
-}
-
-type Vars struct {
-	table map[string]interface{}
+	Name   string
+	Values []string
 }

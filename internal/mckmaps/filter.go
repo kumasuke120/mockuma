@@ -6,16 +6,11 @@ import (
 	"github.com/kumasuke120/mockuma/internal/myjson"
 )
 
+// filters for the preprocessor
 var (
-	fRemoveComment  = commentFilter{}
-	fRenderTemplate = templateFilter{}
+	ppRemoveComment  = commentFilter{}
+	ppRenderTemplate = makeTemplateFilter()
 )
-
-type filterChain struct {
-	filters []filter
-	idx     int
-	v       interface{}
-}
 
 func doFiltersOnV(v interface{}, filters ...filter) (interface{}, error) {
 	chain := &filterChain{filters: filters}
@@ -24,6 +19,12 @@ func doFiltersOnV(v interface{}, filters ...filter) (interface{}, error) {
 		return nil, err
 	}
 	return chain.v, nil
+}
+
+type filterChain struct {
+	filters []filter
+	idx     int
+	v       interface{}
 }
 
 func (c *filterChain) doFilter(v interface{}) error {
@@ -62,8 +63,14 @@ func (f commentFilter) removeComment(v interface{}) {
 }
 
 type templateFilter struct {
-	templateCache  map[string]*Template
-	varsSliceCache map[string][]*Vars
+	templateCache  map[string]*template
+	varsSliceCache map[string][]*vars
+}
+
+func makeTemplateFilter() templateFilter {
+	f := templateFilter{}
+	f.reset()
+	return f
 }
 
 func (f templateFilter) doFilter(v interface{}, chain *filterChain) error {
@@ -143,13 +150,13 @@ func (f templateFilter) rewriteArray(v myjson.Array) (myjson.Array, error) {
 	return result, nil
 }
 
-func (f templateFilter) getTemplateFromDTemplate(v myjson.Object) (*Template, *renderContext, error) {
+func (f templateFilter) getTemplateFromDTemplate(v myjson.Object) (*template, *renderContext, error) {
 	filename, err := v.GetString(dTemplate)
 	if err != nil {
 		return nil, nil, errors.New("cannot read the name of template file")
 	}
 
-	var template *Template
+	var template *template
 	var ok bool
 	_filename := string(filename)
 	if template, ok = f.templateCache[_filename]; !ok {
@@ -162,8 +169,8 @@ func (f templateFilter) getTemplateFromDTemplate(v myjson.Object) (*Template, *r
 	return template, nil, nil
 }
 
-func (f templateFilter) getVarsFromDTemplate(v myjson.Object) ([]*Vars, error) {
-	var varsSlice []*Vars
+func (f templateFilter) getVarsFromDTemplate(v myjson.Object) ([]*vars, error) {
+	var varsSlice []*vars
 	var err error
 	if v.Has(tVars) {
 		varsSlice, err = new(varsParser).parseVars(v)
@@ -181,6 +188,11 @@ func (f templateFilter) getVarsFromDTemplate(v myjson.Object) ([]*Vars, error) {
 		}
 	}
 	return varsSlice, err
+}
+
+func (f templateFilter) reset() {
+	f.templateCache = make(map[string]*template)
+	f.varsSliceCache = make(map[string][]*vars)
 }
 
 type fromTemplate struct {

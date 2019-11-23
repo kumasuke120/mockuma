@@ -12,7 +12,14 @@ import (
 	"github.com/kumasuke120/mockuma/internal/typeutil"
 )
 
-var emptyWhen = new(When)
+type loadError struct {
+	filename string
+	err      error
+}
+
+func (e *loadError) Error() string {
+	return fmt.Sprintf("cannot load the file '%s': %s", e.filename, e.err)
+}
 
 type parserError struct {
 	filename string
@@ -39,15 +46,31 @@ type parser struct {
 	chdir    bool
 }
 
-type mainParser struct {
-	json myjson.Object
-	parser
-}
+func (p *parser) parse() (*MockuMappings, error) {
+	json, err := p.load()
+	if err != nil {
+		return nil, err
+	}
 
-type mappingsParser struct {
-	json     interface{}
-	jsonPath *myjson.Path
-	parser
+	var result *MockuMappings
+	switch json.(type) {
+	case myjson.Object:
+		parser := &mainParser{json: json.(myjson.Object), parser: *p}
+		result, err = parser.parse()
+	case myjson.Array:
+		parser := &mappingsParser{json: json, parser: *p}
+		mappings, err := parser.parse()
+		if err == nil {
+			result = &MockuMappings{Mappings: mappings}
+		} else {
+			result = nil
+		}
+	default:
+		result, err = nil, newParserError(p.filename, nil)
+	}
+
+	p.reset()
+	return result, err
 }
 
 func (p *parser) load() (interface{}, error) {
@@ -68,29 +91,11 @@ func (p *parser) load() (interface{}, error) {
 		}
 	}
 
-	return doFiltersOnV(json, fRemoveComment, fRenderTemplate)
-}
-
-func (p *parser) parse() (*MockuMappings, error) {
-	json, err := p.load()
+	v, err := doFiltersOnV(json, ppRemoveComment, ppRenderTemplate)
 	if err != nil {
-		return nil, err
+		return nil, &loadError{filename: p.filename, err: err}
 	}
-
-	switch json.(type) {
-	case myjson.Object:
-		parser := &mainParser{json: json.(myjson.Object), parser: *p}
-		return parser.parse()
-	case myjson.Array:
-		parser := &mappingsParser{json: json, parser: *p}
-		mappings, err := parser.parse()
-		if err != nil {
-			return nil, err
-		}
-		return &MockuMappings{mappings: mappings}, nil
-	}
-
-	return nil, newParserError(p.filename, nil)
+	return v, nil
 }
 
 func (p *parser) chdirBasedOnFilename() error {
@@ -105,9 +110,18 @@ func (p *parser) chdirBasedOnFilename() error {
 		return err
 	}
 
-	log.Println("[load] working directory has been changed to:", dir)
+	log.Println("working directory has been changed to:", dir)
 
 	return nil
+}
+
+func (p *parser) reset() {
+	ppRenderTemplate.reset()
+}
+
+type mainParser struct {
+	json myjson.Object
+	parser
 }
 
 func (p *mainParser) parse() (*MockuMappings, error) {
@@ -142,7 +156,13 @@ func (p *mainParser) parse() (*MockuMappings, error) {
 		mappings = append(mappings, partOfMappings...)
 	}
 
-	return &MockuMappings{mappings: mappings}, nil
+	return &MockuMappings{Mappings: mappings}, nil
+}
+
+type mappingsParser struct {
+	json     interface{}
+	jsonPath *myjson.Path
+	parser
 }
 
 func (p *mappingsParser) parse() ([]*Mapping, error) {
@@ -207,14 +227,14 @@ func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
 	if err != nil {
 		return nil, newParserError(p.filename, p.jsonPath)
 	}
-	mapping.uri = string(uri)
+	mapping.Uri = string(uri)
 
 	p.jsonPath.SetLast(mapMethod)
 	method, err := v.GetString(mapMethod)
 	if err != nil {
 		return nil, newParserError(p.filename, p.jsonPath)
 	}
-	mapping.method = myhttp.ToHttpMethod(string(method))
+	mapping.Method = myhttp.ToHttpMethod(string(method))
 
 	p.jsonPath.SetLast(mapPolicies)
 	p.jsonPath.Append(0)
@@ -234,7 +254,7 @@ func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
 		}
 	}
 	p.jsonPath.RemoveLast()
-	mapping.policies = policies
+	mapping.Policies = policies
 
 	p.jsonPath.RemoveLast()
 	return mapping, nil
@@ -257,9 +277,9 @@ func (p *mappingsParser) parsePolicy(v myjson.Object) (*Policy, error) {
 			return nil, err
 		}
 	} else {
-		when = emptyWhen
+		when = new(When)
 	}
-	policy.when = when
+	policy.When = when
 
 	p.jsonPath.SetLast(mapPolicyReturns)
 	rawReturns, err := v.GetObject(mapPolicyReturns)
@@ -270,7 +290,7 @@ func (p *mappingsParser) parsePolicy(v myjson.Object) (*Policy, error) {
 	if err != nil {
 		return nil, err
 	}
-	policy.returns = returns
+	policy.Returns = returns
 
 	p.jsonPath.RemoveLast()
 	return policy, nil
@@ -287,7 +307,7 @@ func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 		if err != nil {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
-		when.headers = parseAsNameValuesPairs(rawHeaders)
+		when.Headers = parseAsNameValuesPairs(rawHeaders)
 	}
 
 	p.jsonPath.SetLast(pParams)
@@ -296,7 +316,7 @@ func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 		if err != nil {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
-		when.params = parseAsNameValuesPairs(rawParams)
+		when.Params = parseAsNameValuesPairs(rawParams)
 	}
 
 	p.jsonPath.RemoveLast()
@@ -314,7 +334,7 @@ func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
 		if err != nil {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
-		returns.statusCode = myhttp.StatusCode(int(statusCode))
+		returns.StatusCode = myhttp.StatusCode(int(statusCode))
 	}
 
 	p.jsonPath.SetLast(pHeaders)
@@ -323,7 +343,7 @@ func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
 		if err != nil {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
-		returns.headers = parseAsNameValuesPairs(rawHeaders)
+		returns.Headers = parseAsNameValuesPairs(rawHeaders)
 	}
 
 	p.jsonPath.SetLast(pBody)
@@ -332,7 +352,7 @@ func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
 	if err != nil {
 		return nil, newParserError(p.filename, p.jsonPath)
 	}
-	returns.body = body
+	returns.Body = body
 
 	p.jsonPath.RemoveLast()
 	return returns, nil
@@ -387,7 +407,7 @@ type templateParser struct {
 	parser
 }
 
-func (p *templateParser) parse() (*Template, error) {
+func (p *templateParser) parse() (*template, error) {
 	json, err := p.load()
 	if err != nil {
 		return nil, err
@@ -408,7 +428,7 @@ func (p *templateParser) parse() (*Template, error) {
 		return nil, newParserError(p.filename, p.jsonPath)
 	}
 
-	template := new(Template)
+	template := new(template)
 
 	p.jsonPath.SetLast(tTemplate)
 	v := p.json.Get(tTemplate)
@@ -432,7 +452,7 @@ type varsParser struct {
 	parser
 }
 
-func (p *varsParser) parse() ([]*Vars, error) {
+func (p *varsParser) parse() ([]*vars, error) {
 	json, err := p.load()
 	if err != nil {
 		return nil, err
@@ -464,9 +484,9 @@ func (p *varsParser) parse() ([]*Vars, error) {
 	return varsSlice, nil
 }
 
-func (p *varsParser) parseVars(v myjson.Object) ([]*Vars, error) {
+func (p *varsParser) parseVars(v myjson.Object) ([]*vars, error) {
 	rawVarsArray := ensureJsonArray(v.Get(tVars))
-	varsSlice := make([]*Vars, len(rawVarsArray))
+	varsSlice := make([]*vars, len(rawVarsArray))
 	for idx, rawVars := range rawVarsArray {
 		if p.json != nil {
 			p.jsonPath.SetLast(idx)
@@ -505,19 +525,19 @@ func parseAsNameValuesPairs(o myjson.Object) []*NameValuesPair {
 func parseAsNameValuesPair(n string, v myjson.Array) *NameValuesPair {
 	pair := new(NameValuesPair)
 
-	pair.name = n
+	pair.Name = n
 
 	values := make([]string, len(v))
 	for i, p := range v {
 		values[i] = typeutil.ToString(p)
 	}
-	pair.values = values
+	pair.Values = values
 
 	return pair
 }
 
-func parseVars(v myjson.Object) *Vars {
-	vars := new(Vars)
+func parseVars(v myjson.Object) *vars {
+	vars := new(vars)
 	table := make(map[string]interface{})
 	for name, value := range v {
 		table[name] = value
