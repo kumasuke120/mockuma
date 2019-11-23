@@ -280,10 +280,8 @@ func (p *mappingsParser) parsePolicy(v myjson.Object) (*Policy, error) {
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		when = new(When)
+		policy.When = when
 	}
-	policy.When = when
 
 	p.jsonPath.SetLast(mapPolicyReturns)
 	rawReturns, err := v.GetObject(mapPolicyReturns)

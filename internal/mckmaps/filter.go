@@ -183,8 +183,9 @@ func (f *templateFilter) getVarsFromDTemplate(v myjson.Object) ([]*vars, error) 
 			return nil, errors.New("cannot read the name of vars file")
 		}
 
+		var ok bool
 		_filename := string(filename)
-		if varsSlice, ok := f.varsSliceCache[_filename]; !ok {
+		if varsSlice, ok = f.varsSliceCache[_filename]; !ok {
 			vParser := &varsParser{parser: parser{filename: _filename}}
 			varsSlice, err = vParser.parse()
 			f.varsSliceCache[_filename] = varsSlice

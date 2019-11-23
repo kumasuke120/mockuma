@@ -17,7 +17,6 @@ var (
 
 func newStatusJsonPolicy(statusCode myhttp.StatusCode, message string) *mckmaps.Policy {
 	return &mckmaps.Policy{
-		When: new(mckmaps.When),
 		Returns: &mckmaps.Returns{
 			StatusCode: statusCode,
 			Headers: []*mckmaps.NameValuesPair{
