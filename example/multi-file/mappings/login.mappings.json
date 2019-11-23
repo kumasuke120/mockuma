@@ -20,7 +20,7 @@
         {
           "when": {
             "headers": {
-              "@comment": "use regexp /^.+$/ to match header 'Authorization' (not implemented yet)",
+              "@comment": "use regexp /^.+$/ to match header 'Authorization' (not implemented yet, may change)",
               "Authorization": "@regexp{^.+$}"
             }
           },
