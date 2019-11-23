@@ -23,7 +23,7 @@ func (e *policyExecutor) execute() error {
 		return err
 	}
 
-	log.Printf("[server] (%d) %s %s\n", returns.StatusCode, e.r.Method, e.r.URL)
+	log.Printf("[executor] (%d) %s %s\n", returns.StatusCode, e.r.Method, e.r.URL)
 	return nil
 }
 

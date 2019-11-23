@@ -8,7 +8,7 @@ import (
 
 // filters for the preprocessor
 var (
-	ppRemoveComment  = commentFilter{}
+	ppRemoveComment  = &commentFilter{}
 	ppRenderTemplate = makeTemplateFilter()
 )
 
@@ -46,15 +46,18 @@ type filter interface {
 type commentFilter struct {
 }
 
-func (f commentFilter) doFilter(v interface{}, chain *filterChain) error {
+func (f *commentFilter) doFilter(v interface{}, chain *filterChain) error {
 	f.removeComment(v)
 	return chain.doFilter(v)
 }
 
-func (f commentFilter) removeComment(v interface{}) {
+func (f *commentFilter) removeComment(v interface{}) {
 	switch v.(type) {
 	case myjson.Object:
 		delete(v.(myjson.Object), dComment)
+		for _, value := range v.(myjson.Object) {
+			f.removeComment(value)
+		}
 	case myjson.Array:
 		for _, _v := range v.(myjson.Array) {
 			f.removeComment(_v)
@@ -67,13 +70,13 @@ type templateFilter struct {
 	varsSliceCache map[string][]*vars
 }
 
-func makeTemplateFilter() templateFilter {
+func makeTemplateFilter() *templateFilter {
 	f := templateFilter{}
 	f.reset()
-	return f
+	return &f
 }
 
-func (f templateFilter) doFilter(v interface{}, chain *filterChain) error {
+func (f *templateFilter) doFilter(v interface{}, chain *filterChain) error {
 	renderV, err := f.rewrite(v)
 	if err != nil {
 		return err
@@ -81,7 +84,7 @@ func (f templateFilter) doFilter(v interface{}, chain *filterChain) error {
 	return chain.doFilter(renderV)
 }
 
-func (f templateFilter) rewrite(v interface{}) (interface{}, error) {
+func (f *templateFilter) rewrite(v interface{}) (interface{}, error) {
 	var renderV interface{}
 	var err error
 	switch v.(type) {
@@ -95,7 +98,7 @@ func (f templateFilter) rewrite(v interface{}) (interface{}, error) {
 	return renderV, err
 }
 
-func (f templateFilter) rewriteObject(v myjson.Object) (interface{}, error) {
+func (f *templateFilter) rewriteObject(v myjson.Object) (interface{}, error) {
 	if v.Has(dTemplate) {
 		template, ctx, err := f.getTemplateFromDTemplate(v)
 		if err != nil {
@@ -130,7 +133,7 @@ func (f templateFilter) rewriteObject(v myjson.Object) (interface{}, error) {
 	}
 }
 
-func (f templateFilter) rewriteArray(v myjson.Array) (myjson.Array, error) {
+func (f *templateFilter) rewriteArray(v myjson.Array) (myjson.Array, error) {
 	var result myjson.Array
 	for _, value := range v {
 		rValue, err := f.rewrite(value)
@@ -150,7 +153,7 @@ func (f templateFilter) rewriteArray(v myjson.Array) (myjson.Array, error) {
 	return result, nil
 }
 
-func (f templateFilter) getTemplateFromDTemplate(v myjson.Object) (*template, *renderContext, error) {
+func (f *templateFilter) getTemplateFromDTemplate(v myjson.Object) (*template, *renderContext, error) {
 	filename, err := v.GetString(dTemplate)
 	if err != nil {
 		return nil, nil, errors.New("cannot read the name of template file")
@@ -163,13 +166,13 @@ func (f templateFilter) getTemplateFromDTemplate(v myjson.Object) (*template, *r
 		tParser := &templateParser{parser: parser{filename: _filename}}
 		template, err = tParser.parse()
 		if err != nil {
-			return nil, &renderContext{filename: _filename}, err
+			return nil, nil, err
 		}
 	}
-	return template, nil, nil
+	return template, &renderContext{filename: _filename}, nil
 }
 
-func (f templateFilter) getVarsFromDTemplate(v myjson.Object) ([]*vars, error) {
+func (f *templateFilter) getVarsFromDTemplate(v myjson.Object) ([]*vars, error) {
 	var varsSlice []*vars
 	var err error
 	if v.Has(tVars) {
@@ -190,7 +193,7 @@ func (f templateFilter) getVarsFromDTemplate(v myjson.Object) ([]*vars, error) {
 	return varsSlice, err
 }
 
-func (f templateFilter) reset() {
+func (f *templateFilter) reset() {
 	f.templateCache = make(map[string]*template)
 	f.varsSliceCache = make(map[string][]*vars)
 }

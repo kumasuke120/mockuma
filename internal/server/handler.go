@@ -59,12 +59,12 @@ func (h *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := executor.execute(); err != nil {
-		log.Printf("[server] %s %s: fail to render response: %v\n", r.Method, r.URL, err)
+		log.Printf("[handler] %s %s: fail to render response: %v\n", r.Method, r.URL, err)
 	}
 }
 
 func (h *mockHandler) listAllMappings() {
-	for _, mapping := range h.mappings.Mappings {
-		log.Printf("[server] mapped: %s, methods = %v\n", mapping.Uri, mapping.Method)
+	for uri, methods := range h.mappings.GetUriWithItsMethods() {
+		log.Printf("[handler] mapped: %s, methods = %v\n", uri, methods)
 	}
 }

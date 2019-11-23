@@ -32,3 +32,13 @@ type NameValuesPair struct {
 	Name   string
 	Values []string
 }
+
+func (m *MockuMappings) GetUriWithItsMethods() map[string][]myhttp.HttpMethod {
+	result := make(map[string][]myhttp.HttpMethod)
+	for _, m := range m.Mappings {
+		mappingsOfUri := result[m.Uri]
+		mappingsOfUri = append(mappingsOfUri, m.Method)
+		result[m.Uri] = mappingsOfUri
+	}
+	return result
+}

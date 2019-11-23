@@ -17,7 +17,7 @@ func (e *renderError) Error() string {
 	if e.jsonPath == nil {
 		result += "cannot render template"
 	} else {
-		result += fmt.Sprintf("cannot render template on json-path '%v'", e.jsonPath)
+		result += fmt.Sprintf("cannot render the template on json-path '%v'", e.jsonPath)
 	}
 
 	if e.filename != "" {
@@ -117,10 +117,14 @@ func renderArray(ctx *renderContext, jsonPath *myjson.Path,
 // states for rendering string
 const (
 	rsReady = iota
-	rsMaybeDVar
-	rsMaybeDVar2
-	rsMaybeSVar
+	rsMaybeVar
 	rsInVar
+)
+
+const (
+	placeholderPrefix = '@'
+	placeholderLeft   = '{'
+	placeholderRight  = '}'
 )
 
 func renderString(ctx *renderContext, jsonPath *myjson.Path,
@@ -140,14 +144,8 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 
 		switch s {
 		case rsReady:
-			if r == '$' {
-				s = rsMaybeSVar
-
-			} else if r == '@' {
-				s = rsMaybeDVar
-			}
-
-			if r == '$' || r == '@' {
+			if r == placeholderPrefix {
+				s = rsMaybeVar
 				if i == 0 {
 					fromBegin = true
 				} else {
@@ -155,39 +153,14 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 				}
 				doWrite = false
 			}
-		case rsMaybeDVar:
-			if string(runes[i:i+3]) == "var" {
-				s = rsMaybeDVar2
-				i += 3
-				doWrite = false
-			} else {
-				s = rsReady
-				if r != '@' { // replaces "@@" to "@"
-					builder.WriteRune('@')
-				}
-				if fromBegin {
-					fromBegin = false
-				}
-			}
-		case rsMaybeDVar2:
-			if r == '{' {
+		case rsMaybeVar:
+			if r == placeholderLeft {
 				s = rsInVar
 				doWrite = false
 			} else {
 				s = rsReady
-				builder.WriteString("@var")
-				if fromBegin {
-					fromBegin = false
-				}
-			}
-		case rsMaybeSVar:
-			if r == '{' {
-				s = rsInVar
-				doWrite = false
-			} else {
-				s = rsReady
-				if r != '$' { // replaces "$$" to "$"
-					builder.WriteString("$")
+				if r != placeholderPrefix { // replaces "@@" to "@"
+					builder.WriteString(string(placeholderPrefix))
 				}
 				if fromBegin {
 					fromBegin = false
@@ -195,7 +168,7 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 			}
 		case rsInVar:
 			doWrite = false
-			if r == '}' {
+			if r == placeholderRight {
 				s = rsReady
 				if fromBegin && i == len(runes)-1 {
 					toEnd = true
@@ -247,7 +220,7 @@ func renderTextString(ctx *renderContext, jsonPath *myjson.Path,
 	varV := vars.table[varName]
 	switch varV.(type) {
 	case myjson.String:
-		return fmt.Sprintf("%v", varV), nil
+		return fmt.Sprintf("%s", string(varV.(myjson.String))), nil
 	case myjson.Number:
 		return fmt.Sprintf("%v", varV), nil
 	case myjson.Boolean:

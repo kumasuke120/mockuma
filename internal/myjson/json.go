@@ -32,18 +32,6 @@ func (b Boolean) String() string {
 	return strconv.FormatBool(bool(b))
 }
 
-type ValueError struct {
-	Name string
-}
-
-func (e *ValueError) Error() string {
-	if e.Name == "" {
-		return "cannot interpret value as json value"
-	} else {
-		return fmt.Sprintf("cannot read value of name '%s'", e.Name)
-	}
-}
-
 func (o Object) Has(name string) bool {
 	_, ok := map[string]interface{}(o)[name]
 	return ok
@@ -60,12 +48,7 @@ func (o Object) GetObject(name string) (Object, error) {
 
 func (o Object) GetArray(name string) (Array, error) {
 	v := o.Get(name)
-	switch v.(type) {
-	case Array:
-		return v.(Array), nil
-	default:
-		return Array{}, &ValueError{Name: name}
-	}
+	return toArray(v, name)
 }
 
 func (o Object) GetNumber(name string) (Number, error) {

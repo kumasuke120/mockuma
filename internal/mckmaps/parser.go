@@ -9,7 +9,6 @@ import (
 
 	"github.com/kumasuke120/mockuma/internal/myhttp"
 	"github.com/kumasuke120/mockuma/internal/myjson"
-	"github.com/kumasuke120/mockuma/internal/typeutil"
 )
 
 type loadError struct {
@@ -31,7 +30,7 @@ func (e *parserError) Error() string {
 	if e.jsonPath == nil {
 		result += "cannot parse json data"
 	} else {
-		result += fmt.Sprintf("cannot parse value on json-path '%v'", e.jsonPath)
+		result += fmt.Sprintf("cannot parse the value on json-path '%v'", e.jsonPath)
 	}
 
 	if e.filename != "" {
@@ -47,9 +46,17 @@ type parser struct {
 }
 
 func (p *parser) parse() (*MockuMappings, error) {
-	json, err := p.load()
-	if err != nil {
+	var json interface{}
+	var err error
+	if json, err = p.load(ppRemoveComment, ppRenderTemplate); err != nil {
 		return nil, err
+	}
+
+	if p.chdir { // only changes once before any actual parsing
+		err = p.chdirBasedOnFilename()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var result *MockuMappings
@@ -59,11 +66,11 @@ func (p *parser) parse() (*MockuMappings, error) {
 		result, err = parser.parse()
 	case myjson.Array:
 		parser := &mappingsParser{json: json, parser: *p}
-		mappings, err := parser.parse()
-		if err == nil {
-			result = &MockuMappings{Mappings: mappings}
+		mappings, _err := parser.parse()
+		if _err == nil {
+			result, err = &MockuMappings{Mappings: mappings}, _err
 		} else {
-			result = nil
+			result, err = nil, _err
 		}
 	default:
 		result, err = nil, newParserError(p.filename, nil)
@@ -73,7 +80,7 @@ func (p *parser) parse() (*MockuMappings, error) {
 	return result, err
 }
 
-func (p *parser) load() (interface{}, error) {
+func (p *parser) load(preprocessors ...filter) (interface{}, error) {
 	bytes, err := ioutil.ReadFile(p.filename)
 	if err != nil {
 		return nil, err
@@ -84,14 +91,7 @@ func (p *parser) load() (interface{}, error) {
 		return nil, newParserError(p.filename, nil)
 	}
 
-	if p.chdir {
-		err := p.chdirBasedOnFilename()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	v, err := doFiltersOnV(json, ppRemoveComment, ppRenderTemplate)
+	v, err := doFiltersOnV(json, preprocessors...)
 	if err != nil {
 		return nil, &loadError{filename: p.filename, err: err}
 	}
@@ -126,7 +126,7 @@ type mainParser struct {
 
 func (p *mainParser) parse() (*MockuMappings, error) {
 	_type, err := p.json.GetString(dType)
-	if err != nil || _type != tMain {
+	if err != nil || string(_type) != tMain {
 		return nil, newParserError(p.filename, myjson.NewPath(dType))
 	}
 
@@ -140,7 +140,7 @@ func (p *mainParser) parse() (*MockuMappings, error) {
 		return nil, newParserError(p.filename, myjson.NewPath(dInclude, tMappings))
 	}
 
-	var mappings = make([]*Mapping, len(filenamesOfMappings))
+	var mappings []*Mapping
 	for idx, filename := range filenamesOfMappings {
 		_filename, err := myjson.ToString(filename)
 		if err != nil {
@@ -167,7 +167,7 @@ type mappingsParser struct {
 
 func (p *mappingsParser) parse() ([]*Mapping, error) {
 	if p.json == nil {
-		json, err := p.load()
+		json, err := p.load(ppRemoveComment, ppRenderTemplate)
 		if err != nil {
 			return nil, err
 		}
@@ -182,7 +182,7 @@ func (p *mappingsParser) parse() ([]*Mapping, error) {
 
 		p.jsonPath.SetLast(dType)
 		_type, err := jsonObject.GetString(dType)
-		if err != nil || _type != tMappings {
+		if err != nil || string(_type) != tMappings {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
 
@@ -230,11 +230,15 @@ func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
 	mapping.Uri = string(uri)
 
 	p.jsonPath.SetLast(mapMethod)
-	method, err := v.GetString(mapMethod)
-	if err != nil {
-		return nil, newParserError(p.filename, p.jsonPath)
+	if v.Has(mapMethod) {
+		method, err := v.GetString(mapMethod)
+		if err != nil {
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
+		mapping.Method = myhttp.ToHttpMethod(string(method))
+	} else {
+		mapping.Method = myhttp.Any
 	}
-	mapping.Method = myhttp.ToHttpMethod(string(method))
 
 	p.jsonPath.SetLast(mapPolicies)
 	p.jsonPath.Append(0)
@@ -335,6 +339,8 @@ func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
 		returns.StatusCode = myhttp.StatusCode(int(statusCode))
+	} else {
+		returns.StatusCode = myhttp.Ok
 	}
 
 	p.jsonPath.SetLast(pHeaders)
@@ -362,8 +368,8 @@ func (p *mappingsParser) parseBody(v interface{}) ([]byte, error) {
 	switch v.(type) {
 	case nil:
 		return nil, nil
-	case string:
-		return []byte(v.(string)), nil
+	case myjson.String:
+		return []byte(string(v.(myjson.String))), nil
 	case myjson.Object:
 		if ok, bytes, err := p.parseDirectiveFile(v.(myjson.Object)); ok {
 			if err != nil {
@@ -408,7 +414,7 @@ type templateParser struct {
 }
 
 func (p *templateParser) parse() (*template, error) {
-	json, err := p.load()
+	json, err := p.load(ppRemoveComment)
 	if err != nil {
 		return nil, err
 	}
@@ -424,7 +430,7 @@ func (p *templateParser) parse() (*template, error) {
 
 	p.jsonPath.SetLast(dType)
 	_type, err := p.json.GetString(dType)
-	if err != nil || _type != tTemplate {
+	if err != nil || string(_type) != tTemplate {
 		return nil, newParserError(p.filename, p.jsonPath)
 	}
 
@@ -453,7 +459,7 @@ type varsParser struct {
 }
 
 func (p *varsParser) parse() ([]*vars, error) {
-	json, err := p.load()
+	json, err := p.load(ppRemoveComment)
 	if err != nil {
 		return nil, err
 	}
@@ -469,7 +475,7 @@ func (p *varsParser) parse() ([]*vars, error) {
 
 	p.jsonPath.SetLast(dType)
 	_type, err := p.json.GetString(dType)
-	if err != nil || _type != tVars {
+	if err != nil || string(_type) != tVars {
 		return nil, newParserError(p.filename, p.jsonPath)
 	}
 
@@ -529,7 +535,17 @@ func parseAsNameValuesPair(n string, v myjson.Array) *NameValuesPair {
 
 	values := make([]string, len(v))
 	for i, p := range v {
-		values[i] = typeutil.ToString(p)
+		switch p.(type) {
+		case nil:
+			values[i] = ""
+		default:
+			str, err := myjson.ToString(p)
+			if err != nil {
+				panic("Shouldn't happen")
+			}
+			values[i] = string(str)
+		}
+
 	}
 	pair.Values = values
 
