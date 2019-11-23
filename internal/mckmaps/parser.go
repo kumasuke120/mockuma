@@ -1,11 +1,13 @@
 package mckmaps
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/kumasuke120/mockuma/internal/myhttp"
 	"github.com/kumasuke120/mockuma/internal/myjson"
@@ -499,7 +501,10 @@ func (p *varsParser) parseVars(v myjson.Object) ([]*vars, error) {
 		if err != nil {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
-		varsSlice[idx] = parseVars(rVars)
+		varsSlice[idx], err = parseVars(rVars)
+		if err != nil {
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
 	}
 	return varsSlice, nil
 }
@@ -550,12 +555,17 @@ func parseAsNameValuesPair(n string, v myjson.Array) *NameValuesPair {
 	return pair
 }
 
-func parseVars(v myjson.Object) *vars {
+var varNameRegexp = regexp.MustCompile("(?i)[a-z][a-z\\d]*")
+
+func parseVars(v myjson.Object) (*vars, error) {
 	vars := new(vars)
 	table := make(map[string]interface{})
 	for name, value := range v {
+		if !varNameRegexp.Match([]byte(name)) {
+			return nil, errors.New("invalid name for var")
+		}
 		table[name] = value
 	}
 	vars.table = table
-	return vars
+	return vars, nil
 }
