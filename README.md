@@ -255,8 +255,8 @@ Content-Type: text/html; charset=utf-8
 </html>
 ```
 
-## `MockuMappings` 模板
-`1.1.0` 版本起，MocKuma 添加了模板系统，模板声明时可以使用占位符(placeholder)引用变量，在应用模板时将套用给定变量值动态生成。
+## `MockuMappings` 模板引擎
+`1.1.0` 版本起，MocKuma 添加了模板引擎，模板声明时可以使用占位符(placeholder)引用变量，在应用模板时将套用给定变量值动态生成。
 
 ### 模板声明(template)配置
 模板声明(template)配置文件声明并定义一个新的模板，推荐该类型文件使用 `.template.json` 作为后缀。
