@@ -3,7 +3,7 @@
   "mappings": [
     {
       "@comment": "will be matched first, to override the next @any mapping",
-      "@template": "template/hello-methd-not-allowed.template.json",
+      "@template": "template/hello-method-not-allowed.template.json",
       "vars": [
         {
           "method": "OPTIONS"

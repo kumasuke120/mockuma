@@ -3,10 +3,10 @@
   "template": {
     "when": {
       "params": {
-        "username": "@var{username}"
+        "username": "@{username}"
       },
       "headers": {
-        "Authorization": "Basic @var{authToken}"
+        "Authorization": "Basic @{authToken}"
       }
     },
     "returns": {
@@ -14,9 +14,9 @@
         "Content-Type": "application/json; charset=utf8"
       },
       "body": {
-        "@comment": "'$' is the short form for '@var'",
+        "@comment": "'@{}' is the placeholder for @vars",
         "code": 2000,
-        "message": "Welcome, ${username}!"
+        "message": "Welcome, @{username}!"
       }
     }
   }
