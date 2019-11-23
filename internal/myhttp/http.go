@@ -7,7 +7,7 @@ import (
 type HttpMethod string
 
 const (
-	Any     = HttpMethod("")
+	Any     = HttpMethod("*")
 	Options = HttpMethod("OPTIONS")
 	Get     = HttpMethod("GET")
 	Head    = HttpMethod("HEAD")

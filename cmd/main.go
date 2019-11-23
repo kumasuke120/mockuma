@@ -2,27 +2,39 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 
-	"github.com/kumasuke120/mockuma/internal/mapping"
-	"github.com/kumasuke120/mockuma/internal/serve"
+	"github.com/kumasuke120/mockuma/internal/mckmaps"
+	"github.com/kumasuke120/mockuma/internal/server"
+)
+
+const (
+	appName       = "MocKuma"
+	versionNumber = "1.1.0"
 )
 
 var port = flag.Int("p", 3214,
-	"the port number on which Mockuma listen")
-var mapfile = flag.String("mapfile", mapping.DefaultMapfile,
-	"the name of a json file which defines mockuMappings")
+	"sets the port number on which Mockuma listen")
+var mapfile = flag.String("mapfile", "",
+	"sets the name of a json file which defines mockuMappings")
+var showVersion = flag.Bool("-version", false, "shows the version number")
 
 func main() {
 	flag.Parse()
 
-	mappings, err := mapping.FromJsonFile(*mapfile)
-	if err != nil {
-		log.Fatal("cannot load mockuMappings:", err)
-	}
+	if *showVersion {
+		fmt.Printf("%s: %s\n", appName, versionNumber)
+	} else {
+		mappings, err := mckmaps.LoadFromJsonFile(*mapfile)
+		if err != nil {
+			log.Fatal("cannot load mockuMappings:", err)
+		}
 
-	server := &serve.MockServer{Port: *port, Mappings: mappings}
-	if err := server.Start(); err != nil {
-		log.Fatal("cannot start server:", err)
+		s := server.NewMockServer(*port, mappings)
+		s.SetServer(appName, versionNumber)
+		if err := s.Start(); err != nil {
+			log.Fatal("cannot start server:", err)
+		}
 	}
 }

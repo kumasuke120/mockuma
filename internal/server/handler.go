@@ -1,0 +1,70 @@
+package server
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+
+	"github.com/kumasuke120/mockuma/internal/mckmaps"
+	"github.com/kumasuke120/mockuma/internal/myhttp"
+)
+
+// default policies
+var (
+	pNotFound         = newStatusJsonPolicy(myhttp.NotFound, "Not Found")
+	pNotPolicyMatched = newStatusJsonPolicy(myhttp.BadRequest, "No policy matched")
+)
+
+func newStatusJsonPolicy(statusCode myhttp.StatusCode, message string) *mckmaps.Policy {
+	return &mckmaps.Policy{
+		When: new(mckmaps.When),
+		Returns: &mckmaps.Returns{
+			StatusCode: statusCode,
+			Headers: []*mckmaps.NameValuesPair{
+				{Name: myhttp.HeaderContentType, Values: []string{myhttp.ContentTypeJson}},
+			},
+			Body: []byte(fmt.Sprintf(`{"statusCode": %d, "message": "%s"}`, statusCode, message)),
+		},
+	}
+}
+
+type mockHandler struct {
+	serverHeader string
+	mappings     *mckmaps.MockuMappings
+	pathMatcher  *pathMatcher
+}
+
+func newMockHandler(mappings *mckmaps.MockuMappings) *mockHandler {
+	handler := new(mockHandler)
+	handler.mappings = mappings
+	handler.pathMatcher = newPathMatcher(mappings)
+	return handler
+}
+
+func (h *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set(myhttp.HeaderServer, h.serverHeader)
+
+	matcher := h.pathMatcher.bind(r)
+	executor := &policyExecutor{r: r, w: &w}
+
+	if matcher.matches() {
+		policy := matcher.matchPolicy()
+		if policy != nil {
+			executor.policy = policy
+		} else {
+			executor.policy = pNotPolicyMatched
+		}
+	} else {
+		executor.policy = pNotFound
+	}
+
+	if err := executor.execute(); err != nil {
+		log.Printf("[server] %s %s: fail to render response: %v\n", r.Method, r.URL, err)
+	}
+}
+
+func (h *mockHandler) listAllMappings() {
+	for _, mapping := range h.mappings.Mappings {
+		log.Printf("[server] mapped: %s, methods = %v\n", mapping.Uri, mapping.Method)
+	}
+}
