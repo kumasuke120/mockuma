@@ -21,7 +21,7 @@ func NewMockServer(port int, mappings *mckmaps.MockuMappings) *MockServer {
 	return s
 }
 
-func (s *MockServer) SetServer(name string, versionNumber string) {
+func (s *MockServer) SetNameAndVersion(name string, versionNumber string) {
 	s.handler.serverHeader = fmt.Sprintf("%s/%s", name, versionNumber)
 }
 

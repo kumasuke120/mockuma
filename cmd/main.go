@@ -28,24 +28,24 @@ func main() {
 	if *showVersion {
 		printVersion()
 	} else {
-		mappings, err := mckmaps.LoadFromJsonFile(*mapfile)
+		mappings, err := mckmaps.LoadFromFile(*mapfile)
 		if err != nil {
-			log.Fatal("cannot load mockuMappings: ", err)
+			log.Fatal("[main] cannot load mockuMappings: ", err)
 		}
 
 		s := server.NewMockServer(*port, mappings)
-		s.SetServer(appName, versionNumber)
+		s.SetNameAndVersion(appName, versionNumber)
 		if err := s.Start(); err != nil {
-			log.Fatal("cannot start server: ", err)
+			log.Fatal("[main] cannot start server: ", err)
 		}
 	}
 }
 
 func printVersion() {
-	fmt.Println(" _______              __  __                       ")
-	fmt.Println("|   |   |.-----.----.|  |/  |.--.--.--------.---.-.")
-	fmt.Println("|       ||  _  |  __||     < |  |  |        |  _  |")
-	fmt.Println("|__|_|__||_____|____||__|\\__||_____|__|__|__|___._|")
+	fmt.Println(` _______              __  __                       `)
+	fmt.Println(`|   |   |.-----.----.|  |/  |.--.--.--------.---.-.`)
+	fmt.Println(`|       ||  _  |  __||     < |  |  |        |  _  |`)
+	fmt.Println(`|__|_|__||_____|____||__|\__||_____|__|__|__|___._|`)
 	fmt.Println()
 	fmt.Printf("Version\t: %s\n", versionNumber)
 	fmt.Printf("Author\t: %s\n", author)
