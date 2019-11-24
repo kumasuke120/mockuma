@@ -1,99 +1,119 @@
 # MocKuma
-这是一款使用 Go 编写的 Http 接口 Mock 工具。该工具读取命令化的 Json 映射配置文件，并根据配置生成对应的 Mock 接口。
+See in other languages: English | [中文](README_CN.md) 
 
-前、后端开发人员使用本工具可以模拟 RESTful 接口以辅助开发以及单元测试；
-测试人员也可以使用本工具利用其命令式的声明进行参数匹配编写符合测试用例的接口辅助测试。
+This is a Http API mocking server written in Go. It reads command-like json mapping configuration file, generating
+corresponding mock API interfaces dynamically.
+
+Front/back end developers may use this tool to mock RESTful API interfaces, helping developments and unit testings;
+Tester may also use this tool with its command-like mapping configuration, writing mock APIs to match the parameters
+and testing your software with your own test cases.
 
 
 
-## 构建与运行
-使用 `go get` 命令或下载压缩包解压至 `$GOPATH/github.com/kumasuke120/mockuma` 中，进入该目录并执行以下命令进行构建：
+## Build & Run
+Run `go get` or download source codes to `$GOPATH/github.com/kumasuke120/mockuma`, entering the directory and run the
+following command:
 ```
 $ cd cmd && go build -o ../bin/mockuma
 ```
 
-如果想要避免麻烦或者没有 Go 的开发环境，请[点此](https://github.com/kumasuke120/mockuma/releases)以下载已发布版本的可执行文件。
+You may click [here](https://github.com/kumasuke120/mockuma/releases) to download a executable of the newest
+release version, if you don't own the Go development environment or you wanna do it quickly.
 
-构建或下载成功并重命名后，可以使用以下命令运行：
+If you have got the executable, you could run the following command:
 ```
 $ cd bin && ./mockuma
 ```
 
 
-### 命令行参数
-虽然 MocKuma 可以直接执行，但是它也提供了一些命令行参数供配置使用，以下是所有支持的命令行参数：
+### Command Line Arguments
+Although you could run MocKuma directly, MocKuma provides a series of command line arguments:
 
-1. `-mapfile`: `MockuMappings` 映射配置文件路径，支持相对路径和绝对路径。特别的，MocKuma 的工作目录将会被设为该配置文件所在目录。
-默认情况下，将会依次寻找当前目录下名为 `mockuMappings.json`，`mockuMappings.main.json` 的配置文件并读取加载；
-2. `-p`: MocKuma 监听端口号，默认值为 `3214`；
-3. `--help`: 查看命令行参数帮助，帮助内容文本为英文；
-4. `--version`: 查看当前 MocKuma 的版本信息。
-
-
-
-## `MockuMappings` 基础
-`MockuMappings` 是 MocKuma 的配置文件统称，其文件内容均为 `.json` 格式。
+1. `-mapfile`: the path to the `MockuMappings` mapping configuration file, supports both relative and absolute path.
+Specifically, the working directory of MocKuma will be set to the directory in which the `mapfile` resides.
+Under the default circumstance, MocKuma will find a configuration file called `mockuMappings.json` or 
+`mockuMappings.main.json` in the starting directory, reading and loading the file;
+2. `-p`: the port number on which the MocKuma listens, the default value is `3214`;
+3. `--help`: views the help content of command line arguments;
+4. `--version`: views the version information of MocKuma;
 
 
-### 示例配置文件
-为了便于理解，项目中提供了示例配置文件，位于 `example/` 文件夹中，可以[点此](example)查看这些配置文件。
-其中位于 `example/single-file` 中的是单文件配置，而位于 `example/multi-file` 中的则是多文件配置。
 
-为了便于充分理解以下部分的说明和示例返回，建议在 `$GOPATH/github.com/kumasuke120/mockuma` 目录下执行以下命令，使用示例配置文件启动 MocKuma：
+## `MockuMappings` Essentials
+`MockuMappings` is the unified name of MocKuma configuration files whose file formats are all of `.json`.
 
-(单文件模式)
+
+### Example Configuration Files
+This repo provides example configuration files which help your understanding, resides in the `example/` directory,
+you could view these files by clicking [here](example).
+The files in the `example/single-file` directory are used in single-file mode, however those in the `example/multi-file` 
+directory are used in multi-file mode.
+
+It is recommended that run the following commands in the `$GOPATH/github.com/kumasuke120/mockuma` directory, starting
+a MocKuma instance using example configuration files.
+
+(Single-file Mode)
 ```
 $ bin/mockuma -mapfile=example/single-file/mockuMappings.json
 ```
-(多文件模式)
+(Multi-file Mode)
 ```
 $ bin/mockuma -mapfile=example/multi-file/mockuMappings.main.json
 ```
 
 
-### 单文件配置与多文件配置
-MocKuma 支持单文件和多文件两种配置模式。
+### Single-file & Multi-file Configuration
+MocKuma supports both single-file and multi-file mode.
 
-其中单文件模式适合 Mock 接口数量少的使用场景，配置简单，可以快速成型。
+Single-file mode is suitable for the scenarios when the number of mock APIs is small and the logic of mock APIs is
+not quite complex.
 
-而多文件模式则需要一个入口文件，适合 Mock 接口多，业务情况复杂的情况。
-使用多文件模式可以将不同业务的接口 Mock 放在不同的文件中，多个文件**毋需**在同一目录下，可以建文件夹并进行管理。
+However, the multi-file mode needs a main entrance file. It is suitable for the scenarios when there are plenty of
+APIs or complex logic.
+You may put different API mappings into different files according your business in multi-file. Multiple files **don't**
+have to be in the same directories. You could creating directories for different purposes to manage your configuration
+files.
 
-`1.1.0` 版本后，**推荐使用多文件模式**进行配置，以下的说明也以多文件模式为基准，涉及到单文件与多文件模式不同的部分将会特殊说明。
+From `v1.1.0`, **multi-file mode is recommended**. In addition, the following parts are based on multi-file mode.
+When it comes to the disparity between single-file and multi-file mode, there will be a specific explanation.
 
 
-### 注释配置文件
-由于 Json 格式不支持一般的注释语法，`MockuMappings` 中提供了一种添加注释的方式：
+### Commenting Configuration Files
+Because json does not normal comment styles, `MockuMappings` provides a way to comment on your configuration file:
 ```json
 {
   "@type": "...",
-  "@comment": "这里填写注释"
+  "@comment": "Comment here..."
 }
 ```
-上例中的 `@comment` 就是添加注释的方式，可以添加在任意层级、任意位置的 **Json 对象**（形如 `{...}`）中，其内容可以为任意类型。
-MocKuma 在读取配置文件时，将自动去除 `@comment` 相关内容，不会对配置造成影响。
+`@comment` in the above sample is the method to add comment. You could add comments in the **json object** 
+(in the form of `{...}`) at any level, any position. The comment value could be of any type.
 
-此外，形如 `@comment` 以 `@` 开头的属性在 `MockuMappings` 被称为指令(directive)，接下来我们还将会看到它们。
-
-
-### 配置文件中的路径
-在 `MockuMappings` 中很多地方支持引用其他文件，文件路径支持相对和绝对路径。
-其中需要注意的是相对路径是**相对于主入口文件（单文件模式下为 `-mapfile` 指定文件）所在目录的**，无论引用其他文件的文件所在位置如何，都遵守这个规则。
+Besides, in the `MockuMappings`, all attributes like `@comment` which start with `@` are called directives. 
+We will see them again in the following part.
 
 
-### 主入口(main)配置
-主入口(main)配置文件为多文件模式下的默认文件，推荐使用 `.main.json` 作为该类型文件的后缀。
-可以[点此](example/multi-file/mockuMappings.main.json)查看示例文件。
+### Paths in Configuration Files
+Lots of parts of `MockuMappings` require include other files. The paths of those files support relative and absolute path.
+It bears noting that the relative paths are relative to **the directory of main configuration file (specified by `-mapfile` in single-file mode)**.
+No matter where the included files exists, this rule will always be complied.
 
-在未来的版本中，主入口文件将会增加全局的配置，用于控制接口映射处理时的默认行为。
 
-_在单文件模式下，不支持使用主入口文件_
+### Main Configuration
+Main configuration file is the default file in the multi-file mode. 
+It is recommended to use `.main.json` as a suffix for this type of file.
+You may click [here](example/multi-file/mockuMappings.main.json) to view the example file.
 
-以下是主入口配置的基本样式：
+In the future release, the main configuration file will add some global configurations that control the default behavior
+when the API interfaces mapping.
+
+_Main configuration are not supported in single-file mode_
+
+The following are the basic structures of the main configuration:
 ```json
 {
   "@type": "main",
-  "@comment": "这是主入口文件",
+  "@comment": "This is main configuration",
   "@include": {
     "mappings": [
       "hello.mappings.json"
@@ -101,28 +121,33 @@ _在单文件模式下，不支持使用主入口文件_
   }
 }
 ```
-主入口配置顶层为 Json 对象，有以下属性 key：
-- `@type`: `MockuMappings` 配置文件类型的标志，用于主入口配置时，其值须为 `main`；
-- `@include`: 引入指令(directive)，仅可在主入口文件中使用。其值须为 Json 对象，对象的 key 为引入文件的类型(`@type`)，对象的 key 对应的 value
-是一个 Json 数组，其中每一个值均为所引入文件的路径。如果被引用的文件和对象 key 指定的类型不一致，MocKuma 将会报错。目前该指令仅支持引入映射(mappings)文件。
+The top level of a main configuration is a json object with following attributes:
+- `@type`: type flag of `MockuMappings` files. when using in the main configuration, its value must be `main`;
+- `@include`: include directive, can be used in main configuration only. its value should be a json object. 
+The key of the json object is the `@type` of the included file; the value of the json object is a json array whose values
+are the paths to the included files.
+If the included file does not match the type specified by the object key, MocKuma will report an error. 
+Currently this directive only supports the introduction of mappings files.
 
 
-### 映射(mappings)配置
-映射(mappings)配置文件指定接口映射相关参数，推荐使用 `.mappings.json` 作为该类型文件的后缀。
-可以[点此](example/multi-file/mappings/hello.mappings.json)查看示例文件。
-映射配置文件主要配置具体 Mock 接口的地址(uri)、请求方式(method)以及处理策略(policies)。
+### Mappings Configuration
+Mappings configuration file specifies API mapping related parameters.
+It is recommended to use `.mappings.json` as a suffix for this type of file.
+You may click [here](example/multi-file/mappings/hello.mappings.json) to view the example file.
+The mappings configuration file mainly configures the uri, request method , and processing policies of 
+the specific Mock APIs.
 
-_在单文件模式下，该文件即为入口文件，但有些变化，将在下面说明_
+_In single-file mode, with some modifications this file is the main file. The differences will be explained later_
 
-以下是映射配置的基本样式：
+The following are the basic structures of the mappings configuration:
 ```json
 {
   "@type": "mappings",
   "mappings": [
     {
       "@comment": {
-        "uri": "本地启动且端口号为 3214 时，访问 'http://localhost:3214/hello' 即可",
-        "method": "仅 GET 方式可调用"
+        "uri": "when MocKuma starts locally and the port is 3214, you may access'http://localhost:3214/hello'",
+        "method": "only GET method is mapped"
       },
       "uri": "/hello",
       "method": "GET",
@@ -130,7 +155,7 @@ _在单文件模式下，该文件即为入口文件，但有些变化，将在�
         {
           "when": {
             "params": {
-              "@comment": "调用参数为 '/hello?lang=cn' 时匹配",
+              "@comment": "matches when the parameter is '/hello?lang=cn'",
               "lang": "cn"
             }
           },
@@ -147,7 +172,7 @@ _在单文件模式下，该文件即为入口文件，但有些变化，将在�
               "Content-Type": "application/json; charset=utf8"
             },
             "body": {
-              "@comment": "复杂的 json 结构，可以像这样展开书写，便于查看",
+              "@comment": "complex jsons can be written like this for easy viewing",
               "code": 2000,
               "message": "Hello, World!"
             }
@@ -167,52 +192,62 @@ _在单文件模式下，该文件即为入口文件，但有些变化，将在�
   ]
 }
 ```
-映射配置顶层为 Json 对象，有以下属性 key：
-- `@type`: `MockuMappings` 配置文件类型的标志，用于映射配置时，其值须为 `mappings`；
-- `mappings`: 映射项配置集，其值一般为 Json 数组。特别的，如果只有一个映射项，可以不使用 Json 数组而将映射项作为 `mappings` 的直接下级。
-匹配时，从第一个配置项开始从上到下**依次匹配**，匹配到第一个符合映射项就停止，即数组下标越小，映射项优先级越高。
+The top level of a mapping configuration is a json object with following attributes:
+- `@type`: type flag of `MockuMappings` files. when using in the mappings configuration, its value must be `mappings`;
+- `mappings`: a mapping configuration item set whose value is typically a json array. 
+In particular, if there is only one mapping configuration item, you could put the item as the direct child of `mappings`.
+Matching starts from first item and stops at the first matched item, that is, the smaller the array index, 
+the higher the mapping item priority.
 
-_在单文件模式下，须将 `mappings` 中的内容（必须是 Json 数组，无省略写法）作为直接顶层_
+_In single-file mode, the contents of `mappings` (must be json array, no omission) as the direct top level _
 
-#### 映射(mappings)的映射项
-目前映射项中有三个属性配置：`uri`, `method`, `policies`：
+#### Mapping Items in Mappings Configuration
+There are currently three attributes for configuration in the mapping item: `uri`, `method`, `policies`:
 
-- `uri`: Mock 接口的 uri，必须以 `/` 开头，该参数必填；
-- `method`: Mock 接口映射的请求方式，支持所有 [Http/1.1 的请求方式](https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html)。
-该参数非必填，没有填写或者填写 `@any` 时，将会映射所有的请求方式；
-- `policies`: Mock 接口的处理策略配置集，其值一般为 Json 数组。特别的，如果只有一个处理策略项，可以不使用 Json 数组而将处理策略项作为 `policies` 的直接下级。
-执行处理策略项(policy)时，从上到下**依次匹配**，返回匹配到的第一个结果。
+- `uri`: the uri of the mock API, must start with `/`, which is required;
+- `method`: the mock API mapped request method, supports all [Http/1.1 request methods](https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html).
+This attribute is optional. If you do not fill it in or fill it in `@any`, all request methods will be mapped.
+- `policies`: a mapping policy item set whose value is typically a json array. 
+In particular, if there is only one mapping policy item, you could put the item as the direct child of `policies`.
+When processing a policy item, it matches **from top to bottom**, and returns the first result that matches.
 
-需要注意的是，`uri` 和 `method` 上**没有**重复性检查，当出现多个配置时，按照上文提到的优先级进行匹配处理。
+It bears noting that there is no **repeatability check** on `uri` and `method`. 
+When there are multiple pairs of `uri` and `method`, the matching is performed according to the priority mentioned above.
 
-#### 映射项的处理策略项(policy)
-目前处理策略项中有两大属性配置：`when`, `returns`：
+#### Policies in Mappings Configuration
+There are currently two major attributes for configuration in the mapping policy item: `when`, `returns`:
 
-- `when` 类似程序语言中的 `if`。`when` 中为限定策略的条件，可以有多种条件限定。不填写或者填写空 Json 对象，则该处理策略项(policy)**恒真**。
-一个 `when` 中出现多个条件时，所有条件取逻辑“**与**”操作。当 `when` 中约束的条件满足时，即匹配成功，此时会执行 `returns` 命令。
-`when` 中的限定条件均为选填，目前有如下限定条件：
+- `when` is similar to `if` in the programming language. `when` defines a variety of conditions to limits policies. 
+If you do not fill it in or fill it in an empty json object, then the mapping policy item is **always true**.
+If there are multiple conditions in a single `when`, all conditions take a logical "** and **" operation. 
+When the conditions in `when` is satisfied, the match is successful and the `returns` command is executed.
+The conditions in `when` are optional. Currently we have the following conditions:
 
-| **条件** | **说明** | **示例** |
+| **Condition** | **Description** | **Example** |
 |--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
-| `params` | （选填）匹配请求中的 Url 参数，形如 `/uri?key=value`；<br>或是匹配 POST、PUT、DELETE 且`Content-Type` 为 `application/x-www-form-urlencoded` 的参数；<br> 其形式为 Json 对象，其中 key 为参数名称，value 为参数值；<br>需要匹配多个同名参数时，value 须为 Json 数组| `"params": {"value1": [1, 2], "value2": 2}` |
-| `headers` | （选填）匹配请求头中的参数，其形式和 `params` 相同，同样支持一个或多个参数值 | `"headers": { "Authorization": "Basic a3VtYXN1a2UxMjAvcGEkJHcwcmQ=" }` |
+| `params` | (Optional) matches the url parameters in the request, in the form of `/uri?key=value`; <br>or matches POST, PUT, DELETE method with `Content-Type` of `application/x-www-form-urlencoded`; <br> it is of form json object, where key is the parameter name and value is the parameter value; <br> when you need to match multiple parameters with the same name, the value must be a json array | `"params": {"value1": [1, 2], "value2": 2}` |
+| `headers` | (Optional) matches the parameters in the request headers in the same form as `params`, which also supports one or more parameter values. | `"headers": { "Authorization": "Basic a3VtYXN1a2UxMjAvcGEkJHcwcmQ=" }` |
 
-- `returns` 指定了 `when` 匹配后的返回内容，`returns` 中有如下参数：
+- `returns` specifies the return value if the `when` matches, and the `returns` has the following parameters:
 
-| **参数** | **说明** | **示例** |
+| **Condition** | **Description** | **Example** |
 |------------|--------------------------------|----------------------------------------------------|
-| `statusCode` | （选填，默认 200）Http 状态码 | `503` |
-| `headers` | （选填）Http 响应头 | `"Content-Type": "text/html"` |
-| `body` | （选填，默认为 ""）Http 响应体，可以为字符串，也可以是展开的 Json 对象或数组 | `"{\"code\": 2000, \"message\": \"Hello, World!\"}"` |
+| `statusCode` | (Optional, default 200) Http status code | `503` |
+| `headers` | (Optional) Http response header | `"Content-Type": "text/html"` |
+| `body` | (Optional, default "") Http response body, either a string or an expanded json object or array | `"{\"code\": 2000, \"message\": \"Hello, World!\"}"` |
 
-此外，`body` 中支持 `@file` 文件指令。该指令指定一个文件路径（相对路径是相对 `mapfile` 所在目录），并读取其内容作为该参数的值。
-推荐在**返回体较大**时使用该指令，可以使得配置文件更加简洁。
+In addition, the `@file` file directive is supported in `body`. 
+This directive specifies a file path (the relative path is relative to the directory where `mapfile` is located) 
+and reads its contents as the value of this parameter.
+It is recommended to use this command when the **return body is large**, which can make the configuration file more concise.
 
 
-### 示例配置返回展示
-使用默认配置以及上述的多文件示例配置，在本地启动 MocKuma，使用 Http 工具请求并记录运行结果如下（与具体结果可能有细节上的差异，如时间，MocKuma 版本等）：
+### Sample Responses of Example Configurations
+You could use the default configuration and the multi-file example configuration above, start MocKuma locally, 
+take a Http tool to request and log the results as follows
+(there may be some differences with your responses, such as time, MocKuma version, etc.):
 
-- 请求 `POST http://localhost:3214/api/hello?lang=cn&lang=en`，返回：
+- Request `POST http://localhost:3214/api/hello?lang=cn&lang=en`, it returns:
 ```
 HTTP/1.1 200 OK
 Server: HelloMock/1.0
@@ -223,7 +258,7 @@ Content-Type: text/plain; charset=utf-8
 {"code": 2000, "message": "Hello, 世界!"}
 ```
 
-- 请求 `GET http://localhost:3214/api/books?page=2&perPage=20`，返回：
+- Request `GET http://localhost:3214/api/books?page=2&perPage=20`, it returns:
 ```
 HTTP/1.1 200 OK
 Content-Type: application/json; charset=utf8
@@ -231,10 +266,10 @@ Server: MocKuma/1.1.0
 Date: Sun, 17 Nov 2019 18:09:52 GMT
 Content-Length: 531
 
-<文件 'books-page2.json' 的内容>
+<The conetent of 'books-page2.json'>
 ```
 
-- 请求 `DELETE http://localhost:3214/api/notexists`，返回：
+- Request `DELETE http://localhost:3214/api/notexists`, it returns:
 ```
 HTTP/1.1 404 Not Found
 Content-Type: application/json; charset=utf8
@@ -248,7 +283,7 @@ Content-Length: 43
 }
 ```
 
-- 请求 `GET http://localhost:3214/whoami`，返回：
+- Request `GET http://localhost:3214/whoami`, it returns:
 ```
 HTTP/1.1 200 OK
 Server: MocKuma/1.1.0
@@ -269,15 +304,17 @@ Content-Type: text/html; charset=utf-8
 
 
 
-## `MockuMappings` 模板引擎
-`1.1.0` 版本起，MocKuma 添加了模板引擎，模板声明时可以使用占位符(placeholder)引用变量，在应用模板时将套用给定变量值动态生成。
+## `MockuMappings` Template Engine
+From `v1.1.0`, MocKuma adds a template engine. 
+When you declare a template, you could use placeholders to reference variables. When applying this kind of template, 
+MocKuma will generate dynamically using given variable sets.
 
+### Template Declaration Configurations
+Template declaration configuration file declares and defines a new template.
+It is recommended to use `.template.json` as a suffix for this type of file.
+You may click [here](example/multi-file/template/login-policy.template.json) to view the example file.
 
-### 模板声明(template)配置
-模板声明(template)配置文件声明并定义一个新的模板，推荐使用 `.template.json` 作为该类型文件的后缀。
-可以[点此](example/multi-file/template/login-policy.template.json)查看示例文件。
-
-以下是模板声明配置的基本样式：
+The following are the basic structures of the template declaration configuration:
 ```json
 {
   "@type": "template",
@@ -295,7 +332,7 @@ Content-Type: text/html; charset=utf-8
         "Content-Type": "application/json; charset=utf8"
       },
       "body": {
-        "@comment": "'@{}' 是 @vars 的占位符",
+        "@comment": "'@{}' is the placeholder for @vars",
         "code": 2000,
         "message": "Welcome, @{username}!"
       }
@@ -303,23 +340,23 @@ Content-Type: text/html; charset=utf-8
   }
 }
 ```
-模板声明配置顶层为 Json 对象，有以下属性 key：
-- `@type`: `MockuMappings` 配置文件类型的标志，用于模板声明配置时，其值须为 `template`；
-- `template`: 模板具体内容。支持字符串、Json 对象、Json 数组。
+The top level of a template declaration configuration is a json object with following attributes:
+- `@type`: type flag of `MockuMappings` files. when using in the template declaration configuration, its value must be `template`;
+- `template`: the content for the actual template,  supports strings, json objects, json arrays.
 
-#### 模板声明中的占位符
-在模板声明中，可以在任意位置、任意层级使用占位符 `@{varName}` 引用变量，其中 `varName` 为变量名。
-特别的，如果想要在模板中直接展示 `@{varName}` 而不进行替换，可以**双写** `@` 进行转义（`@@{varName}`）。
+#### Placeholders in Template Declaration
+In template declaration, you could reference variables at any level, any position with the placeholder `@{varName}`.
+The `varName` in the placeholder is variable name.
+In particular, if you want to display `@{varName}` directly in the template without replacing it,
+you can ** double write ** `@` to escape (`@@{varName}`).
 
-如果占位符是字符串的一部分，渲染模板时，对应引用的变量值将被转换为**字符串拼接**到原字符串上。
-如果整个字符串中仅有一个占位符，渲染模板时，对应引用的变量值将**直接替换**到占位符的位置，**变量类型不变**。
 
+### Vars Definition Configurations
+Vars definition configuration file defines a series of variables and their actual values..
+It is recommended to use `.vars.json` as a suffix for this type of file.
+You may click [here](example/multi-file/vars/login-policy.vars.json) to view the example file.
 
-### 变量定义(vars)配置
-变量定义(vars)配置文件定义了一系列变量和它们具体的值，推荐使用 `.vars.json` 作为该类型文件的后缀。
-可以[点此](example/multi-file/vars/login-policy.vars.json)查看示例文件。
-
-以下是变量定义配置的基本样式：
+The following are the basic structures of the vars definition configuration:
 ```json
 {
   "@type": "vars",
@@ -339,14 +376,17 @@ Content-Type: text/html; charset=utf-8
   ]
 }
 ```
-变量定义配置顶层为 Json 对象，有以下属性 key：
-- `@type`: `MockuMappings` 配置文件类型的标志，用于变量定义配置时，其值须为 `vars`；
-- `vars`: 变量定义项集，其值一般为 Json 数组。特别的，如果只有一个变量定义项，可以不使用 Json 数组而将变量定义项作为 `vars` 的直接下级。
-每个变量定义项都是一个 Json 对象，对象的 key 是变量名，变量名须**以字母开头，之后可以接字母与数字**，即变量名须符合正则表达式 `/[a-z][a-z\d]*/i`。
+The top level of a vars definition configuration is a json object with following attributes:
+- `@type`: type flag of `MockuMappings` files. when using in the vars definition configuration, its value must be `vars`;
+- `vars`: a var definition item set whose value is typically a json array. 
+In particular, if there is only one mapping policy item, you could put the item as the direct child of `vars`.
+Each var definition item is a json object, the key of the object is the variable name, 
+the variable name must **begin with a letter, following with the letters and numbers**, that is, 
+the variable name must matches the regular expression `/[az][ Az\d]*/i`.
 
-
-### 模板(template)应用
-声明模板并定义好变量后，就可以应用模板了，以下是应用模板的示例：
+### Template Applying
+Once you have declared the template and defined the variables, 
+you can apply the template. Here is an example of an application template:
 ```json
 {
   "@type": "mappings",
@@ -367,35 +407,46 @@ Content-Type: text/html; charset=utf-8
   ]
 }
 ```
-应用模板时，需要在一个单独的 Json 对象中使用 `@template` 模板应用指令，**不能在最顶层**使用模板应用指令。
-应用模板时必须使用 `vars` 属性或 `@vars` 指令指定模板对应的变量。`vars` 属性的具体配置同变量定义(vars)配置中对应属性一致。
+When applying a template, you need to use the `@template` template application directive in a separate json object, 
+you can't use the template application directive **at the top level**.
+When applying a template, you must use the `vars` attribute or the `@vars` directive to specify the variable 
+corresponding to the template. The specific configuration of the `vars` attribute is consistent with the corresponding 
+attribute in the vars definition configuration.
 
-应用模板后，模板中的占位符将会被按照一定规则以变量值替换并生成对应 Json 结构。
-生成 Json 结构之后，Json 结构将会被放置在 `@template` 模板**应用指令所在的位置**。
+After applying the template, the placeholders in the template will be replaced with variable values 
+according to certain rules and a corresponding json structure will be generated.
+After generating the json structure, the json structure will be placed in the location **where the ` template`
+template** applying directive is located.
 
-#### 模板渲染结果的放置方式
-由于变量定义时可以定义多组，且可以在不同的位置应用模板，模板渲染时有一些特殊的规则。
+#### Placements of Templates Rendering Results
+Since we could define multiple groups of variables, and we could apply template te at almost any position, there
+are some special rules MocKuma will follow when rendering templates.
 
-模板渲染的样式和其应用模板时指定的变量组数有关，变量有多少组，模板就会渲染多少次。
+The rendering of template is related to the number of variable groups you specify when applying the template. 
+The template renders as many times as the number of groups of variables.
 
-- 当在 Json 数组中应用模板时，无论有多少组变量，模板渲染的结果将**直接插入** `@template` 模板应用指令所在的对应位置。
-- 当在 Json 对象中应用模板时，如果变量只有一组，渲染结果将会以模板原样放置；如果存在多组，所有渲染结果将会被**放入一个 Json 数组**中再放置到对应位置。
+- When applying templates in the json array, no matter how many groups of variables there are, 
+the result of template rendering **will be directly inserted into the corresponding position** of `@template`' 
+template applying directive;
+- When a template is applied in a json object, if there is only one group of variables, 
+the rendering results will be placed as where the template places; if there are multiple groups, 
+all the rendering results will be **put into a json array** and then placed in the corresponding location.
 
 
-### 模板引擎使用示例
-假设有如下模板声明，其文件路径为 `template/alphabet-order.template.json`：
+### Sample Usages of Template Engine
+Given the following template declaration, whose path is `template/alphabet-order.template.json`:
 ```json
 {
   "@type": "template",
   "template": {
-    "@comment": "字母大小写以及其序号",
+    "@comment": "the upper and lowe cases of alphabet and its order",
     "alphabet": "@{alphabetUpper}|@{alphabetLower}",
     "order": "@{order}"
   }
 }
 ```
 
-- 如果应用模板方式如下所示：
+- if applying the template as follows:
 ```json
 {
   "@type": "mappings",
@@ -416,7 +467,7 @@ Content-Type: text/html; charset=utf-8
   }
 }
 ```
-则将被渲染成：
+will be rendered as:
 ```json
 {
   "@type": "mappings",
@@ -433,7 +484,7 @@ Content-Type: text/html; charset=utf-8
 }
 ```
 
-- 如果应用模板方式如下所示：
+- if applying the template as follows:
 ```json
 {
   "@type": "mappings",
@@ -449,7 +500,7 @@ Content-Type: text/html; charset=utf-8
   }
 }
 ```
-则将被渲染成：
+will be rendered as:
 ```json
 {
   "@type": "mappings",
