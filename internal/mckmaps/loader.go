@@ -23,7 +23,7 @@ func loadFromFile(filename string, chdir bool) (*MockuMappings, error) {
 		return loadFromDefaultMapfile(mappings, err)
 	}
 
-	filename, err = filepath.Abs(filename)
+	filename, err = filepath.Abs(filename) // gets absolute path before chdir
 	if err != nil {
 		return nil, err
 	}

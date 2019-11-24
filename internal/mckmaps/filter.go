@@ -43,7 +43,7 @@ type filter interface {
 	doFilter(v interface{}, chain *filterChain) error
 }
 
-type commentFilter struct {
+type commentFilter struct { // removes all @comment directives in mockuMappings
 }
 
 func (f *commentFilter) doFilter(v interface{}, chain *filterChain) error {
@@ -65,7 +65,7 @@ func (f *commentFilter) removeComment(v interface{}) {
 	}
 }
 
-type templateFilter struct {
+type templateFilter struct { // rewrites @template directives with given vars
 	templateCache  map[string]*template
 	varsSliceCache map[string][]*vars
 }
@@ -99,7 +99,7 @@ func (f *templateFilter) rewrite(v interface{}) (interface{}, error) {
 }
 
 func (f *templateFilter) rewriteObject(v myjson.Object) (interface{}, error) {
-	if v.Has(dTemplate) {
+	if v.Has(dTemplate) { // if v is a @template directive
 		template, ctx, err := f.getTemplateFromDTemplate(v)
 		if err != nil {
 			return nil, err
@@ -175,7 +175,7 @@ func (f *templateFilter) getTemplateFromDTemplate(v myjson.Object) (*template, *
 func (f *templateFilter) getVarsFromDTemplate(v myjson.Object) ([]*vars, error) {
 	var varsSlice []*vars
 	var err error
-	if v.Has(tVars) {
+	if v.Has(tVars) { // if @template directive has a 'vars' attribute
 		varsSlice, err = new(varsParser).parseVars(v)
 	} else {
 		filename, err := v.GetString(dVars)
@@ -194,7 +194,7 @@ func (f *templateFilter) getVarsFromDTemplate(v myjson.Object) ([]*vars, error) 
 	return varsSlice, err
 }
 
-func (f *templateFilter) reset() {
+func (f *templateFilter) reset() { // clears caches
 	f.templateCache = make(map[string]*template)
 	f.varsSliceCache = make(map[string][]*vars)
 }

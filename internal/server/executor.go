@@ -30,6 +30,7 @@ func (e *policyExecutor) execute() error {
 func (e *policyExecutor) writeHeaders(headers []*mckmaps.NameValuesPair) {
 	outHeader := (*e.w).Header()
 
+	// new headers overrides old ones
 	for _, pair := range headers {
 		if _, ok := outHeader[pair.Name]; ok {
 			outHeader.Del(pair.Name)

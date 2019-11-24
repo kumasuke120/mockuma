@@ -52,10 +52,10 @@ func (p *parser) parse(chdir bool) (*MockuMappings, error) {
 
 	var result *MockuMappings
 	switch json.(type) {
-	case myjson.Object:
+	case myjson.Object: // parses in multi-file mode
 		parser := &mainParser{json: json.(myjson.Object), parser: *p}
 		result, err = parser.parse()
-	case myjson.Array:
+	case myjson.Array: // parses in single-file mode
 		parser := &mappingsParser{json: json, parser: *p}
 		mappings, _err := parser.parse()
 		if _err == nil {
@@ -82,7 +82,7 @@ func (p *parser) load(preprocessors ...filter) (interface{}, error) {
 		return nil, newParserError(p.filename, nil)
 	}
 
-	v, err := doFiltersOnV(json, preprocessors...)
+	v, err := doFiltersOnV(json, preprocessors...) // runs given preprocessors
 	if err != nil {
 		return nil, &loadError{filename: p.filename, err: err}
 	}
@@ -122,7 +122,7 @@ func (p *mainParser) parse() (*MockuMappings, error) {
 		}
 
 		parser := &mappingsParser{parser: parser{filename: string(_filename)}}
-		partOfMappings, err := parser.parse()
+		partOfMappings, err := parser.parse() // parses mappings for each included file
 		if err != nil {
 			return nil, err
 		}
@@ -150,7 +150,7 @@ func (p *mappingsParser) parse() ([]*Mapping, error) {
 
 	var rawMappings myjson.Array
 	switch p.json.(type) {
-	case myjson.Object:
+	case myjson.Object: // parses in multi-file mode
 		p.jsonPath = myjson.NewPath("")
 		jsonObject := p.json.(myjson.Object)
 
@@ -162,7 +162,7 @@ func (p *mappingsParser) parse() ([]*Mapping, error) {
 
 		p.jsonPath.SetLast(tMappings)
 		rawMappings = ensureJsonArray(jsonObject.Get(tMappings))
-	case myjson.Array:
+	case myjson.Array: // parses in single-file mode
 		p.jsonPath = myjson.NewPath()
 		rawMappings = p.json.(myjson.Array)
 	default:

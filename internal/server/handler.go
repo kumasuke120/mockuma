@@ -11,8 +11,8 @@ import (
 
 // default policies
 var (
-	pNotFound         = newStatusJsonPolicy(myhttp.NotFound, "Not Found")
-	pNotPolicyMatched = newStatusJsonPolicy(myhttp.BadRequest, "No policy matched")
+	pNotFound        = newStatusJsonPolicy(myhttp.NotFound, "Not Found")
+	pNoPolicyMatched = newStatusJsonPolicy(myhttp.BadRequest, "No policy matched")
 )
 
 func newStatusJsonPolicy(statusCode myhttp.StatusCode, message string) *mckmaps.Policy {
@@ -51,7 +51,7 @@ func (h *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if policy != nil {
 			executor.policy = policy
 		} else {
-			executor.policy = pNotPolicyMatched
+			executor.policy = pNoPolicyMatched
 		}
 	} else {
 		executor.policy = pNotFound

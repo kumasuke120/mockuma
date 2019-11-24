@@ -94,7 +94,7 @@ func allMatch(expected []*mckmaps.NameValuesPair, actual map[string][]string) bo
 	return true
 }
 
-func valuesMatch(l, r []string) bool {
+func valuesMatch(l, r []string) bool { // tests if two []string share same elements, ignoring the order
 	if len(l) != len(r) {
 		return false
 	}

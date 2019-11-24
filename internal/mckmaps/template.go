@@ -121,6 +121,7 @@ const (
 	rsInVar
 )
 
+// tokens for rendering string
 const (
 	placeholderPrefix = '@'
 	placeholderLeft   = '{'
@@ -194,11 +195,11 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 		}
 	}
 
-	if s != rsReady {
+	if s != rsReady { // placeholder is not complete
 		return nil, &renderError{filename: ctx.filename, jsonPath: jsonPath}
 	}
 
-	if fromBegin && toEnd {
+	if fromBegin && toEnd { // if the whole string is a placeholder
 		varName := nameBuilder.String()
 		if varName == "" {
 			return nil, &renderError{filename: ctx.filename, jsonPath: jsonPath}
