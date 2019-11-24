@@ -4,9 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
-	"os"
-	"path/filepath"
 	"regexp"
 
 	"github.com/kumasuke120/mockuma/internal/myhttp"
@@ -44,21 +41,13 @@ func (e *parserError) Error() string {
 
 type parser struct {
 	filename string
-	chdir    bool
 }
 
-func (p *parser) parse() (*MockuMappings, error) {
+func (p *parser) parse(chdir bool) (*MockuMappings, error) {
 	var json interface{}
 	var err error
 	if json, err = p.load(ppRemoveComment, ppRenderTemplate); err != nil {
 		return nil, err
-	}
-
-	if p.chdir { // only changes once before any actual parsing
-		err = p.chdirBasedOnFilename()
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	var result *MockuMappings
@@ -100,23 +89,6 @@ func (p *parser) load(preprocessors ...filter) (interface{}, error) {
 	return v, nil
 }
 
-func (p *parser) chdirBasedOnFilename() error {
-	abs, err := filepath.Abs(p.filename)
-	if err != nil {
-		return err
-	}
-
-	dir := filepath.Dir(abs)
-	err = os.Chdir(dir)
-	if err != nil {
-		return err
-	}
-
-	log.Println("working directory has been changed to:", dir)
-
-	return nil
-}
-
 func (p *parser) reset() {
 	ppRenderTemplate.reset()
 }
@@ -149,7 +121,7 @@ func (p *mainParser) parse() (*MockuMappings, error) {
 			return nil, newParserError(p.filename, myjson.NewPath(dInclude, tMappings, idx))
 		}
 
-		parser := &mappingsParser{parser: parser{filename: string(_filename), chdir: p.chdir}}
+		parser := &mappingsParser{parser: parser{filename: string(_filename)}}
 		partOfMappings, err := parser.parse()
 		if err != nil {
 			return nil, err
