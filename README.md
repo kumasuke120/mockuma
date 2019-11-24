@@ -26,7 +26,7 @@ $ cd bin && ./mockuma
 1. `-mapfile`: `MockuMappings` 映射配置文件路径，支持相对路径和绝对路径。特别的，MocKuma 的工作目录将会被设为该配置文件所在目录。
 默认情况下，将会依次寻找当前目录下名为 `mockuMappings.json`，`mockuMappings.main.json` 的配置文件并读取加载；
 2. `-p`: MocKuma 监听端口号，默认值为 `3214`；
-3. `--help`: 查看帮助，帮助内容文本为英文；
+3. `--help`: 查看命令行参数帮助，帮助内容文本为英文；
 4. `--version`: 查看当前 MocKuma 的版本信息。
 
 
