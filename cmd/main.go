@@ -14,6 +14,7 @@ const (
 	versionNumber = "1.1.0"
 	author        = "kumasuke120<bearcomingx@gmail.com>"
 	github        = "https://github.com/kumasuke120/mockuma"
+	gitee         = "https://github.com/kumasuke120/mockuma"
 )
 
 var port = flag.Int("p", 3214,
@@ -50,4 +51,5 @@ func printVersion() {
 	fmt.Printf("Version\t: %s\n", versionNumber)
 	fmt.Printf("Author\t: %s\n", author)
 	fmt.Printf("GitHub\t: %s\n", github)
+	fmt.Printf("Gitee\t: %s\n", gitee)
 }
