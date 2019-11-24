@@ -14,7 +14,7 @@ const (
 	versionNumber = "1.1.0"
 	author        = "kumasuke120<bearcomingx@gmail.com>"
 	github        = "https://github.com/kumasuke120/mockuma"
-	gitee         = "https://github.com/kumasuke120/mockuma"
+	gitee         = "https://gitee.com/kumasuke/mockuma"
 )
 
 var port = flag.Int("p", 3214,
