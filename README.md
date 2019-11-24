@@ -415,7 +415,7 @@ attribute in the vars definition configuration.
 
 After applying the template, the placeholders in the template will be replaced with variable values 
 according to certain rules and a corresponding json structure will be generated.
-After generating the json structure, the json structure will be placed in the location **where the ` template`
+After generating the json structure, the json structure will be placed in the location **where the `@template`
 template** applying directive is located.
 
 #### Placements of Templates Rendering Results
@@ -426,7 +426,7 @@ The rendering of template is related to the number of variable groups you specif
 The template renders as many times as the number of groups of variables.
 
 - When applying templates in the json array, no matter how many groups of variables there are, 
-the result of template rendering **will be directly inserted into the corresponding position** of `@template`' 
+the result of template rendering **will be directly inserted into the corresponding position** of `@template`
 template applying directive;
 - When a template is applied in a json object, if there is only one group of variables, 
 the rendering results will be placed as where the template places; if there are multiple groups, 
