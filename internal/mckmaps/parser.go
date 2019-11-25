@@ -91,6 +91,7 @@ func (p *parser) load(preprocessors ...filter) (interface{}, error) {
 
 func (p *parser) reset() {
 	ppRenderTemplate.reset()
+	ppLoadFile.reset()
 }
 
 type mainParser struct {
@@ -337,46 +338,31 @@ func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
 }
 
 func (p *mappingsParser) parseBody(v interface{}) ([]byte, error) {
+	v, err := doFiltersOnV(v, ppLoadFile)
+	if err != nil {
+		return nil, err
+	}
+
 	switch v.(type) {
 	case nil:
 		return nil, nil
 	case myjson.String:
 		return []byte(string(v.(myjson.String))), nil
 	case myjson.Object:
-		if ok, bytes, err := p.parseDirectiveFile(v.(myjson.Object)); ok {
-			if err != nil {
-				return nil, err
-			} else {
-				return bytes, nil
-			}
-		} else {
-			bytes, err := myjson.Marshal(v)
-			if err != nil {
-				return nil, newParserError(p.filename, p.jsonPath)
-			}
-			return bytes, nil
-		}
+		return p.parseJsonToBytes(v)
 	case myjson.Array:
-		bytes, err := myjson.Marshal(v)
-		if err != nil {
-			return nil, newParserError(p.filename, p.jsonPath)
-		}
-		return bytes, nil
+		return p.parseJsonToBytes(v)
 	}
 
 	return nil, newParserError(p.filename, p.jsonPath)
 }
 
-func (p *mappingsParser) parseDirectiveFile(v myjson.Object) (bool, []byte, error) {
-	dFileValue, err := v.GetString(dFile)
-	if err == nil {
-		bytes, err := ioutil.ReadFile(string(dFileValue))
-		if err != nil {
-			return true, nil, err
-		}
-		return true, bytes, nil
+func (p *mappingsParser) parseJsonToBytes(v interface{}) ([]byte, error) {
+	bytes, err := myjson.Marshal(v)
+	if err != nil {
+		return nil, newParserError(p.filename, p.jsonPath)
 	}
-	return false, nil, nil
+	return bytes, nil
 }
 
 type templateParser struct {
