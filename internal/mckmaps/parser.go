@@ -22,6 +22,7 @@ func (e *loadError) Error() string {
 type parserError struct {
 	filename string
 	jsonPath *myjson.Path
+	err      error
 }
 
 func (e *parserError) Error() string {
@@ -34,6 +35,10 @@ func (e *parserError) Error() string {
 
 	if e.filename != "" {
 		result += fmt.Sprintf(" in the file '%s'", e.filename)
+	}
+
+	if e.err != nil {
+		result += ": " + e.err.Error()
 	}
 
 	return result
@@ -284,7 +289,16 @@ func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 		if err != nil {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
-		when.Headers = parseAsNameValuesPairs(rawHeaders)
+
+		normalHeaders, regexpHeaders := divideNormalsAndRegexps(rawHeaders)
+		when.Headers = parseAsNameValuesPairs(normalHeaders)
+		regexpPairs, err := parseAsNameRegexpPairs(regexpHeaders)
+		if err != nil {
+			newErr := newParserError(p.filename, p.jsonPath)
+			newErr.err = err
+			return nil, newErr
+		}
+		when.HeaderRegexps = regexpPairs
 	}
 
 	p.jsonPath.SetLast(pParams)
@@ -293,7 +307,16 @@ func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 		if err != nil {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
-		when.Params = parseAsNameValuesPairs(rawParams)
+
+		normalParams, regexpParams := divideNormalsAndRegexps(rawParams)
+		when.Params = parseAsNameValuesPairs(normalParams)
+		regexpPairs, err := parseAsNameRegexpPairs(regexpParams)
+		if err != nil {
+			newErr := newParserError(p.filename, p.jsonPath)
+			newErr.err = err
+			return nil, newErr
+		}
+		when.ParamRegexps = regexpPairs
 	}
 
 	p.jsonPath.RemoveLast()
@@ -480,6 +503,35 @@ func ensureJsonArray(v interface{}) myjson.Array {
 	}
 }
 
+func divideNormalsAndRegexps(v myjson.Object) (myjson.Object, myjson.Object) {
+	normals := make(myjson.Object)
+	regexps := make(myjson.Object)
+
+	for name, rawValue := range v {
+		var normV myjson.Array
+
+		for _, rV := range ensureJsonArray(rawValue) { // divides normals and regexps
+			switch rV.(type) {
+			case myjson.Object:
+				_rV := rV.(myjson.Object)
+				if rV.(myjson.Object).Has(dRegexp) {
+					if _, ok := regexps[name]; !ok { // only first @regexp is effective
+						regexps[name] = _rV
+					}
+					continue
+				}
+			}
+			normV = append(normV, rV)
+		}
+
+		if len(normV) != 0 {
+			normals[name] = normV
+		}
+	}
+
+	return normals, regexps
+}
+
 func parseAsNameValuesPairs(o myjson.Object) []*NameValuesPair {
 	var pairs []*NameValuesPair
 	for name, rawValues := range o {
@@ -511,6 +563,41 @@ func parseAsNameValuesPair(n string, v myjson.Array) *NameValuesPair {
 	pair.Values = values
 
 	return pair
+}
+
+func parseAsNameRegexpPairs(o myjson.Object) ([]*NameRegexpPair, error) {
+	var pairs []*NameRegexpPair
+	for name, rawValue := range o {
+		value, err := myjson.ToObject(rawValue)
+		if err != nil {
+			return nil, err
+		}
+		pair, err := parseAsNameRegexpPair(name, value)
+		if err != nil {
+			return nil, err
+		}
+
+		pairs = append(pairs, pair)
+	}
+	return pairs, nil
+}
+
+func parseAsNameRegexpPair(n string, v myjson.Object) (*NameRegexpPair, error) {
+	regexpStr, err := v.GetString(dRegexp)
+	if err != nil {
+		return nil, err
+	}
+
+	_regexp, err := regexp.Compile(string(regexpStr))
+	if err != nil {
+		return nil, err
+	}
+
+	pair := new(NameRegexpPair)
+	pair.Name = n
+	pair.Regexp = _regexp
+
+	return pair, nil
 }
 
 var varNameRegexp = regexp.MustCompile("(?i)[a-z][a-z\\d]*")

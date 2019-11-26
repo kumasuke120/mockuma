@@ -1,6 +1,10 @@
 package mckmaps
 
-import "github.com/kumasuke120/mockuma/internal/myhttp"
+import (
+	"regexp"
+
+	"github.com/kumasuke120/mockuma/internal/myhttp"
+)
 
 type MockuMappings struct {
 	Mappings []*Mapping
@@ -18,8 +22,10 @@ type Policy struct {
 }
 
 type When struct {
-	Headers []*NameValuesPair
-	Params  []*NameValuesPair
+	Headers       []*NameValuesPair
+	Params        []*NameValuesPair
+	HeaderRegexps []*NameRegexpPair
+	ParamRegexps  []*NameRegexpPair
 }
 
 type Returns struct {
@@ -31,6 +37,11 @@ type Returns struct {
 type NameValuesPair struct {
 	Name   string
 	Values []string
+}
+
+type NameRegexpPair struct {
+	Name   string
+	Regexp *regexp.Regexp
 }
 
 func (m *MockuMappings) GetUriWithItsMethods() map[string][]myhttp.HttpMethod {

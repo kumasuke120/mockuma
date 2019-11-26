@@ -14,6 +14,7 @@ const (
 	dComment  = "@comment"
 	dTemplate = "@template"
 	dVars     = "@vars"
+	dRegexp   = "@regexp"
 )
 
 const (
