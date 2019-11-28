@@ -3,6 +3,7 @@ package mckmaps
 import (
 	"errors"
 	"io/ioutil"
+	"regexp"
 
 	"github.com/kumasuke120/mockuma/internal/myjson"
 )
@@ -12,6 +13,7 @@ var (
 	ppRemoveComment  = &commentFilter{}
 	ppRenderTemplate = makeTemplateFilter()
 	ppLoadFile       = makeLoadFileFilter()
+	ppParseRegexp    = makeParseRegexpFilter()
 )
 
 func doFiltersOnV(v interface{}, filters ...filter) (interface{}, error) {
@@ -296,4 +298,81 @@ func (f *loadFileFilter) loadForArray(v myjson.Array) (interface{}, error) {
 
 func (f *loadFileFilter) reset() {
 	f.fileCache = make(map[string][]byte)
+}
+
+type parseRegexpFilter struct {
+	regexpCache map[string]*regexp.Regexp
+}
+
+func makeParseRegexpFilter() *parseRegexpFilter {
+	f := new(parseRegexpFilter)
+	f.reset()
+	return f
+}
+
+func (f *parseRegexpFilter) doFilter(v interface{}, chain *filterChain) error {
+	rV, err := f.parse(v)
+	if err != nil {
+		return err
+	}
+	return chain.doFilter(rV)
+}
+
+func (f *parseRegexpFilter) parse(v interface{}) (interface{}, error) {
+	var rV interface{}
+	var err error
+	switch v.(type) {
+	case myjson.Object:
+		rV, err = f.parseForObject(v.(myjson.Object))
+	default:
+		rV, err = v, nil
+	}
+	return rV, err
+}
+
+func (f *parseRegexpFilter) parseForObject(v myjson.Object) (interface{}, error) {
+	if v.Has(dRegexp) {
+		pattern, err := v.GetString(dRegexp)
+		if err != nil {
+			return nil, errors.New("cannot read regexp pattern from " + dRegexp)
+		}
+
+		_pattern := string(pattern)
+		var r *regexp.Regexp
+		var ok bool
+		if r, ok = f.regexpCache[_pattern]; !ok {
+			r, err = regexp.Compile(_pattern)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		return r, nil
+	} else {
+		rV := make(myjson.Object)
+		for name, value := range v {
+			rValue, err := f.parse(value)
+			if err != nil {
+				return nil, err
+			}
+			rV[name] = rValue
+		}
+		return rV, nil
+	}
+}
+
+func (f *parseRegexpFilter) parseForArray(v myjson.Array) (interface{}, error) {
+	rV := make(myjson.Array, len(v))
+	for idx, value := range v {
+		rValue, err := f.parse(value)
+		if err != nil {
+			return nil, err
+		}
+		rV[idx] = rValue
+	}
+	return rV, nil
+}
+
+func (f *parseRegexpFilter) reset() {
+	f.regexpCache = make(map[string]*regexp.Regexp)
 }
