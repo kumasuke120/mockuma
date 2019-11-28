@@ -202,7 +202,7 @@ func (f *templateFilter) reset() { // clears caches
 }
 
 type fromTemplate struct {
-	rV []interface{}
+	rV myjson.Array
 }
 
 func (ft fromTemplate) forObject() interface{} {
