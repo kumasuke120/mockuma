@@ -20,8 +20,10 @@
         {
           "when": {
             "headers": {
-              "@comment": "use regexp /^.+$/ to match header 'Authorization' (not implemented yet, may change)",
-              "Authorization": "@regexp{^.+$}"
+              "@comment": "use regexp /^Basic [a-z0-9=]+$/i to match header 'Authorization'",
+              "Authorization": {
+                "@regexp": "(?i)Basic [a-z0-9=]+"
+              }
             }
           },
           "returns": {

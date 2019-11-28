@@ -39,12 +39,12 @@ type vars struct {
 	table map[string]interface{}
 }
 
-func (t *template) render(ctx *renderContext, varsSlice []*vars) ([]interface{}, error) {
+func (t *template) render(ctx *renderContext, varsSlice []*vars) (myjson.Array, error) {
 	if len(varsSlice) == 0 {
-		return []interface{}{}, nil
+		return myjson.Array{}, nil
 	}
 
-	result := make([]interface{}, len(varsSlice))
+	result := make(myjson.Array, len(varsSlice))
 	for idx, _var := range varsSlice {
 		v, err := render(ctx, nil, t.content, _var)
 		if err != nil {

@@ -11,7 +11,7 @@ import (
 
 const (
 	appName       = "MocKuma"
-	versionNumber = "1.1.0"
+	versionNumber = "1.1.1"
 	author        = "kumasuke120<bearcomingx@gmail.com>"
 	github        = "https://github.com/kumasuke120/mockuma"
 	gitee         = "https://gitee.com/kumasuke/mockuma"

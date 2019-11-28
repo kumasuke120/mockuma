@@ -79,7 +79,7 @@ When it comes to the disparity between single-file and multi-file mode, there wi
 
 
 ### Commenting Configuration Files
-Because json does not normal comment styles, `MockuMappings` provides a way to comment on your configuration file:
+Because json does not have normal comment styles, `MockuMappings` provides a way to comment on your configuration file:
 ```json
 {
   "@type": "...",

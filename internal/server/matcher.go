@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 
 	"github.com/kumasuke120/mockuma/internal/mckmaps"
 )
@@ -74,6 +75,12 @@ func (bm *boundMatcher) matchPolicy() *mckmaps.Policy {
 			if !allMatch(when.Headers, bm.r.Header) {
 				continue
 			}
+			if !regexpAllMatch(when.ParamRegexps, bm.r.Form) {
+				continue
+			}
+			if !regexpAllMatch(when.HeaderRegexps, bm.r.Header) {
+				continue
+			}
 		}
 
 		policy = p
@@ -83,10 +90,10 @@ func (bm *boundMatcher) matchPolicy() *mckmaps.Policy {
 }
 
 func allMatch(expected []*mckmaps.NameValuesPair, actual map[string][]string) bool {
-	for _, param := range expected {
-		formValues := actual[param.Name]
+	for _, e := range expected {
+		formValues := actual[e.Name]
 
-		if !valuesMatch(param.Values, formValues) {
+		if !valuesMatch(e.Values, formValues) {
 			return false
 		}
 	}
@@ -116,4 +123,25 @@ func valuesMatch(l, r []string) bool { // tests if two []string share same eleme
 	}
 
 	return len(diff) == 0
+}
+
+func regexpAllMatch(expected []*mckmaps.NameRegexpPair, actual map[string][]string) bool {
+	for _, e := range expected {
+		formValues := actual[e.Name]
+
+		if !regexpAnyMatches(e.Regexp, formValues) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func regexpAnyMatches(r *regexp.Regexp, values []string) bool {
+	for _, v := range values {
+		if r.Match([]byte(v)) {
+			return true
+		}
+	}
+	return false
 }
