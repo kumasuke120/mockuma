@@ -1,6 +1,7 @@
 package mckmaps
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -117,15 +118,18 @@ func renderArray(ctx *renderContext, jsonPath *myjson.Path,
 // states for rendering string
 const (
 	rsReady = iota
-	rsMaybeVar
-	rsInVar
+	rsMaybePlaceholder
+	rsInPlaceholder
+	rsMaybePlaceHolderFormat
+	rsInPlaceHolderFormat
 )
 
 // tokens for rendering string
 const (
-	placeholderPrefix = '@'
-	placeholderLeft   = '{'
-	placeholderRight  = '}'
+	placeholderPrefix          = '@'
+	placeholderLeft            = '{'
+	placeholderRight           = '}'
+	placeholderFormatSeparator = ':'
 )
 
 func renderString(ctx *renderContext, jsonPath *myjson.Path,
@@ -138,15 +142,18 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 
 	var builder strings.Builder
 	var nameBuilder strings.Builder
+	var formatBuilder strings.Builder
+
 	for i := 0; i < len(runes); i++ {
 		r := runes[i]
 		doWrite := true
 		doWriteName := false
+		doWriteFormat := false
 
 		switch s {
 		case rsReady:
 			if r == placeholderPrefix {
-				s = rsMaybeVar
+				s = rsMaybePlaceholder
 				if i == 0 {
 					fromBegin = true
 				} else {
@@ -154,9 +161,9 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 				}
 				doWrite = false
 			}
-		case rsMaybeVar:
+		case rsMaybePlaceholder:
 			if r == placeholderLeft {
-				s = rsInVar
+				s = rsInPlaceholder
 				doWrite = false
 			} else {
 				s = rsReady
@@ -167,7 +174,7 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 					fromBegin = false
 				}
 			}
-		case rsInVar:
+		case rsInPlaceholder:
 			doWrite = false
 			if r == placeholderRight {
 				s = rsReady
@@ -175,15 +182,37 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 					toEnd = true
 				} else {
 					varName := nameBuilder.String()
-					v, err := renderTextString(ctx, jsonPath, vars, varName)
+					varFormat := formatBuilder.String()
+					if varName == "" {
+						return "", &renderError{filename: ctx.filename, jsonPath: jsonPath}
+					}
+
+					v, err := renderTextString(vars, varName, varFormat)
 					if err != nil {
-						return nil, err
+						return nil, &renderError{filename: ctx.filename, jsonPath: jsonPath}
 					}
 					builder.WriteString(v)
 					nameBuilder.Reset()
+					formatBuilder.Reset()
 				}
+			} else if r == placeholderFormatSeparator {
+				s = rsMaybePlaceHolderFormat
 			} else {
 				doWriteName = true
+			}
+		case rsMaybePlaceHolderFormat:
+			if r == placeholderRight { // same as empty format, state rolls back
+				s = rsInPlaceholder
+			} else {
+				s = rsInPlaceHolderFormat
+			}
+			i -= 1 // goes back for other state to process
+		case rsInPlaceHolderFormat:
+			if r == placeholderRight { // end of placeholder
+				s = rsInPlaceholder
+				i -= 1
+			} else {
+				doWriteFormat = true
 			}
 		}
 
@@ -192,6 +221,9 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 		}
 		if doWriteName {
 			nameBuilder.WriteRune(r)
+		}
+		if doWriteFormat {
+			formatBuilder.WriteRune(r)
 		}
 	}
 
@@ -212,21 +244,25 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 	return myjson.String(builder.String()), nil
 }
 
-func renderTextString(ctx *renderContext, jsonPath *myjson.Path,
-	vars *vars, varName string) (string, error) {
-	if varName == "" {
-		return "", &renderError{filename: ctx.filename, jsonPath: jsonPath}
-	}
-
+func renderTextString(vars *vars, varName string, varFormat string) (string, error) {
 	varV := vars.table[varName]
 	switch varV.(type) {
 	case myjson.String:
-		return fmt.Sprintf("%s", string(varV.(myjson.String))), nil
+		if varFormat == "" {
+			varFormat = "%s"
+		}
+		return fmt.Sprintf(varFormat, string(varV.(myjson.String))), nil
 	case myjson.Number:
-		return fmt.Sprintf("%v", varV), nil
+		if varFormat == "" {
+			varFormat = "%v"
+		}
+		return fmt.Sprintf(varFormat, varV), nil
 	case myjson.Boolean:
-		return fmt.Sprintf("%v", varV), nil
+		if varFormat == "" {
+			varFormat = "%v"
+		}
+		return fmt.Sprintf(varFormat, varV), nil
 	default:
-		return "", &renderError{filename: ctx.filename, jsonPath: jsonPath}
+		return "", errors.New("invalid json type for template rendering")
 	}
 }
