@@ -602,7 +602,7 @@ func parseVars(v myjson.Object) (*vars, error) {
 	vars := new(vars)
 	table := make(map[string]interface{})
 	for name, value := range v {
-		if !varNameRegexp.Match([]byte(name)) {
+		if !varNameRegexp.MatchString(name) {
 			return nil, errors.New("invalid name for var")
 		}
 		table[name] = value

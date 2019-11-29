@@ -3,6 +3,7 @@ package mckmaps
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/kumasuke120/mockuma/internal/myjson"
@@ -221,6 +222,7 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 				doWriteName = true
 			}
 		case rsMaybePlaceHolderFormat:
+			doWrite = false
 			if r == placeholderRight { // same as empty format, state rolls back
 				s = rsInPlaceholder
 			} else {
@@ -228,6 +230,7 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 			}
 			i -= 1 // goes back for other state to process
 		case rsInPlaceHolderFormat:
+			doWrite = false
 			if r == placeholderRight { // end of placeholder
 				s = rsInPlaceholder
 				i -= 1
@@ -264,8 +267,15 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 	return myjson.String(builder.String()), nil
 }
 
+var validVarFormat = regexp.MustCompile("^%([-+@0 ])?(\\d+)?\\.?(\\d+)?[tdeEfgsqxX]$")
+
 func renderTextString(vars *vars, varName string, varFormat string) (string, error) {
 	varV := vars.table[varName]
+
+	if varFormat != "" && !validVarFormat.MatchString(varFormat) {
+		return "", errors.New("invalid format for var")
+	}
+
 	switch varV.(type) {
 	case myjson.String:
 		if varFormat == "" {
@@ -274,14 +284,17 @@ func renderTextString(vars *vars, varName string, varFormat string) (string, err
 		return fmt.Sprintf(varFormat, string(varV.(myjson.String))), nil
 	case myjson.Number:
 		if varFormat == "" {
-			varFormat = "%v"
+			return fmt.Sprintf("%v", varV), nil
+		} else if varFormat[len(varFormat)-1] == 'd' {
+			return fmt.Sprintf(varFormat, int(float64(varV.(myjson.Number)))), nil
+		} else {
+			return fmt.Sprintf(varFormat, float64(varV.(myjson.Number))), nil
 		}
-		return fmt.Sprintf(varFormat, varV), nil
 	case myjson.Boolean:
 		if varFormat == "" {
 			varFormat = "%v"
 		}
-		return fmt.Sprintf(varFormat, varV), nil
+		return fmt.Sprintf(varFormat, bool(varV.(myjson.Boolean))), nil
 	default:
 		return "", errors.New("invalid json type for template rendering")
 	}
