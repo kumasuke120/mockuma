@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/kumasuke120/mockuma/internal/myjson"
+	"github.com/kumasuke120/mockuma/internal/typeutil"
 )
 
 type renderError struct {
@@ -85,11 +86,15 @@ func renderObject(ctx *renderContext, jsonPath *myjson.Path,
 	for name, value := range v {
 		jsonPath.SetLast(name)
 
+		rName, err := renderPlainString(ctx, jsonPath, name, vars)
+		if err != nil {
+			return nil, err
+		}
 		rValue, err := render(ctx, jsonPath, value, vars)
 		if err != nil {
 			return nil, err
 		}
-		result[name] = rValue
+		result[rName] = rValue
 	}
 
 	jsonPath.RemoveLast()
@@ -131,6 +136,21 @@ const (
 	placeholderRight           = '}'
 	placeholderFormatSeparator = ':'
 )
+
+func renderPlainString(ctx *renderContext, jsonPath *myjson.Path,
+	v string, vars *vars) (string, error) {
+	r, err := renderString(ctx, jsonPath, myjson.String(v), vars)
+	if err != nil {
+		return "", err
+	} else {
+		switch r.(type) {
+		case myjson.String:
+			return string(r.(myjson.String)), nil
+		default:
+			return typeutil.ToString(r), nil
+		}
+	}
+}
 
 func renderString(ctx *renderContext, jsonPath *myjson.Path,
 	v myjson.String, vars *vars) (interface{}, error) {
