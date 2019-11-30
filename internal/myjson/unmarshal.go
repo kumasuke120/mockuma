@@ -2,6 +2,7 @@ package myjson
 
 import (
 	"encoding/json"
+	"regexp"
 )
 
 func Unmarshal(data []byte) (interface{}, error) {
@@ -25,6 +26,8 @@ func toMyJson(v interface{}) interface{} {
 		return String(v.(string))
 	case bool:
 		return Boolean(v.(bool))
+	case *regexp.Regexp:
+		return ExtRegexp(v.(*regexp.Regexp))
 	case Object:
 		return v.(Object)
 	case Array:
@@ -35,6 +38,8 @@ func toMyJson(v interface{}) interface{} {
 		return v.(String)
 	case Boolean:
 		return v.(Boolean)
+	case ExtRegexp:
+		return v.(ExtRegexp)
 	case nil:
 		return nil
 	}

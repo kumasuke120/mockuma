@@ -301,7 +301,7 @@ func (f *loadFileFilter) reset() {
 }
 
 type parseRegexpFilter struct {
-	regexpCache map[string]*regexp.Regexp
+	regexpCache map[string]myjson.ExtRegexp
 }
 
 func makeParseRegexpFilter() *parseRegexpFilter {
@@ -338,7 +338,7 @@ func (f *parseRegexpFilter) parseForObject(v myjson.Object) (interface{}, error)
 		}
 
 		_pattern := string(pattern)
-		var r *regexp.Regexp
+		var r myjson.ExtRegexp
 		var ok bool
 		if r, ok = f.regexpCache[_pattern]; !ok {
 			r, err = regexp.Compile(_pattern)
@@ -374,5 +374,5 @@ func (f *parseRegexpFilter) parseForArray(v myjson.Array) (interface{}, error) {
 }
 
 func (f *parseRegexpFilter) reset() {
-	f.regexpCache = make(map[string]*regexp.Regexp)
+	f.regexpCache = make(map[string]myjson.ExtRegexp)
 }
