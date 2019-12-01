@@ -72,10 +72,11 @@ func (bm *boundMatcher) matchPolicy() *mckmaps.Policy {
 			if !allMatch(when.Params, bm.r.Form) {
 				continue
 			}
-			if !allMatch(when.Headers, bm.r.Header) {
+			if !regexpAllMatch(when.ParamRegexps, bm.r.Form) {
 				continue
 			}
-			if !regexpAllMatch(when.ParamRegexps, bm.r.Form) {
+
+			if !allMatch(when.Headers, bm.r.Header) {
 				continue
 			}
 			if !regexpAllMatch(when.HeaderRegexps, bm.r.Header) {

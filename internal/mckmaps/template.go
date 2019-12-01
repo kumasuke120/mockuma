@@ -20,7 +20,7 @@ func (e *renderError) Error() string {
 	if e.jsonPath == nil {
 		result += "cannot render template"
 	} else {
-		result += fmt.Sprintf("cannot render the template on json-path '%v'", e.jsonPath)
+		result += fmt.Sprintf("cannot render the template on json-path \"%v\"", e.jsonPath)
 	}
 
 	if e.filename != "" {

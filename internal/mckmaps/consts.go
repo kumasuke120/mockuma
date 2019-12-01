@@ -15,6 +15,7 @@ const (
 	dTemplate = "@template"
 	dVars     = "@vars"
 	dRegexp   = "@regexp"
+	dJson     = "@json"
 )
 
 const (

@@ -23,9 +23,16 @@ type Policy struct {
 
 type When struct {
 	Headers       []*NameValuesPair
-	Params        []*NameValuesPair
 	HeaderRegexps []*NameRegexpPair
-	ParamRegexps  []*NameRegexpPair
+	HeaderJsons   []*NameJsonPair
+
+	Params       []*NameValuesPair
+	ParamRegexps []*NameRegexpPair
+	ParamJsons   []*NameJsonPair
+
+	Body       []byte
+	BodyRegexp *regexp.Regexp
+	BodyJson   interface{}
 }
 
 type Returns struct {
@@ -42,6 +49,11 @@ type NameValuesPair struct {
 type NameRegexpPair struct {
 	Name   string
 	Regexp *regexp.Regexp
+}
+
+type NameJsonPair struct {
+	Name string
+	Json interface{}
 }
 
 func (m *MockuMappings) GetUriWithItsMethods() map[string][]myhttp.HttpMethod {

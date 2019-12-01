@@ -30,7 +30,7 @@ func (e *parserError) Error() string {
 	if e.jsonPath == nil {
 		result += "cannot parse json data"
 	} else {
-		result += fmt.Sprintf("cannot parse the value on json-path '%v'", e.jsonPath)
+		result += fmt.Sprintf("cannot parse the value on json-path \"%v\"", e.jsonPath)
 	}
 
 	if e.filename != "" {

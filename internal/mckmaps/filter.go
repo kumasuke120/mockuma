@@ -376,3 +376,53 @@ func (f *parseRegexpFilter) parseForArray(v myjson.Array) (interface{}, error) {
 func (f *parseRegexpFilter) reset() {
 	f.regexpCache = make(map[string]myjson.ExtRegexp)
 }
+
+type jsonMatcherFilter struct {
+}
+
+func (f *jsonMatcherFilter) doFilter(v interface{}, chain *filterChain) error {
+
+}
+
+func (f *jsonMatcherFilter) generate(v interface{}) (rV interface{}, err error) {
+	switch v.(type) {
+	case myjson.Object:
+		rV, err = f.generateObject(v.(myjson.Object))
+	}
+}
+
+func (f *jsonMatcherFilter) generateObject(v myjson.Object) (interface{}, error) {
+	if v.Has(dJson) {
+		json := v.Get(dJson)
+		raw, err := f.toRawJsonMatcher(json)
+		if err != nil {
+			return nil, err
+		}
+		return myjson.MakeExtJsonMatcher(raw), nil
+	} else {
+		rV := make(myjson.Object)
+		for name, value := range v {
+			rValue, err := f.generate(value)
+			if err != nil {
+				return nil, err
+			}
+			rV[name] = rValue
+		}
+		return rV, nil
+	}
+}
+
+func (f *jsonMatcherFilter) toRawJsonMatcher(v interface{}) (interface{}, error) {
+	switch v.(type) {
+
+	}
+}
+
+func (f *jsonMatcherFilter) objectToRawJsonMatcher(v myjson.Object) (myjson.Object, error {
+	rV := make(myjson.Object)
+	var jsonPaths []string
+	for name, value := range v {
+
+	}
+}
+

@@ -2,7 +2,6 @@ package myjson
 
 import (
 	"fmt"
-	"regexp"
 	"strconv"
 )
 
@@ -42,6 +41,12 @@ func (o Object) Get(name string) interface{} {
 	return map[string]interface{}(o)[name]
 }
 
+func (o Object) Set(name string, v interface{}) Object {
+	m := map[string]interface{}(o)
+	m[name] = toMyJson(v)
+	return m
+}
+
 func (o Object) GetObject(name string) (Object, error) {
 	v := o.Get(name)
 	return toObject(v, name)
@@ -62,4 +67,17 @@ func (o Object) GetString(name string) (String, error) {
 	return toString(v, name)
 }
 
-type ExtRegexp *regexp.Regexp
+func (a Array) Get(idx int) interface{} {
+	return []interface{}(a)[idx]
+}
+
+func (a Array) Set(idx int, v interface{}) Array {
+	_a := []interface{}(a)
+	if idx >= len(_a) {
+		for len(_a) < idx+1 {
+			_a = append(_a, Undefined)
+		}
+	}
+	_a[idx] = toMyJson(v)
+	return _a
+}
