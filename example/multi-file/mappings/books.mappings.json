@@ -1,6 +1,6 @@
 {
   "@type": "mappings",
-  "@comment": "api mocks for /api/books",
+  "@comment": "api mocks for /api/books/**",
   "mappings": [
     {
       "@comment": "show books list for page 2",
@@ -20,6 +20,72 @@
           },
           "body": {
             "@file": "static/books-page2.json"
+          }
+        }
+      }
+    },
+    {
+      "uri": "/api/books/_search",
+      "method": "GET",
+      "policies": {
+        "when": {
+          "params": {
+            "filter": {
+              "@comment": "parses the url form value as json",
+              "@json": {
+                "name": {
+                  "@regexp": "^Catch Me If You Can.+$"
+                },
+                "$.authors[0]": "Frank W. Abagnale"
+              }
+            },
+            "field": "id"
+          }
+        },
+        "returns": {
+          "headers": {
+            "Content-Type": "application/json; charset=utf8"
+          },
+          "body": {
+            "code": 2000,
+            "message": "Found!",
+            "found": {
+              "id": 21
+            }
+          }
+        }
+      }
+    },
+    {
+      "uri": "/api/books",
+      "method": "PUT",
+      "policies": {
+        "when": {
+          "headers": {
+            "Content-Type": "application/json; charset=utf8"
+          },
+          "body": {
+            "@comment": "parses body as json",
+            "@json": [
+              {
+                "id": 1,
+                "price": 21.99
+              },
+              {
+                "id": 20,
+                "pages": 910
+              }
+            ]
+          }
+        },
+        "returns": {
+          "headers": {
+            "Content-Type": "application/json; charset=utf8"
+          },
+          "body": {
+            "code": 2000,
+            "message": "Succeed!",
+            "updatedCount": 2
           }
         }
       }
