@@ -282,7 +282,7 @@ func (p *mappingsParser) parsePolicy(v myjson.Object) (*Policy, error) {
 func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 	p.jsonPath.Append("")
 
-	_v, err := doFiltersOnV(v, ppParseRegexp, ppLoadFile)
+	_v, err := doFiltersOnV(v, ppToJsonMatcher, ppParseRegexp, ppLoadFile)
 	if err != nil {
 		return nil, &loadError{filename: p.filename, err: err}
 	}
@@ -302,15 +302,12 @@ func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
 
-		normalHeaders, regexpHeaders := divideIntoNormalsAndRegexps(rawHeaders)
+		normalHeaders, regexpHeaders, jsonMHeaders := divideIntoWhenMatchers(rawHeaders)
 		when.Headers = parseAsNameValuesPairs(normalHeaders)
-		regexpPairs, err := parseAsNameRegexpPairs(regexpHeaders)
-		if err != nil {
-			newErr := newParserError(p.filename, p.jsonPath)
-			newErr.err = err
-			return nil, newErr
+		when.HeaderRegexps = parseAsNameRegexpPairs(regexpHeaders)
+		if len(jsonMHeaders) != 0 {
+			return nil, newParserError(p.filename, p.jsonPath)
 		}
-		when.HeaderRegexps = regexpPairs
 	}
 
 	p.jsonPath.SetLast(pParams)
@@ -320,15 +317,10 @@ func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
 
-		normalParams, regexpParams := divideIntoNormalsAndRegexps(rawParams)
+		normalParams, regexpParams, jsonMHeaders := divideIntoWhenMatchers(rawParams)
 		when.Params = parseAsNameValuesPairs(normalParams)
-		regexpPairs, err := parseAsNameRegexpPairs(regexpParams)
-		if err != nil {
-			newErr := newParserError(p.filename, p.jsonPath)
-			newErr.err = err
-			return nil, newErr
-		}
-		when.ParamRegexps = regexpPairs
+		when.ParamRegexps = parseAsNameRegexpPairs(regexpParams)
+		when.ParamJsons = parseAsNameJsonPairs(jsonMHeaders)
 	}
 
 	p.jsonPath.RemoveLast()
@@ -515,9 +507,12 @@ func ensureJsonArray(v interface{}) myjson.Array {
 	}
 }
 
-func divideIntoNormalsAndRegexps(v myjson.Object) (myjson.Object, map[string]myjson.ExtRegexp) {
-	normals := make(myjson.Object)
+func divideIntoWhenMatchers(v myjson.Object) (myjson.Object,
+	map[string]myjson.ExtRegexp, map[string]myjson.ExtJsonMatcher) {
+
+	direct := make(myjson.Object)
 	regexps := make(map[string]myjson.ExtRegexp)
+	jsonMatchers := make(map[string]myjson.ExtJsonMatcher)
 
 	for name, rawValue := range v {
 		var normV myjson.Array
@@ -530,16 +525,22 @@ func divideIntoNormalsAndRegexps(v myjson.Object) (myjson.Object, map[string]myj
 					regexps[name] = _rV
 				}
 				continue
+			case myjson.ExtJsonMatcher:
+				_rV := rV.(myjson.ExtJsonMatcher)
+				if _, ok := jsonMatchers[name]; !ok { // only first @json is effective
+					jsonMatchers[name] = _rV
+				}
+				continue
 			}
 			normV = append(normV, rV)
 		}
 
 		if len(normV) != 0 {
-			normals[name] = normV
+			direct[name] = normV
 		}
 	}
 
-	return normals, regexps
+	return direct, regexps, jsonMatchers
 }
 
 func parseAsNameValuesPairs(o myjson.Object) []*NameValuesPair {
@@ -575,7 +576,7 @@ func parseAsNameValuesPair(n string, v myjson.Array) *NameValuesPair {
 	return pair
 }
 
-func parseAsNameRegexpPairs(o map[string]myjson.ExtRegexp) ([]*NameRegexpPair, error) {
+func parseAsNameRegexpPairs(o map[string]myjson.ExtRegexp) []*NameRegexpPair {
 	var pairs []*NameRegexpPair
 	for name, value := range o {
 		pair := new(NameRegexpPair)
@@ -584,7 +585,19 @@ func parseAsNameRegexpPairs(o map[string]myjson.ExtRegexp) ([]*NameRegexpPair, e
 
 		pairs = append(pairs, pair)
 	}
-	return pairs, nil
+	return pairs
+}
+
+func parseAsNameJsonPairs(o map[string]myjson.ExtJsonMatcher) []*NameJsonPair {
+	var pairs []*NameJsonPair
+	for name, value := range o {
+		pair := new(NameJsonPair)
+		pair.Name = name
+		pair.Json = value
+
+		pairs = append(pairs, pair)
+	}
+	return pairs
 }
 
 var varNameRegexp = regexp.MustCompile("(?i)[a-z][a-z\\d]*")

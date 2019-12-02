@@ -4,6 +4,7 @@ import (
 	"regexp"
 
 	"github.com/kumasuke120/mockuma/internal/myhttp"
+	"github.com/kumasuke120/mockuma/internal/myjson"
 )
 
 type MockuMappings struct {
@@ -32,7 +33,7 @@ type When struct {
 
 	Body       []byte
 	BodyRegexp *regexp.Regexp
-	BodyJson   interface{}
+	BodyJson   myjson.ExtJsonMatcher
 }
 
 type Returns struct {
@@ -53,7 +54,7 @@ type NameRegexpPair struct {
 
 type NameJsonPair struct {
 	Name string
-	Json interface{}
+	Json myjson.ExtJsonMatcher
 }
 
 func (m *MockuMappings) GetUriWithItsMethods() map[string][]myhttp.HttpMethod {

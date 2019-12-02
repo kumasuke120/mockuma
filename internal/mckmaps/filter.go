@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"regexp"
+	"strings"
 
 	"github.com/kumasuke120/mockuma/internal/myjson"
 )
@@ -14,6 +15,7 @@ var (
 	ppRenderTemplate = makeTemplateFilter()
 	ppLoadFile       = makeLoadFileFilter()
 	ppParseRegexp    = makeParseRegexpFilter()
+	ppToJsonMatcher  = &jsonMatcherFilter{}
 )
 
 func doFiltersOnV(v interface{}, filters ...filter) (interface{}, error) {
@@ -381,14 +383,23 @@ type jsonMatcherFilter struct {
 }
 
 func (f *jsonMatcherFilter) doFilter(v interface{}, chain *filterChain) error {
-
+	gV, err := f.generate(v)
+	if err != nil {
+		return err
+	}
+	return chain.doFilter(gV)
 }
 
-func (f *jsonMatcherFilter) generate(v interface{}) (rV interface{}, err error) {
+func (f *jsonMatcherFilter) generate(v interface{}) (gV interface{}, err error) {
 	switch v.(type) {
 	case myjson.Object:
-		rV, err = f.generateObject(v.(myjson.Object))
+		gV, err = f.generateObject(v.(myjson.Object))
+	case myjson.Array:
+		gV, err = f.generateForArray(v.(myjson.Array))
+	default:
+		gV, err = v, nil
 	}
+	return
 }
 
 func (f *jsonMatcherFilter) generateObject(v myjson.Object) (interface{}, error) {
@@ -412,17 +423,71 @@ func (f *jsonMatcherFilter) generateObject(v myjson.Object) (interface{}, error)
 	}
 }
 
+func (f *jsonMatcherFilter) generateForArray(v myjson.Array) (myjson.Array, error) {
+	result := make(myjson.Array, len(v))
+	for idx, value := range v {
+		gValue, err := f.generate(value)
+		if err != nil {
+			return nil, err
+		}
+		result[idx] = gValue
+	}
+	return result, nil
+}
+
 func (f *jsonMatcherFilter) toRawJsonMatcher(v interface{}) (interface{}, error) {
 	switch v.(type) {
-
+	case myjson.Object:
+		return f.objectToRawJsonMatcher(v.(myjson.Object))
+	case myjson.Array:
+		return f.arrayToRawJsonMatcher(v.(myjson.Array))
+	default:
+		return v, nil
 	}
 }
 
-func (f *jsonMatcherFilter) objectToRawJsonMatcher(v myjson.Object) (myjson.Object, error {
-	rV := make(myjson.Object)
-	var jsonPaths []string
+func (f *jsonMatcherFilter) objectToRawJsonMatcher(v myjson.Object) (myjson.Object, error) {
+	result := make(myjson.Object)
+	jPaths := make(map[string]interface{})
 	for name, value := range v {
+		rValue, err := f.toRawJsonMatcher(value)
+		if err != nil {
+			return nil, err
+		}
 
+		if strings.HasPrefix(name, "$$") {
+			name = name[1:]
+			result[name] = rValue
+		} else if strings.HasPrefix(name, "$") { // treats as json-path
+			jPaths[name] = rValue
+		} else {
+			result[name] = rValue
+		}
 	}
+
+	for pStr, rValue := range jPaths {
+		path, err := myjson.ParsePath(pStr)
+		if err != nil {
+			return nil, err
+		}
+		newRV, err := result.SetByPath(path, rValue)
+		if err != nil {
+			return nil, err
+		}
+		result = newRV
+	}
+
+	return result, nil
 }
 
+func (f *jsonMatcherFilter) arrayToRawJsonMatcher(v myjson.Array) (myjson.Array, error) {
+	result := make(myjson.Array, len(v))
+	for idx, value := range v {
+		rValue, err := f.toRawJsonMatcher(value)
+		if err != nil {
+			return nil, err
+		}
+		result[idx] = rValue
+	}
+	return result, nil
+}
