@@ -320,16 +320,16 @@ func (f *parseRegexpFilter) doFilter(v interface{}, chain *filterChain) error {
 	return chain.doFilter(rV)
 }
 
-func (f *parseRegexpFilter) parse(v interface{}) (interface{}, error) {
-	var rV interface{}
-	var err error
+func (f *parseRegexpFilter) parse(v interface{}) (rV interface{}, err error) {
 	switch v.(type) {
 	case myjson.Object:
 		rV, err = f.parseForObject(v.(myjson.Object))
+	case myjson.Array:
+		rV, err = f.parseForArray(v.(myjson.Array))
 	default:
 		rV, err = v, nil
 	}
-	return rV, err
+	return
 }
 
 func (f *parseRegexpFilter) parseForObject(v myjson.Object) (interface{}, error) {
