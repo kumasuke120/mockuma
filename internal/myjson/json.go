@@ -75,7 +75,7 @@ func (a Array) Set(idx int, v interface{}) Array {
 	_a := []interface{}(a)
 	if idx >= len(_a) {
 		for len(_a) < idx+1 {
-			_a = append(_a, Undefined)
+			_a = append(_a, nil)
 		}
 	}
 	_a[idx] = toMyJson(v)

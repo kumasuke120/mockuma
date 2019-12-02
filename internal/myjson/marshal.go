@@ -27,8 +27,6 @@ func toRawType(v interface{}) interface{} {
 		return nil
 	case ExtJsonMatcher:
 		return nil
-	case ExtUndefined:
-		return nil
 	default:
 		return v
 	}

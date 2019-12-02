@@ -6,12 +6,7 @@ import (
 	"github.com/kumasuke120/mockuma/internal/typeutil"
 )
 
-var Undefined = ExtUndefined{}
-
 type ExtRegexp *regexp.Regexp
-
-type ExtUndefined struct {
-}
 
 type ExtJsonMatcher struct {
 	v interface{}
@@ -43,8 +38,6 @@ func (m ExtJsonMatcher) matches(mv interface{}, v interface{}) bool {
 		return m.regexpMatches(mv.(ExtRegexp), v)
 	case ExtJsonMatcher:
 		return m.matches(mv.(ExtJsonMatcher).v, v)
-	case ExtUndefined:
-		return true
 	}
 
 	panic("Shouldn't happen")
@@ -71,6 +64,10 @@ func (m ExtJsonMatcher) arrayMatches(mv Array, v interface{}) bool {
 	case Array:
 		_v := v.(Array)
 		for idx, val := range mv {
+			if val == nil { // special treatment for Array
+				continue
+			}
+
 			_val := _v[idx]
 			if !m.matches(val, _val) {
 				return false

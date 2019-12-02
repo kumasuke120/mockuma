@@ -225,20 +225,62 @@ func toKey(builder *strings.Builder, quoted bool) (string, error) {
 	return str, nil
 }
 
-func (o Object) SetEx(path *Path, v interface{}) (Object, error) {
-	var t interface{}
-	t = o
+func (o Object) SetByPath(path *Path, v interface{}) (Object, error) {
+	ts, err := o.traverseAndGetSequence(path)
+	if err != nil {
+		return nil, err
+	}
 
-	for idx, p := range path.paths {
-		isLast := idx == len(path.paths)-1
+	var d interface{}
+	vToSet := toMyJson(v)
+	for i := len(ts) - 1; i >= 0; i-- {
+		d = ts[i]
+		k := path.paths[i]
+		vToSet = anySetEx(d, k, vToSet)
+	}
 
+	return d.(Object), nil
+}
+
+func (o Object) traverseAndGetSequence(path *Path) ([]interface{}, error) {
+	var ts []interface{}
+	var t interface{} = o
+	for _, p := range path.paths {
 		switch p.(type) {
 		case int:
 			switch t.(type) {
+			case nil:
+				ts = append(ts, Array{})
 			case Array:
-
+				ts = append(ts, t)
+				t = t.(Array).Get(p.(int))
+			default:
+				return nil, errors.New("requires a json array")
 			}
+		case string:
+			switch t.(type) {
+			case nil:
+				ts = append(ts, Object{})
+			case Object:
+				ts = append(ts, t)
+				t = t.(Object).Get(p.(string))
+			default:
+				return nil, errors.New("requires a json object")
+			}
+		default:
+			panic("Shouldn't happen")
 		}
 	}
+	return ts, nil
+}
 
+func anySetEx(d interface{}, k interface{}, v interface{}) interface{} {
+	switch d.(type) {
+	case Object:
+		return d.(Object).Set(k.(string), v)
+	case Array:
+		return d.(Array).Set(k.(int), v)
+	}
+
+	panic("Shouldn't happen")
 }

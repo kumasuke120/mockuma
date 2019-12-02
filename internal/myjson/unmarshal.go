@@ -40,8 +40,6 @@ func toMyJson(v interface{}) interface{} {
 		return v.(Boolean)
 	case ExtRegexp:
 		return v.(ExtRegexp)
-	case ExtUndefined:
-		return v.(ExtUndefined)
 	case ExtJsonMatcher:
 		return v.(ExtJsonMatcher)
 	case nil:
