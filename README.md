@@ -1,4 +1,7 @@
 # MocKuma
+[![Build Status](https://api.travis-ci.org/kumasuke120/mockuma.svg?branch=dev)](https://travis-ci.org/kumasuke120/mockuma)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 See in other languages: English | [中文](README_CN.md) 
 
 This is a Http API mocking server written in Go. It reads command-like json mapping configuration file, generating
