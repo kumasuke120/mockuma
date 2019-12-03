@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Release](https://img.shields.io/github/release/kumasuke120/mockuma/all.svg)](https://github.com/kumasuke120/mockuma/releases/latest)
-[![Build Status](https://api.travis-ci.org/kumasuke120/mockuma.svg?branch=dev)](https://travis-ci.org/kumasuke120/mockuma)
+[![Build Status](https://api.travis-ci.org/kumasuke120/mockuma.svg?branch=master)](https://travis-ci.org/kumasuke120/mockuma)
 
 [English | [中文](README_CN.md)]
 
