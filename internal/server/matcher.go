@@ -124,7 +124,7 @@ func (bm *boundMatcher) bodyMatches(when *mckmaps.When) bool {
 	body := bm.bodyCache
 	if body == nil {
 		_body, err := ioutil.ReadAll(bm.r.Body)
-		if err != nil {
+		if err == nil {
 			bm.bodyCache = _body
 			body = _body
 		}

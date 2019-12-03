@@ -62,7 +62,9 @@
       "policies": {
         "when": {
           "headers": {
-            "Content-Type": "application/json; charset=utf8"
+            "Content-Type": {
+              "@regexp": "^application/json.*$"
+            }
           },
           "body": {
             "@comment": "parses body as json",
