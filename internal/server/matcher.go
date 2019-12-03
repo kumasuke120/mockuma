@@ -1,12 +1,15 @@
 package server
 
 import (
+	"bytes"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"regexp"
 
 	"github.com/kumasuke120/mockuma/internal/mckmaps"
+	"github.com/kumasuke120/mockuma/internal/myjson"
 )
 
 type pathMatcher struct {
@@ -31,6 +34,7 @@ type boundMatcher struct {
 	m              *pathMatcher
 	r              *http.Request
 	matchedMapping *mckmaps.Mapping
+	bodyCache      []byte
 }
 
 func (bm *boundMatcher) matches() bool {
@@ -69,16 +73,15 @@ func (bm *boundMatcher) matchPolicy() *mckmaps.Policy {
 		when := p.When
 
 		if when != nil {
-			if !allMatch(when.Params, bm.r.Form) {
+			if !bm.paramsMatch(when) {
 				continue
 			}
-			if !allMatch(when.Headers, bm.r.Header) {
+
+			if !bm.headersMatch(when) {
 				continue
 			}
-			if !regexpAllMatch(when.ParamRegexps, bm.r.Form) {
-				continue
-			}
-			if !regexpAllMatch(when.HeaderRegexps, bm.r.Header) {
+
+			if !bm.bodyMatches(when) {
 				continue
 			}
 		}
@@ -89,11 +92,64 @@ func (bm *boundMatcher) matchPolicy() *mckmaps.Policy {
 	return policy
 }
 
-func allMatch(expected []*mckmaps.NameValuesPair, actual map[string][]string) bool {
+func (bm *boundMatcher) paramsMatch(when *mckmaps.When) bool {
+	if !valuesMatch(when.Params, bm.r.Form) {
+		return false
+	}
+	if !regexpsMatch(when.ParamRegexps, bm.r.Form) {
+		return false
+	}
+	if !asJsonsMatch(when.ParamJsons, bm.r.Form) {
+		return false
+	}
+
+	return true
+}
+
+func (bm *boundMatcher) headersMatch(when *mckmaps.When) bool {
+	if !valuesMatch(when.Headers, bm.r.Header) {
+		return false
+	}
+	if !regexpsMatch(when.HeaderRegexps, bm.r.Header) {
+		return false
+	}
+	if !asJsonsMatch(when.HeaderJsons, bm.r.Header) {
+		return false
+	}
+
+	return true
+}
+
+func (bm *boundMatcher) bodyMatches(when *mckmaps.When) bool {
+	body := bm.bodyCache
+	if body == nil {
+		_body, err := ioutil.ReadAll(bm.r.Body)
+		if err == nil {
+			bm.bodyCache = _body
+			body = _body
+		}
+	}
+
+	if when.Body != nil {
+		return bytes.Equal(when.Body, body)
+	} else if when.BodyRegexp != nil {
+		return when.BodyRegexp.Match(body)
+	} else if when.BodyJson != nil {
+		json, err := myjson.Unmarshal(body)
+		if err != nil {
+			return false
+		}
+		return when.BodyJson.Matches(json)
+	} else {
+		return true
+	}
+}
+
+func valuesMatch(expected []*mckmaps.NameValuesPair, actual map[string][]string) bool {
 	for _, e := range expected {
 		formValues := actual[e.Name]
 
-		if !valuesMatch(e.Values, formValues) {
+		if !stringSlicesEqualIgnoreOrder(e.Values, formValues) {
 			return false
 		}
 	}
@@ -101,7 +157,8 @@ func allMatch(expected []*mckmaps.NameValuesPair, actual map[string][]string) bo
 	return true
 }
 
-func valuesMatch(l, r []string) bool { // tests if two []string share same elements, ignoring the order
+// tests if two []string share same elements, ignoring the order
+func stringSlicesEqualIgnoreOrder(l, r []string) bool {
 	if len(l) != len(r) {
 		return false
 	}
@@ -125,7 +182,7 @@ func valuesMatch(l, r []string) bool { // tests if two []string share same eleme
 	return len(diff) == 0
 }
 
-func regexpAllMatch(expected []*mckmaps.NameRegexpPair, actual map[string][]string) bool {
+func regexpsMatch(expected []*mckmaps.NameRegexpPair, actual map[string][]string) bool {
 	for _, e := range expected {
 		formValues := actual[e.Name]
 
@@ -140,6 +197,32 @@ func regexpAllMatch(expected []*mckmaps.NameRegexpPair, actual map[string][]stri
 func regexpAnyMatches(r *regexp.Regexp, values []string) bool {
 	for _, v := range values {
 		if r.Match([]byte(v)) {
+			return true
+		}
+	}
+	return false
+}
+
+func asJsonsMatch(expected []*mckmaps.NameJsonPair, actual map[string][]string) bool {
+	for _, e := range expected {
+		formValues := actual[e.Name]
+
+		if !asJsonAnyMatches(e.Json, formValues) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func asJsonAnyMatches(m myjson.ExtJsonMatcher, values []string) bool {
+	for _, v := range values {
+		json, err := myjson.Unmarshal([]byte(v))
+		if err != nil {
+			continue
+		}
+
+		if m.Matches(json) {
 			return true
 		}
 	}

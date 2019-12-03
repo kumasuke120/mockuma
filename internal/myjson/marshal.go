@@ -23,6 +23,10 @@ func toRawType(v interface{}) interface{} {
 		return string(v.(String))
 	case Boolean:
 		return bool(v.(Boolean))
+	case ExtRegexp:
+		return nil
+	case ExtJsonMatcher:
+		return nil
 	default:
 		return v
 	}

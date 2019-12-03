@@ -1,10 +1,13 @@
 package mckmaps
 
 import (
+	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/kumasuke120/mockuma/internal/myjson"
+	"github.com/kumasuke120/mockuma/internal/typeutil"
 )
 
 type renderError struct {
@@ -17,7 +20,7 @@ func (e *renderError) Error() string {
 	if e.jsonPath == nil {
 		result += "cannot render template"
 	} else {
-		result += fmt.Sprintf("cannot render the template on json-path '%v'", e.jsonPath)
+		result += fmt.Sprintf("cannot render the template on json-path \"%v\"", e.jsonPath)
 	}
 
 	if e.filename != "" {
@@ -84,11 +87,15 @@ func renderObject(ctx *renderContext, jsonPath *myjson.Path,
 	for name, value := range v {
 		jsonPath.SetLast(name)
 
+		rName, err := renderPlainString(ctx, jsonPath, name, vars)
+		if err != nil {
+			return nil, err
+		}
 		rValue, err := render(ctx, jsonPath, value, vars)
 		if err != nil {
 			return nil, err
 		}
-		result[name] = rValue
+		result[rName] = rValue
 	}
 
 	jsonPath.RemoveLast()
@@ -117,16 +124,34 @@ func renderArray(ctx *renderContext, jsonPath *myjson.Path,
 // states for rendering string
 const (
 	rsReady = iota
-	rsMaybeVar
-	rsInVar
+	rsMaybePlaceholder
+	rsInPlaceholder
+	rsMaybePlaceHolderFormat
+	rsInPlaceHolderFormat
 )
 
 // tokens for rendering string
 const (
-	placeholderPrefix = '@'
-	placeholderLeft   = '{'
-	placeholderRight  = '}'
+	placeholderPrefix          = '@'
+	placeholderLeft            = '{'
+	placeholderRight           = '}'
+	placeholderFormatSeparator = ':'
 )
+
+func renderPlainString(ctx *renderContext, jsonPath *myjson.Path,
+	v string, vars *vars) (string, error) {
+	r, err := renderString(ctx, jsonPath, myjson.String(v), vars)
+	if err != nil {
+		return "", err
+	} else {
+		switch r.(type) {
+		case myjson.String:
+			return string(r.(myjson.String)), nil
+		default:
+			return typeutil.ToString(r), nil
+		}
+	}
+}
 
 func renderString(ctx *renderContext, jsonPath *myjson.Path,
 	v myjson.String, vars *vars) (interface{}, error) {
@@ -138,15 +163,18 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 
 	var builder strings.Builder
 	var nameBuilder strings.Builder
+	var formatBuilder strings.Builder
+
 	for i := 0; i < len(runes); i++ {
 		r := runes[i]
 		doWrite := true
 		doWriteName := false
+		doWriteFormat := false
 
 		switch s {
 		case rsReady:
 			if r == placeholderPrefix {
-				s = rsMaybeVar
+				s = rsMaybePlaceholder
 				if i == 0 {
 					fromBegin = true
 				} else {
@@ -154,9 +182,9 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 				}
 				doWrite = false
 			}
-		case rsMaybeVar:
+		case rsMaybePlaceholder:
 			if r == placeholderLeft {
-				s = rsInVar
+				s = rsInPlaceholder
 				doWrite = false
 			} else {
 				s = rsReady
@@ -167,7 +195,7 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 					fromBegin = false
 				}
 			}
-		case rsInVar:
+		case rsInPlaceholder:
 			doWrite = false
 			if r == placeholderRight {
 				s = rsReady
@@ -175,15 +203,39 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 					toEnd = true
 				} else {
 					varName := nameBuilder.String()
-					v, err := renderTextString(ctx, jsonPath, vars, varName)
+					varFormat := formatBuilder.String()
+					if varName == "" {
+						return "", &renderError{filename: ctx.filename, jsonPath: jsonPath}
+					}
+
+					v, err := renderTextString(vars, varName, varFormat)
 					if err != nil {
-						return nil, err
+						return nil, &renderError{filename: ctx.filename, jsonPath: jsonPath}
 					}
 					builder.WriteString(v)
 					nameBuilder.Reset()
+					formatBuilder.Reset()
 				}
+			} else if r == placeholderFormatSeparator {
+				s = rsMaybePlaceHolderFormat
 			} else {
 				doWriteName = true
+			}
+		case rsMaybePlaceHolderFormat:
+			doWrite = false
+			if r == placeholderRight { // same as empty format, state rolls back
+				s = rsInPlaceholder
+			} else {
+				s = rsInPlaceHolderFormat
+			}
+			i -= 1 // goes back for other state to process
+		case rsInPlaceHolderFormat:
+			doWrite = false
+			if r == placeholderRight { // end of placeholder
+				s = rsInPlaceholder
+				i -= 1
+			} else {
+				doWriteFormat = true
 			}
 		}
 
@@ -192,6 +244,9 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 		}
 		if doWriteName {
 			nameBuilder.WriteRune(r)
+		}
+		if doWriteFormat {
+			formatBuilder.WriteRune(r)
 		}
 	}
 
@@ -212,21 +267,35 @@ func renderString(ctx *renderContext, jsonPath *myjson.Path,
 	return myjson.String(builder.String()), nil
 }
 
-func renderTextString(ctx *renderContext, jsonPath *myjson.Path,
-	vars *vars, varName string) (string, error) {
-	if varName == "" {
-		return "", &renderError{filename: ctx.filename, jsonPath: jsonPath}
+var validVarFormat = regexp.MustCompile("^%([-+@0 ])?(\\d+)?\\.?(\\d+)?[tdeEfgsqxX]$")
+
+func renderTextString(vars *vars, varName string, varFormat string) (string, error) {
+	varV := vars.table[varName]
+
+	if varFormat != "" && !validVarFormat.MatchString(varFormat) {
+		return "", errors.New("invalid format for var")
 	}
 
-	varV := vars.table[varName]
 	switch varV.(type) {
 	case myjson.String:
-		return fmt.Sprintf("%s", string(varV.(myjson.String))), nil
+		if varFormat == "" {
+			varFormat = "%s"
+		}
+		return fmt.Sprintf(varFormat, string(varV.(myjson.String))), nil
 	case myjson.Number:
-		return fmt.Sprintf("%v", varV), nil
+		if varFormat == "" {
+			return fmt.Sprintf("%v", varV), nil
+		} else if varFormat[len(varFormat)-1] == 'd' {
+			return fmt.Sprintf(varFormat, int(float64(varV.(myjson.Number)))), nil
+		} else {
+			return fmt.Sprintf(varFormat, float64(varV.(myjson.Number))), nil
+		}
 	case myjson.Boolean:
-		return fmt.Sprintf("%v", varV), nil
+		if varFormat == "" {
+			varFormat = "%v"
+		}
+		return fmt.Sprintf(varFormat, bool(varV.(myjson.Boolean))), nil
 	default:
-		return "", &renderError{filename: ctx.filename, jsonPath: jsonPath}
+		return "", errors.New("invalid json type for template rendering")
 	}
 }

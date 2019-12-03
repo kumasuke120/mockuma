@@ -41,6 +41,12 @@ func (o Object) Get(name string) interface{} {
 	return map[string]interface{}(o)[name]
 }
 
+func (o Object) Set(name string, v interface{}) Object {
+	m := map[string]interface{}(o)
+	m[name] = toMyJson(v)
+	return m
+}
+
 func (o Object) GetObject(name string) (Object, error) {
 	v := o.Get(name)
 	return toObject(v, name)
@@ -61,63 +67,17 @@ func (o Object) GetString(name string) (String, error) {
 	return toString(v, name)
 }
 
-type Path struct {
-	paths []interface{}
+func (a Array) Get(idx int) interface{} {
+	return []interface{}(a)[idx]
 }
 
-func NewPath(paths ...interface{}) *Path {
-	var _paths []interface{}
-	for _, p := range paths {
-		switch p.(type) {
-		case string:
-			_paths = append(_paths, p)
-		case int:
-			_paths = append(_paths, p)
-		default:
-			return nil
+func (a Array) Set(idx int, v interface{}) Array {
+	_a := []interface{}(a)
+	if idx >= len(_a) {
+		for len(_a) < idx+1 {
+			_a = append(_a, nil)
 		}
 	}
-	return &Path{paths: _paths}
-}
-
-func (p *Path) Append(v interface{}) {
-	switch v.(type) {
-	case string:
-		p.paths = append(p.paths, p)
-	case int:
-		p.paths = append(p.paths, p)
-	}
-}
-
-func (p *Path) SetLast(v interface{}) {
-	if len(p.paths) == 0 {
-		return
-	}
-
-	lastIdx := len(p.paths) - 1
-	switch v.(type) {
-	case string:
-		p.paths[lastIdx] = v
-	case int:
-		p.paths[lastIdx] = v
-	}
-}
-
-func (p *Path) RemoveLast() {
-	if len(p.paths) != 0 {
-		p.paths = p.paths[:len(p.paths)-1]
-	}
-}
-
-func (p *Path) String() string {
-	result := "$"
-	for _, v := range p.paths {
-		switch v.(type) {
-		case string:
-			result += "." + v.(string)
-		case int:
-			result += fmt.Sprintf("[%d]", v.(int))
-		}
-	}
-	return result
+	_a[idx] = toMyJson(v)
+	return _a
 }

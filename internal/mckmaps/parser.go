@@ -8,6 +8,7 @@ import (
 
 	"github.com/kumasuke120/mockuma/internal/myhttp"
 	"github.com/kumasuke120/mockuma/internal/myjson"
+	"github.com/kumasuke120/mockuma/internal/typeutil"
 )
 
 type loadError struct {
@@ -30,7 +31,7 @@ func (e *parserError) Error() string {
 	if e.jsonPath == nil {
 		result += "cannot parse json data"
 	} else {
-		result += fmt.Sprintf("cannot parse the value on json-path '%v'", e.jsonPath)
+		result += fmt.Sprintf("cannot parse the value on json-path \"%v\"", e.jsonPath)
 	}
 
 	if e.filename != "" {
@@ -48,7 +49,7 @@ type parser struct {
 	filename string
 }
 
-func (p *parser) parse(chdir bool) (*MockuMappings, error) {
+func (p *parser) parse() (*MockuMappings, error) {
 	var json interface{}
 	var err error
 	if json, err = p.load(ppRemoveComment, ppRenderTemplate); err != nil {
@@ -97,6 +98,7 @@ func (p *parser) load(preprocessors ...filter) (interface{}, error) {
 func (p *parser) reset() {
 	ppRenderTemplate.reset()
 	ppLoadFile.reset()
+	ppParseRegexp.reset()
 }
 
 type mainParser struct {
@@ -281,6 +283,17 @@ func (p *mappingsParser) parsePolicy(v myjson.Object) (*Policy, error) {
 func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 	p.jsonPath.Append("")
 
+	_v, err := doFiltersOnV(v, ppToJsonMatcher, ppParseRegexp, ppLoadFile)
+	if err != nil {
+		return nil, &loadError{filename: p.filename, err: err}
+	}
+	switch _v.(type) {
+	case myjson.Object:
+		v = _v.(myjson.Object)
+	default:
+		return nil, newParserError(p.filename, p.jsonPath)
+	}
+
 	when := new(When)
 
 	p.jsonPath.SetLast(pHeaders)
@@ -290,15 +303,10 @@ func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
 
-		normalHeaders, regexpHeaders := divideNormalsAndRegexps(rawHeaders)
+		normalHeaders, regexpHeaders, jsonMHeaders := divideIntoWhenMatchers(rawHeaders)
 		when.Headers = parseAsNameValuesPairs(normalHeaders)
-		regexpPairs, err := parseAsNameRegexpPairs(regexpHeaders)
-		if err != nil {
-			newErr := newParserError(p.filename, p.jsonPath)
-			newErr.err = err
-			return nil, newErr
-		}
-		when.HeaderRegexps = regexpPairs
+		when.HeaderRegexps = parseAsNameRegexpPairs(regexpHeaders)
+		when.HeaderJsons = parseAsNameJsonPairs(jsonMHeaders)
 	}
 
 	p.jsonPath.SetLast(pParams)
@@ -308,19 +316,37 @@ func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
 
-		normalParams, regexpParams := divideNormalsAndRegexps(rawParams)
+		normalParams, regexpParams, jsonMHeaders := divideIntoWhenMatchers(rawParams)
 		when.Params = parseAsNameValuesPairs(normalParams)
-		regexpPairs, err := parseAsNameRegexpPairs(regexpParams)
-		if err != nil {
-			newErr := newParserError(p.filename, p.jsonPath)
-			newErr.err = err
-			return nil, newErr
-		}
-		when.ParamRegexps = regexpPairs
+		when.ParamRegexps = parseAsNameRegexpPairs(regexpParams)
+		when.ParamJsons = parseAsNameJsonPairs(jsonMHeaders)
+	}
+
+	p.jsonPath.SetLast(pBody)
+	if v.Has(pBody) {
+		rawBody := v.Get(pBody)
+		bytes, bodyRegexp, jMatcher := p.parseWhenBody(rawBody)
+		when.Body = bytes
+		when.BodyRegexp = bodyRegexp
+		when.BodyJson = jMatcher
 	}
 
 	p.jsonPath.RemoveLast()
 	return when, nil
+}
+
+func (p *mappingsParser) parseWhenBody(v interface{}) ([]byte, myjson.ExtRegexp, *myjson.ExtJsonMatcher) {
+	switch v.(type) {
+	case myjson.String:
+		return []byte(v.(myjson.String)), nil, nil
+	case myjson.ExtRegexp:
+		return nil, v.(myjson.ExtRegexp), nil
+	case myjson.ExtJsonMatcher:
+		_v := v.(myjson.ExtJsonMatcher)
+		return nil, nil, &_v
+	default:
+		return []byte(typeutil.ToString(v.(myjson.Number))), nil, nil
+	}
 }
 
 func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
@@ -350,7 +376,7 @@ func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
 
 	p.jsonPath.SetLast(pBody)
 	rawBody := v.Get(pBody)
-	body, err := p.parseBody(rawBody)
+	body, err := p.parseReturnsBody(rawBody)
 	if err != nil {
 		return nil, newParserError(p.filename, p.jsonPath)
 	}
@@ -360,10 +386,10 @@ func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
 	return returns, nil
 }
 
-func (p *mappingsParser) parseBody(v interface{}) ([]byte, error) {
+func (p *mappingsParser) parseReturnsBody(v interface{}) ([]byte, error) {
 	v, err := doFiltersOnV(v, ppLoadFile)
 	if err != nil {
-		return nil, err
+		return nil, &loadError{filename: p.filename, err: err}
 	}
 
 	switch v.(type) {
@@ -503,33 +529,40 @@ func ensureJsonArray(v interface{}) myjson.Array {
 	}
 }
 
-func divideNormalsAndRegexps(v myjson.Object) (myjson.Object, myjson.Object) {
-	normals := make(myjson.Object)
-	regexps := make(myjson.Object)
+func divideIntoWhenMatchers(v myjson.Object) (myjson.Object,
+	map[string]myjson.ExtRegexp, map[string]myjson.ExtJsonMatcher) {
+
+	direct := make(myjson.Object)
+	regexps := make(map[string]myjson.ExtRegexp)
+	jsonMatchers := make(map[string]myjson.ExtJsonMatcher)
 
 	for name, rawValue := range v {
 		var normV myjson.Array
 
 		for _, rV := range ensureJsonArray(rawValue) { // divides normals and regexps
 			switch rV.(type) {
-			case myjson.Object:
-				_rV := rV.(myjson.Object)
-				if rV.(myjson.Object).Has(dRegexp) {
-					if _, ok := regexps[name]; !ok { // only first @regexp is effective
-						regexps[name] = _rV
-					}
-					continue
+			case myjson.ExtRegexp:
+				_rV := rV.(myjson.ExtRegexp)
+				if _, ok := regexps[name]; !ok { // only first @regexp is effective
+					regexps[name] = _rV
 				}
+				continue
+			case myjson.ExtJsonMatcher:
+				_rV := rV.(myjson.ExtJsonMatcher)
+				if _, ok := jsonMatchers[name]; !ok { // only first @json is effective
+					jsonMatchers[name] = _rV
+				}
+				continue
 			}
 			normV = append(normV, rV)
 		}
 
 		if len(normV) != 0 {
-			normals[name] = normV
+			direct[name] = normV
 		}
 	}
 
-	return normals, regexps
+	return direct, regexps, jsonMatchers
 }
 
 func parseAsNameValuesPairs(o myjson.Object) []*NameValuesPair {
@@ -565,39 +598,28 @@ func parseAsNameValuesPair(n string, v myjson.Array) *NameValuesPair {
 	return pair
 }
 
-func parseAsNameRegexpPairs(o myjson.Object) ([]*NameRegexpPair, error) {
+func parseAsNameRegexpPairs(o map[string]myjson.ExtRegexp) []*NameRegexpPair {
 	var pairs []*NameRegexpPair
-	for name, rawValue := range o {
-		value, err := myjson.ToObject(rawValue)
-		if err != nil {
-			return nil, err
-		}
-		pair, err := parseAsNameRegexpPair(name, value)
-		if err != nil {
-			return nil, err
-		}
+	for name, value := range o {
+		pair := new(NameRegexpPair)
+		pair.Name = name
+		pair.Regexp = value
 
 		pairs = append(pairs, pair)
 	}
-	return pairs, nil
+	return pairs
 }
 
-func parseAsNameRegexpPair(n string, v myjson.Object) (*NameRegexpPair, error) {
-	regexpStr, err := v.GetString(dRegexp)
-	if err != nil {
-		return nil, err
+func parseAsNameJsonPairs(o map[string]myjson.ExtJsonMatcher) []*NameJsonPair {
+	var pairs []*NameJsonPair
+	for name, value := range o {
+		pair := new(NameJsonPair)
+		pair.Name = name
+		pair.Json = value
+
+		pairs = append(pairs, pair)
 	}
-
-	_regexp, err := regexp.Compile(string(regexpStr))
-	if err != nil {
-		return nil, err
-	}
-
-	pair := new(NameRegexpPair)
-	pair.Name = n
-	pair.Regexp = _regexp
-
-	return pair, nil
+	return pairs
 }
 
 var varNameRegexp = regexp.MustCompile("(?i)[a-z][a-z\\d]*")
@@ -606,7 +628,7 @@ func parseVars(v myjson.Object) (*vars, error) {
 	vars := new(vars)
 	table := make(map[string]interface{})
 	for name, value := range v {
-		if !varNameRegexp.Match([]byte(name)) {
+		if !varNameRegexp.MatchString(name) {
 			return nil, errors.New("invalid name for var")
 		}
 		table[name] = value

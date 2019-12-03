@@ -34,7 +34,7 @@ func loadFromFile(filename string, chdir bool) (*MockuMappings, error) {
 	}
 
 	parser := &parser{filename: filename}
-	return parser.parse(chdir)
+	return parser.parse()
 }
 
 func loadFromDefaultMapfile(mappings *MockuMappings, err error) (*MockuMappings, error) {
