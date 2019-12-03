@@ -178,13 +178,12 @@ func (f *templateFilter) getTemplateFromDTemplate(v myjson.Object) (*template, *
 	return template, &renderContext{filename: _filename}, nil
 }
 
-func (f *templateFilter) getVarsFromDTemplate(v myjson.Object) ([]*vars, error) {
-	var varsSlice []*vars
-	var err error
+func (f *templateFilter) getVarsFromDTemplate(v myjson.Object) (varsSlice []*vars, err error) {
 	if v.Has(tVars) { // if @template directive has a 'vars' attribute
 		varsSlice, err = new(varsParser).parseVars(v)
 	} else {
-		filename, err := v.GetString(dVars)
+		var filename myjson.String
+		filename, err = v.GetString(dVars)
 		if err != nil {
 			return nil, errors.New("cannot read filename from " + dVars)
 		}
@@ -197,7 +196,7 @@ func (f *templateFilter) getVarsFromDTemplate(v myjson.Object) ([]*vars, error) 
 			f.varsSliceCache[_filename] = varsSlice
 		}
 	}
-	return varsSlice, err
+	return
 }
 
 func (f *templateFilter) reset() { // clears caches
