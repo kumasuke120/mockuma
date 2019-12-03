@@ -298,6 +298,15 @@ func (f *loadFileFilter) loadForArray(v myjson.Array) (interface{}, error) {
 	return rV, nil
 }
 
+func (f *loadFileFilter) loadForExtJsonMatcher(v myjson.ExtJsonMatcher) (interface{}, error) {
+	_v := v.Unwrap()
+	rV, err := f.load(_v)
+	if err != nil {
+		return nil, err
+	}
+	return myjson.MakeExtJsonMatcher(rV), nil
+}
+
 func (f *loadFileFilter) reset() {
 	f.fileCache = make(map[string][]byte)
 }
@@ -326,6 +335,8 @@ func (f *parseRegexpFilter) parse(v interface{}) (rV interface{}, err error) {
 		rV, err = f.parseForObject(v.(myjson.Object))
 	case myjson.Array:
 		rV, err = f.parseForArray(v.(myjson.Array))
+	case myjson.ExtJsonMatcher:
+		rV, err = f.parseForExtJsonMatcher(v.(myjson.ExtJsonMatcher))
 	default:
 		rV, err = v, nil
 	}
@@ -373,6 +384,15 @@ func (f *parseRegexpFilter) parseForArray(v myjson.Array) (interface{}, error) {
 		rV[idx] = rValue
 	}
 	return rV, nil
+}
+
+func (f *parseRegexpFilter) parseForExtJsonMatcher(v myjson.ExtJsonMatcher) (interface{}, error) {
+	_v := v.Unwrap()
+	rV, err := f.parse(_v)
+	if err != nil {
+		return nil, err
+	}
+	return myjson.MakeExtJsonMatcher(rV), nil
 }
 
 func (f *parseRegexpFilter) reset() {

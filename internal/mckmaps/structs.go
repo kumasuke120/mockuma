@@ -33,7 +33,7 @@ type When struct {
 
 	Body       []byte
 	BodyRegexp *regexp.Regexp
-	BodyJson   myjson.ExtJsonMatcher
+	BodyJson   *myjson.ExtJsonMatcher
 }
 
 type Returns struct {

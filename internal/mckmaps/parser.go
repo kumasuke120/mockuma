@@ -8,6 +8,7 @@ import (
 
 	"github.com/kumasuke120/mockuma/internal/myhttp"
 	"github.com/kumasuke120/mockuma/internal/myjson"
+	"github.com/kumasuke120/mockuma/internal/typeutil"
 )
 
 type loadError struct {
@@ -305,9 +306,7 @@ func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 		normalHeaders, regexpHeaders, jsonMHeaders := divideIntoWhenMatchers(rawHeaders)
 		when.Headers = parseAsNameValuesPairs(normalHeaders)
 		when.HeaderRegexps = parseAsNameRegexpPairs(regexpHeaders)
-		if len(jsonMHeaders) != 0 {
-			return nil, newParserError(p.filename, p.jsonPath)
-		}
+		when.HeaderJsons = parseAsNameJsonPairs(jsonMHeaders)
 	}
 
 	p.jsonPath.SetLast(pParams)
@@ -323,8 +322,31 @@ func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 		when.ParamJsons = parseAsNameJsonPairs(jsonMHeaders)
 	}
 
+	p.jsonPath.SetLast(pBody)
+	if v.Has(pBody) {
+		rawBody := v.Get(pBody)
+		bytes, bodyRegexp, jMatcher := p.parseWhenBody(rawBody)
+		when.Body = bytes
+		when.BodyRegexp = bodyRegexp
+		when.BodyJson = jMatcher
+	}
+
 	p.jsonPath.RemoveLast()
 	return when, nil
+}
+
+func (p *mappingsParser) parseWhenBody(v interface{}) ([]byte, myjson.ExtRegexp, *myjson.ExtJsonMatcher) {
+	switch v.(type) {
+	case myjson.String:
+		return []byte(v.(myjson.String)), nil, nil
+	case myjson.ExtRegexp:
+		return nil, v.(myjson.ExtRegexp), nil
+	case myjson.ExtJsonMatcher:
+		_v := v.(myjson.ExtJsonMatcher)
+		return nil, nil, &_v
+	default:
+		return []byte(typeutil.ToString(v.(myjson.Number))), nil, nil
+	}
 }
 
 func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
@@ -354,7 +376,7 @@ func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
 
 	p.jsonPath.SetLast(pBody)
 	rawBody := v.Get(pBody)
-	body, err := p.parseBody(rawBody)
+	body, err := p.parseReturnsBody(rawBody)
 	if err != nil {
 		return nil, newParserError(p.filename, p.jsonPath)
 	}
@@ -364,7 +386,7 @@ func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
 	return returns, nil
 }
 
-func (p *mappingsParser) parseBody(v interface{}) ([]byte, error) {
+func (p *mappingsParser) parseReturnsBody(v interface{}) ([]byte, error) {
 	v, err := doFiltersOnV(v, ppLoadFile)
 	if err != nil {
 		return nil, &loadError{filename: p.filename, err: err}

@@ -16,6 +16,10 @@ func MakeExtJsonMatcher(v interface{}) ExtJsonMatcher {
 	return ExtJsonMatcher{v: v}
 }
 
+func (m ExtJsonMatcher) Unwrap() interface{} {
+	return m.v
+}
+
 func (m ExtJsonMatcher) Matches(v interface{}) bool {
 	return m.matches(m.v, v)
 }
@@ -40,7 +44,7 @@ func (m ExtJsonMatcher) matches(mv interface{}, v interface{}) bool {
 		return m.matches(mv.(ExtJsonMatcher).v, v)
 	}
 
-	panic("Shouldn't happen")
+	return false
 }
 
 func (m ExtJsonMatcher) objectMatches(mv Object, v interface{}) bool {

@@ -34,7 +34,7 @@
               "@comment": "parses the url form value as json",
               "@json": {
                 "name": {
-                  "@regexp": "^Catch Me If You Can.+$"
+                  "@regexp": "^.*?Catch Me If You Can.*$"
                 },
                 "$.authors[0]": "Frank W. Abagnale"
               }
