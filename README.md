@@ -6,7 +6,7 @@
 
 [English | [中文](README_CN.md)]
 
-`MocKuma` is an http mocking server. It reads command-like json mapping configuration file, generating
+MocKuma is an http mocking server. It reads command-like json mapping configuration file, generating
 corresponding mock APIs dynamically.
 
 Front/back end developers may use this tool to mock RESTful APIs, helping developments and unit testings;
@@ -20,8 +20,8 @@ Executes the following command to install in your environment:
 $ go get github.com/kumasuke120/mockuma/cmd/mockuma
 ```
 
-You may also click [here](https://github.com/kumasuke120/mockuma/releases) to download a executable of the newest
-release version, if you don't own the Go development environment or you wanna do it quickly.
+You may also click [here](https://github.com/kumasuke120/mockuma/releases) to download an executable file of the latest
+release version, if you don't own the Go development environment or if you wanna do it quickly.
 
 
 ## Quick Start
@@ -59,7 +59,7 @@ $ mockuma
 [http://localhost:3214/?lang=cn](http://localhost:3214/?lang=cn) to check out the result. 
 
 #### Command-Line Arguments
-Although you could run MocKuma directly, MocKuma provides a series of command line arguments:
+Although you could run MocKuma directly like the example above, MocKuma provides a series of command line arguments:
 
 1. `-mapfile=<filename>`: the path to the MockuMappings mapping configuration file, supports both relative and absolute path. 
 Under the default circumstance, MocKuma will find a configuration file called `mockuMappings.json` or `mockuMappings.main.json` 
