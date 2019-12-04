@@ -1,27 +1,30 @@
 package myhttp
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestToHttpMethod(t *testing.T) {
-	if ToHttpMethod("get") != Get {
-		t.Error("get: failed")
-	}
-	if ToHttpMethod("GET") != Get {
-		t.Error("GET: failed")
-	}
-	if ToHttpMethod("Put") != Put {
-		t.Error("Put: failed")
-	}
+	//noinspection GoImportUsedAsName
+	assert := assert.New(t)
+
+	assert.Equal(Options, ToHttpMethod("Options"))
+	assert.Equal(Get, ToHttpMethod("get"))
+	assert.Equal(Head, ToHttpMethod("HEAD"))
+	assert.Equal(Post, ToHttpMethod("POST"))
+	assert.Equal(Put, ToHttpMethod("put"))
+	assert.Equal(Delete, ToHttpMethod("dElEtE"))
+	assert.Equal(Trace, ToHttpMethod("trAcE"))
+	assert.Equal(Connect, ToHttpMethod("CONNECT"))
 }
 
 func TestHttpMethod_Matches(t *testing.T) {
-	if !Get.Matches("GET") {
-		t.Error("Get-GET: failed")
-	}
-	if Post.Matches("GET") {
-		t.Error("Post-GET: failed")
-	}
-	if !Any.Matches("OPTIONS") {
-		t.Error("Any-OPTIONS: failed")
-	}
+	//noinspection GoImportUsedAsName
+	assert := assert.New(t)
+
+	assert.True(Get.Matches("GET"))
+	assert.True(Any.Matches("POST"))
+	assert.False(Post.Matches("GET"))
 }

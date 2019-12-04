@@ -1,27 +1,29 @@
 package myjson
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestIsAllNumber(t *testing.T) {
+	//noinspection GoImportUsedAsName
+	assert := assert.New(t)
+
 	v1 := []interface{}{Number(1), Number(2)}
-	if !IsAllNumber(v1) {
-		t.Error("v1: failed")
-	}
+	assert.True(IsAllNumber(v1))
 
 	v2 := []interface{}{Number(1), Boolean(false)}
-	if IsAllNumber(v2) {
-		t.Error("v2: failed")
-	}
+	assert.False(IsAllNumber(v2))
 }
 
 func TestIsNumber(t *testing.T) {
+	//noinspection GoImportUsedAsName
+	assert := assert.New(t)
+
 	v1 := Number(1)
-	if !IsNumber(v1) {
-		t.Error("v1: failed")
-	}
+	assert.True(IsNumber(v1))
 
 	v2 := String("")
-	if IsNumber(v2) {
-		t.Error("v2: failed")
-	}
+	assert.False(IsNumber(v2))
 }

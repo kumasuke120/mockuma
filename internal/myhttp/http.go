@@ -1,6 +1,7 @@
 package myhttp
 
 import (
+	"net/http"
 	"strings"
 )
 
@@ -21,9 +22,9 @@ const (
 type StatusCode int
 
 const (
-	Ok         = StatusCode(200)
-	BadRequest = StatusCode(400)
-	NotFound   = StatusCode(404)
+	Ok         = StatusCode(http.StatusOK)
+	BadRequest = StatusCode(http.StatusBadRequest)
+	NotFound   = StatusCode(http.StatusNotFound)
 )
 
 func ToHttpMethod(method interface{}) HttpMethod {
