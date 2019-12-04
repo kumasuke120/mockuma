@@ -31,4 +31,5 @@ const (
 	pHeaders    = "headers"
 	pParams     = "params"
 	pBody       = "body"
+	pLatency    = "latency"
 )

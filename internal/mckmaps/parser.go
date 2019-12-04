@@ -382,6 +382,16 @@ func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
 	}
 	returns.Body = body
 
+	p.jsonPath.SetLast(pLatency)
+	if v.Has(pLatency) {
+		rawLatency := v.Get(pLatency)
+		latency, err := p.parseLatency(rawLatency)
+		if err != nil {
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
+		returns.Latency = latency
+	}
+
 	p.jsonPath.RemoveLast()
 	return returns, nil
 }
@@ -412,6 +422,39 @@ func (p *mappingsParser) parseJsonToBytes(v interface{}) ([]byte, error) {
 		return nil, newParserError(p.filename, p.jsonPath)
 	}
 	return bytes, nil
+}
+
+func (p *mappingsParser) parseLatency(v interface{}) (*Interval, error) {
+	switch v.(type) {
+	case myjson.Number:
+		_v := int64(v.(myjson.Number))
+		return &Interval{
+			Min: _v,
+			Max: _v,
+		}, nil
+	case myjson.Array:
+		va := v.(myjson.Array)
+		if len(va) == 1 {
+			va0 := va[0]
+			switch va0.(type) {
+			case myjson.Number:
+				return p.parseLatency(va0)
+			}
+		} else if len(va) == 2 {
+			if myjson.IsAllNumber(va) {
+				va0 := int64(va[0].(myjson.Number))
+				va1 := int64(va[1].(myjson.Number))
+				if va1 >= va0 {
+					return &Interval{
+						Min: va0,
+						Max: va1,
+					}, nil
+				}
+			}
+		}
+	}
+
+	return nil, newParserError(p.filename, p.jsonPath)
 }
 
 type templateParser struct {

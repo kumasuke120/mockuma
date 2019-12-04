@@ -2,7 +2,9 @@ package server
 
 import (
 	"log"
+	"math/rand"
 	"net/http"
+	"time"
 
 	"github.com/kumasuke120/mockuma/internal/mckmaps"
 )
@@ -16,6 +18,10 @@ type policyExecutor struct {
 func (e *policyExecutor) execute() error {
 	returns := e.policy.Returns
 
+	if returns.Latency != nil {
+		waitBeforeReturns(returns.Latency)
+	}
+
 	e.writeHeaders(returns.Headers)
 	(*e.w).WriteHeader(int(returns.StatusCode)) // statusCode must be written after headers
 	err := e.writeBody(returns.Body)
@@ -25,6 +31,16 @@ func (e *policyExecutor) execute() error {
 
 	log.Printf("[executor] (%d) %s %s\n", returns.StatusCode, e.r.Method, e.r.URL)
 	return nil
+}
+
+func waitBeforeReturns(latency *mckmaps.Interval) {
+	diff := latency.Max - latency.Min
+	if diff > 0 {
+		d := rand.Int63n(diff) + latency.Min
+		time.Sleep(time.Duration(d * int64(time.Millisecond)))
+	} else if latency.Min > 0 {
+		time.Sleep(time.Duration(latency.Min * int64(time.Millisecond)))
+	}
 }
 
 func (e *policyExecutor) writeHeaders(headers []*mckmaps.NameValuesPair) {
