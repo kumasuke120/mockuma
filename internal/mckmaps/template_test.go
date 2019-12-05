@@ -24,11 +24,11 @@ func TestRenderString(t *testing.T) {
 	r1, e1 := renderString(theContext, theJsonPath, t1, theVars)
 	assert.Nil(e1)
 	assert.IsType(myjson.String(""), r1)
-	assert.Equal("a = \"123\", b1 = 123, b2 = 123.123, c = true", string(r1.(myjson.String)))
+	assert.EqualValues("a = \"123\", b1 = 123, b2 = 123.123, c = true", r1)
 
 	t2 := myjson.String("a = \"@{a:%8s}\", b1 = ORD@{b1:%010d}, b2 = @{b2:%.2f}, c = @{c}")
 	r2, e2 := renderString(theContext, theJsonPath, t2, theVars)
 	assert.Nil(e2)
 	assert.IsType(myjson.String(""), r2)
-	assert.Equal("a = \"     123\", b1 = ORD0000000123, b2 = 123.12, c = true", string(r2.(myjson.String)))
+	assert.EqualValues("a = \"     123\", b1 = ORD0000000123, b2 = 123.12, c = true", r2)
 }

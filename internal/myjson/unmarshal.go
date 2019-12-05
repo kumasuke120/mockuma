@@ -29,9 +29,9 @@ func toMyJson(v interface{}) interface{} {
 	case *regexp.Regexp:
 		return ExtRegexp(v.(*regexp.Regexp))
 	case Object:
-		return v.(Object)
+		return toMyJsonObject(v.(Object))
 	case Array:
-		return v.(Array)
+		return toMyJsonArray(v.(Array))
 	case Number:
 		return v.(Number)
 	case String:

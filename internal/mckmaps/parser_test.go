@@ -8,14 +8,16 @@ import (
 
 	"github.com/kumasuke120/mockuma/internal/myjson"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
+//noinspection GoImportUsedAsName
 func TestMappingsParser_parse(t *testing.T) {
-	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
+	require := require.New(t)
 
 	fb1, e1 := ioutil.ReadFile(filepath.Join("testdata", "mappings-1.json"))
-	assert.Nil(e1)
+	require.Nil(e1)
 	j1, e1 := myjson.Unmarshal(fb1)
 	assert.Nil(e1)
 	m1 := &mappingsParser{json: j1}
