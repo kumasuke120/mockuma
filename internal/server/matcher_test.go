@@ -65,6 +65,7 @@ func TestNewPathMatcher(t *testing.T) {
 	matcher := newPathMatcher(mappings)
 	expected := map[string][]*mckmaps.Mapping{
 		"/hello": {mappings.Mappings[0]},
+		"/mp1":   {mappings.Mappings[1]},
 	}
 	assert.Equal(t, expected, matcher.uri2mappings)
 }
