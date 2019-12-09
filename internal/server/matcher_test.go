@@ -142,7 +142,7 @@ func TestNewPathMatcher(t *testing.T) {
 					mappings.Mappings[2].Policies[2],
 				},
 			},
-			mappings.Mappings[2],
+			mappings.Mappings[3],
 		},
 	}
 	assert.Equal(t, expected, matcher.uri2mappings)
