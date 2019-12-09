@@ -1,0 +1,51 @@
+{
+  "@type": "template",
+  "template": {
+    "@comment": "show books list for page x",
+    "uri": "/api/books",
+    "method": "GET",
+    "policies": [
+      {
+        "when": {
+          "headers": {
+            "Content-Type": {
+              "@regexp": "^application/json.*$"
+            }
+          },
+          "body": {
+            "@json": {
+              "page": "@{page}",
+              "perPage": 20
+            }
+          }
+        },
+        "returns": {
+          "headers": {
+            "@comment": "the type of body is '.json'",
+            "Content-Type": "application/json; charset=utf8"
+          },
+          "body": {
+            "@file": "static/books-page@{page}.json"
+          }
+        }
+      },
+      {
+        "when": {
+          "params": {
+            "page": "@{page}",
+            "perPage": 20
+          }
+        },
+        "returns": {
+          "headers": {
+            "@comment": "the type of body is '.json'",
+            "Content-Type": "application/json; charset=utf8"
+          },
+          "body": {
+            "@file": "static/books-page@{page}.json"
+          }
+        }
+      }
+    ]
+  }
+}
