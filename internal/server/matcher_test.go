@@ -19,7 +19,7 @@ var mappings = &mckmaps.MockuMappings{
 			Policies: []*mckmaps.Policy{newStatusJsonPolicy(myhttp.Ok, "OK")},
 		},
 		{
-			Uri:    "/mp1",
+			Uri:    "/m",
 			Method: myhttp.Get,
 			Policies: []*mckmaps.Policy{
 				{
@@ -58,14 +58,66 @@ var mappings = &mckmaps.MockuMappings{
 				},
 			},
 		},
+		{
+			Uri:    "/m",
+			Method: myhttp.Get,
+			Policies: []*mckmaps.Policy{
+				{
+					When: &mckmaps.When{
+						Headers: []*mckmaps.NameValuesPair{
+							{
+								Name:   "X-H1",
+								Values: []string{"v1"},
+							},
+							{
+								Name:   "X-H2",
+								Values: []string{"v2", "v1"},
+							},
+						},
+					},
+				},
+				{
+					When: &mckmaps.When{
+						HeaderRegexps: []*mckmaps.NameRegexpPair{
+							{
+								Name:   "X-R1",
+								Regexp: regexp.MustCompile("^\\d{3}$"),
+							},
+						},
+					},
+				},
+				{
+					When: &mckmaps.When{
+						HeaderJsons: []*mckmaps.NameJsonPair{
+							{
+								Name: "X-J1",
+								Json: myjson.MakeExtJsonMatcher(myjson.Object{}),
+							},
+						},
+					},
+				},
+			},
+		},
 	},
 }
 
 func TestNewPathMatcher(t *testing.T) {
 	matcher := newPathMatcher(mappings)
+
 	expected := map[string][]*mckmaps.Mapping{
 		"/hello": {mappings.Mappings[0]},
-		"/mp1":   {mappings.Mappings[1]},
+		"/m": {&mckmaps.Mapping{
+			Uri:    "/m",
+			Method: myhttp.Get,
+			Policies: []*mckmaps.Policy{
+				mappings.Mappings[1].Policies[0],
+				mappings.Mappings[1].Policies[1],
+				mappings.Mappings[1].Policies[2],
+				mappings.Mappings[2].Policies[0],
+				mappings.Mappings[2].Policies[1],
+				mappings.Mappings[2].Policies[2],
+			},
+		}},
 	}
 	assert.Equal(t, expected, matcher.uri2mappings)
 }
@@ -86,21 +138,21 @@ func TestPathMatcher_matchPolicy(t *testing.T) {
 
 	matcher := newPathMatcher(mappings)
 
-	bound1 := matcher.bind(httptest.NewRequest("", "/mp1?p1=v1&p2=v1&p2=v2", nil))
+	bound1 := matcher.bind(httptest.NewRequest("", "/m?p1=v1&p2=v1&p2=v2", nil))
 	assert.True(bound1.matches())
 	assert.Equal(mappings.Mappings[1].Policies[0], bound1.matchPolicy())
 
-	bound2 := matcher.bind(httptest.NewRequest("", "/mp1?r1=123", nil))
+	bound2 := matcher.bind(httptest.NewRequest("", "/m?r1=123", nil))
 	assert.True(bound2.matches())
 	assert.Equal(mappings.Mappings[1].Policies[1], bound2.matchPolicy())
-	bound2 = matcher.bind(httptest.NewRequest("", "/mp1?r1=12", nil))
+	bound2 = matcher.bind(httptest.NewRequest("", "/m?r1=12", nil))
 	assert.True(bound2.matches())
 	assert.Nil(bound2.matchPolicy())
 
-	bound3 := matcher.bind(httptest.NewRequest("", "/mp1?j={}", nil))
+	bound3 := matcher.bind(httptest.NewRequest("", "/m?j={}", nil))
 	assert.True(bound3.matches())
 	assert.Equal(mappings.Mappings[1].Policies[2], bound3.matchPolicy())
-	bound3 = matcher.bind(httptest.NewRequest("", "/mp1?j=123", nil))
+	bound3 = matcher.bind(httptest.NewRequest("", "/m?j=123", nil))
 	assert.True(bound3.matches())
 	assert.Nil(bound3.matchPolicy())
 }
