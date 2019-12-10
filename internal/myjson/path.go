@@ -33,9 +33,9 @@ func NewPath(paths ...interface{}) *Path {
 func (p *Path) Append(v interface{}) {
 	switch v.(type) {
 	case string:
-		p.paths = append(p.paths, p)
+		p.paths = append(p.paths, v)
 	case int:
-		p.paths = append(p.paths, p)
+		p.paths = append(p.paths, v)
 	}
 }
 
