@@ -27,10 +27,19 @@ func TestObject_SetByPath(t *testing.T) {
 	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
 
-	o1Path := NewPath("first", 2, "third")
-	o1, e1 := Object{}.SetByPath(o1Path, String("value"))
-	assert.Nil(e1)
-	assert.Equal(`map[first:[<nil> <nil> map[third:"value"]]]`, o1.String())
+	p := NewPath("first", 2, "third")
+	o1, e1 := Object{}.SetByPath(p, String("value"))
+	if assert.Nil(e1) {
+		assert.Equal(`map[first:[<nil> <nil> map[third:"value"]]]`, o1.String())
+	}
+
+	o2 := Object(map[string]interface{}{
+		"first": Array{},
+	})
+	o2, e2 := o2.SetByPath(p, "value")
+	if assert.Nil(e2) {
+		assert.Equal(`map[first:[<nil> <nil> map[third:"value"]]]`, o2.String())
+	}
 }
 
 func TestPath_Append(t *testing.T) {
