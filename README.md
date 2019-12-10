@@ -13,7 +13,7 @@ and testing it.
 ## Installation
 Executes the following command to install in your environment:
 ```
-$ go get github.com/kumasuke120/mockuma/cmd/mockuma
+$ go get -u github.com/kumasuke120/mockuma/cmd/mockuma
 ```
 
 You may also click [here](https://github.com/kumasuke120/mockuma/releases) to download an executable file of the latest
