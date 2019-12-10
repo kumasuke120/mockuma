@@ -32,3 +32,44 @@ func TestObject_SetByPath(t *testing.T) {
 	assert.Nil(e1)
 	assert.Equal(`map[first:[<nil> <nil> map[third:"value"]]]`, o1.String())
 }
+
+func TestPath_Append(t *testing.T) {
+	//noinspection GoImportUsedAsName
+	assert := assert.New(t)
+
+	p := NewPath()
+	if assert.NotNil(p) {
+		p.Append(1)
+		assert.Equal([]interface{}{1}, p.paths)
+
+		p.Append("s")
+		assert.Equal([]interface{}{1, "s"}, p.paths)
+	}
+}
+
+func TestPath_SetLast(t *testing.T) {
+	//noinspection GoImportUsedAsName
+	assert := assert.New(t)
+
+	p1 := NewPath()
+	p1.SetLast(1)
+	assert.Nil(p1.paths)
+
+	p2 := NewPath(0)
+	p2.SetLast(1)
+	assert.Equal([]interface{}{1}, p2.paths)
+
+	p3 := NewPath("")
+	p3.SetLast("s")
+	assert.Equal([]interface{}{"s"}, p3.paths)
+}
+
+func TestPath_String(t *testing.T) {
+	//noinspection GoImportUsedAsName
+	assert := assert.New(t)
+
+	assert.Equal("$[0].abc", NewPath(0, "abc").String())
+	assert.Equal("$.abc[0]", NewPath("abc", 0).String())
+	assert.Equal("$['@abc'][0]", NewPath("@abc", 0).String())
+	assert.Equal("$['\\'@abc\\''][0]", NewPath("'@abc'", 0).String())
+}
