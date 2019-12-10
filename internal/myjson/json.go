@@ -42,7 +42,10 @@ func (o Object) Get(name string) interface{} {
 }
 
 func (o Object) Set(name string, v interface{}) Object {
-	m := map[string]interface{}(o)
+	m := make(map[string]interface{}, len(o))
+	for k, v := range o {
+		m[k] = v
+	}
 	m[name] = toMyJson(v)
 	return m
 }
