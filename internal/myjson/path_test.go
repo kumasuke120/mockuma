@@ -64,6 +64,12 @@ func TestPath_SetLast(t *testing.T) {
 	assert.Equal([]interface{}{"s"}, p3.paths)
 }
 
+func TestPath_RemoveLast(t *testing.T) {
+	p := NewPath(0)
+	p.RemoveLast()
+	assert.Empty(t, p.paths)
+}
+
 func TestPath_String(t *testing.T) {
 	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
