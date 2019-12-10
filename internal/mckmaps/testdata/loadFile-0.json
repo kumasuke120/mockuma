@@ -1,0 +1,17 @@
+{
+  "i": 1,
+  "s": {
+    "@file": "loadFile-s.txt"
+  },
+  "a": [
+    {
+      "@file": "loadFile-s.txt"
+    },
+    {
+      "@file": "loadFile-s.txt"
+    },
+    {
+      "@file": "loadFile-s.txt"
+    }
+  ]
+}
