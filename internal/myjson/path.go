@@ -226,44 +226,59 @@ func toKey(builder *strings.Builder, quoted bool) (string, error) {
 }
 
 func (o Object) SetByPath(path *Path, v interface{}) (Object, error) {
-	ts, err := o.traverseAndGetSequence(path)
+	ds, err := o.toAllPathDs(path)
 	if err != nil {
 		return nil, err
 	}
 
 	var d interface{}
 	vToSet := toMyJson(v)
-	for i := len(ts) - 1; i >= 0; i-- {
-		d = ts[i]
+	for i := len(ds) - 1; i >= 0; i-- {
+		d = ds[i]
 		k := path.paths[i]
 		vToSet = anySetEx(d, k, vToSet)
+		d = vToSet
 	}
 
 	return d.(Object), nil
 }
 
-func (o Object) traverseAndGetSequence(path *Path) ([]interface{}, error) {
+func (o Object) toAllPathDs(path *Path) ([]interface{}, error) {
 	var ts []interface{}
 	var t interface{} = o
-	for _, p := range path.paths {
+	for _, p := range path.paths { // reads through paths
 		switch p.(type) {
-		case int:
+		case int: // requires array
+			_p := p.(int)
 			switch t.(type) {
 			case nil:
 				ts = append(ts, Array{})
+				t = nil // next level is empty
 			case Array:
-				ts = append(ts, t)
-				t = t.(Array).Get(p.(int))
+				_t := t.(Array)
+				ts = append(ts, _t)
+				if _t.Has(_p) {
+					t = _t.Get(_p)
+				} else {
+					t = nil // next level is empty
+				}
 			default:
 				return nil, errors.New("requires a json array")
 			}
 		case string:
+			_p := p.(string)
 			switch t.(type) {
 			case nil:
 				ts = append(ts, Object{})
+				t = nil // next level is empty
 			case Object:
-				ts = append(ts, t)
-				t = t.(Object).Get(p.(string))
+				_t := t.(Object)
+				ts = append(ts, _t)
+				if _t.Has(_p) {
+					t = _t.Get(_p)
+				} else {
+					t = nil // next level is empty
+				}
 			default:
 				return nil, errors.New("requires a json object")
 			}

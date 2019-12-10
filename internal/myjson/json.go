@@ -70,6 +70,10 @@ func (o Object) GetString(name string) (String, error) {
 	return toString(v, name)
 }
 
+func (a Array) Has(idx int) bool {
+	return len(a) > idx && 0 <= idx
+}
+
 func (a Array) Get(idx int) interface{} {
 	return []interface{}(a)[idx]
 }
