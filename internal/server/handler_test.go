@@ -15,8 +15,27 @@ func TestMockHandler_ServeHTTP(t *testing.T) {
 	handler := newMockHandler(mappings)
 
 	req1 := httptest.NewRequest("POST", "/hello", nil)
-	rr := httptest.NewRecorder()
-	handler.ServeHTTP(rr, req1)
+	rr1 := httptest.NewRecorder()
+	handler.ServeHTTP(rr1, req1)
+	assert.Equal(http.StatusOK, rr1.Code)
 
-	assert.Equal(http.StatusOK, rr.Code)
+	req2 := httptest.NewRequest("", "/hello", nil)
+	rr2 := httptest.NewRecorder()
+	handler.ServeHTTP(rr2, req2)
+	assert.Equal(http.StatusMethodNotAllowed, rr2.Code)
+
+	req3 := httptest.NewRequest("", "/notfound", nil)
+	rr3 := httptest.NewRecorder()
+	handler.ServeHTTP(rr3, req3)
+	assert.Equal(http.StatusNotFound, rr3.Code)
+
+	req4 := httptest.NewRequest("", "/m", nil)
+	rr4 := httptest.NewRecorder()
+	handler.ServeHTTP(rr4, req4)
+	assert.Equal(http.StatusBadRequest, rr4.Code)
+}
+
+func TestMockHandler_listAllMappings(t *testing.T) {
+	handler := newMockHandler(mappings)
+	handler.listAllMappings()
 }
