@@ -22,9 +22,10 @@ const (
 type StatusCode int
 
 const (
-	Ok         = StatusCode(http.StatusOK)
-	BadRequest = StatusCode(http.StatusBadRequest)
-	NotFound   = StatusCode(http.StatusNotFound)
+	Ok               = StatusCode(http.StatusOK)
+	BadRequest       = StatusCode(http.StatusBadRequest)
+	MethodNotAllowed = StatusCode(http.StatusMethodNotAllowed)
+	NotFound         = StatusCode(http.StatusNotFound)
 )
 
 func ToHttpMethod(method interface{}) HttpMethod {

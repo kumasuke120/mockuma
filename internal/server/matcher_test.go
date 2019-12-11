@@ -58,12 +58,6 @@ var mappings = &mckmaps.MockuMappings{
 						},
 					},
 				},
-			},
-		},
-		{
-			Uri:    "/m",
-			Method: myhttp.Get,
-			Policies: []*mckmaps.Policy{
 				{
 					When: &mckmaps.When{
 						Headers: []*mckmaps.NameValuesPair{
@@ -131,18 +125,11 @@ func TestNewPathMatcher(t *testing.T) {
 		"/hello": {mappings.Mappings[0]},
 		"/m": {
 			&mckmaps.Mapping{
-				Uri:    "/m",
-				Method: myhttp.Get,
-				Policies: []*mckmaps.Policy{
-					mappings.Mappings[1].Policies[0],
-					mappings.Mappings[1].Policies[1],
-					mappings.Mappings[1].Policies[2],
-					mappings.Mappings[2].Policies[0],
-					mappings.Mappings[2].Policies[1],
-					mappings.Mappings[2].Policies[2],
-				},
+				Uri:      "/m",
+				Method:   myhttp.Get,
+				Policies: mappings.Mappings[1].Policies,
 			},
-			mappings.Mappings[3],
+			mappings.Mappings[2],
 		},
 	}
 	assert.Equal(t, expected, matcher.uri2mappings)
@@ -188,13 +175,13 @@ func TestPathMatcher_matchPolicy(t *testing.T) {
 	req4.Header.Add("X-H2", "v2")
 	bound4 := matcher.bind(req4)
 	assert.True(bound4.matches())
-	assert.Equal(mappings.Mappings[2].Policies[0], bound4.matchPolicy())
+	assert.Equal(mappings.Mappings[1].Policies[3], bound4.matchPolicy())
 
 	req5p1 := httptest.NewRequest("", "/m", nil)
 	req5p1.Header.Add("X-R1", "123")
 	bound5 := matcher.bind(req5p1)
 	assert.True(bound5.matches())
-	assert.Equal(mappings.Mappings[2].Policies[1], bound5.matchPolicy())
+	assert.Equal(mappings.Mappings[1].Policies[4], bound5.matchPolicy())
 	req5p2 := httptest.NewRequest("", "/m", nil)
 	req5p2.Header.Add("X-R1", "12")
 	bound5 = matcher.bind(req5p2)
@@ -205,7 +192,7 @@ func TestPathMatcher_matchPolicy(t *testing.T) {
 	req6p1.Header.Add("X-J1", "{}")
 	bound6 := matcher.bind(req6p1)
 	assert.True(bound6.matches())
-	assert.Equal(mappings.Mappings[2].Policies[2], bound6.matchPolicy())
+	assert.Equal(mappings.Mappings[1].Policies[5], bound6.matchPolicy())
 	req6p2 := httptest.NewRequest("", "/m", nil)
 	req6p2.Header.Add("X-J1", "120")
 	bound6 = matcher.bind(req6p2)
@@ -214,16 +201,20 @@ func TestPathMatcher_matchPolicy(t *testing.T) {
 
 	bound7 := matcher.bind(httptest.NewRequest("POST", "/m", strings.NewReader("123")))
 	assert.True(bound7.matches())
-	assert.Equal(mappings.Mappings[3].Policies[0], bound7.matchPolicy())
+	assert.Equal(mappings.Mappings[2].Policies[0], bound7.matchPolicy())
 
 	bound8 := matcher.bind(httptest.NewRequest("POST", "/m", strings.NewReader("120")))
 	assert.True(bound8.matches())
-	assert.Equal(mappings.Mappings[3].Policies[1], bound8.matchPolicy())
+	assert.Equal(mappings.Mappings[2].Policies[1], bound8.matchPolicy())
 	bound8 = matcher.bind(httptest.NewRequest("POST", "/m", strings.NewReader("95")))
 	assert.True(bound8.matches())
 	assert.Nil(bound8.matchPolicy())
 
 	bound9 := matcher.bind(httptest.NewRequest("POST", "/m", strings.NewReader("{}")))
 	assert.True(bound9.matches())
-	assert.Equal(mappings.Mappings[3].Policies[2], bound9.matchPolicy())
+	assert.Equal(mappings.Mappings[2].Policies[2], bound9.matchPolicy())
+
+	bound10 := matcher.bind(httptest.NewRequest("", "/hello", nil))
+	assert.False(bound10.matches())
+	assert.True(bound10.isMethodNotAllowed())
 }

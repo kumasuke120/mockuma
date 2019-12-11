@@ -20,25 +20,10 @@ func newPathMatcher(mappings *mckmaps.MockuMappings) *pathMatcher {
 	uri2mappings := make(map[string][]*mckmaps.Mapping)
 	for _, m := range mappings.Mappings {
 		mappingsOfUri := uri2mappings[m.Uri]
-		mappingsOfUri = appendToMappingsOfUri(mappingsOfUri, m)
+		mappingsOfUri = append(mappingsOfUri, m)
 		uri2mappings[m.Uri] = mappingsOfUri
 	}
 	return &pathMatcher{uri2mappings: uri2mappings}
-}
-
-func appendToMappingsOfUri(dst []*mckmaps.Mapping, m *mckmaps.Mapping) []*mckmaps.Mapping {
-	appended := false
-	for _, dm := range dst {
-		if dm.Uri == m.Uri && dm.Method == m.Method {
-			dm.Policies = append(dm.Policies, m.Policies...)
-			appended = true
-		}
-	}
-
-	if !appended {
-		dst = append(dst, m)
-	}
-	return dst
 }
 
 func (m *pathMatcher) bind(r *http.Request) *boundMatcher {
@@ -49,6 +34,7 @@ type boundMatcher struct {
 	m              *pathMatcher
 	r              *http.Request
 	matchedMapping *mckmaps.Mapping
+	is405          bool
 	bodyCache      []byte
 }
 
@@ -62,9 +48,15 @@ func (bm *boundMatcher) matches() bool {
 				return true
 			}
 		}
+
+		bm.is405 = true
 	}
 
 	return false
+}
+
+func (bm *boundMatcher) isMethodNotAllowed() bool {
+	return bm.is405
 }
 
 func getUriWithoutQuery(url0 *url.URL) string {

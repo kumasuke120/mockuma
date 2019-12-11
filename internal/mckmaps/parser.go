@@ -101,6 +101,39 @@ func (p *parser) reset() {
 	ppParseRegexp.reset()
 }
 
+func (p *parser) sortMappings(mappings *MockuMappings) *MockuMappings {
+	uri2mappings := make(map[string][]*Mapping)
+	var uriOrder []string
+	for _, m := range mappings.Mappings {
+		mappingsOfUri := uri2mappings[m.Uri]
+		mappingsOfUri = appendToMappingsOfUri(mappingsOfUri, m)
+		uri2mappings[m.Uri] = mappingsOfUri
+		uriOrder = append(uriOrder, m.Uri)
+	}
+
+	ms := make([]*Mapping, 0, len(mappings.Mappings))
+	for _, uri := range uriOrder {
+		mappingsOfUri := uri2mappings[uri]
+		ms = append(ms, mappingsOfUri...)
+	}
+	return &MockuMappings{Mappings: ms}
+}
+
+func appendToMappingsOfUri(dst []*Mapping, m *Mapping) []*Mapping {
+	appended := false
+	for _, dm := range dst {
+		if dm.Uri == m.Uri && dm.Method == m.Method {
+			dm.Policies = append(dm.Policies, m.Policies...)
+			appended = true
+		}
+	}
+
+	if !appended {
+		dst = append(dst, m)
+	}
+	return dst
+}
+
 type mainParser struct {
 	json myjson.Object
 	parser
