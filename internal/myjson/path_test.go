@@ -21,6 +21,9 @@ func TestParsePath(t *testing.T) {
 
 	_, e3 := ParsePath("$$.first.second")
 	assert.NotNil(e3)
+
+	_, e4 := ParsePath("$.first[1")
+	assert.NotNil(e4)
 }
 
 func TestObject_SetByPath(t *testing.T) {
