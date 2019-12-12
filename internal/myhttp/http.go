@@ -9,14 +9,15 @@ type HttpMethod string
 
 const (
 	Any     = HttpMethod("*")
-	Options = HttpMethod("OPTIONS")
-	Get     = HttpMethod("GET")
-	Head    = HttpMethod("HEAD")
-	Post    = HttpMethod("POST")
-	Put     = HttpMethod("PUT")
-	Delete  = HttpMethod("DELETE")
-	Trace   = HttpMethod("TRACE")
-	Connect = HttpMethod("CONNECT")
+	Options = HttpMethod(http.MethodOptions)
+	Get     = HttpMethod(http.MethodGet)
+	Head    = HttpMethod(http.MethodHead)
+	Post    = HttpMethod(http.MethodPost)
+	Put     = HttpMethod(http.MethodPut)
+	Delete  = HttpMethod(http.MethodDelete)
+	Trace   = HttpMethod(http.MethodTrace)
+	Connect = HttpMethod(http.MethodConnect)
+	Patch   = HttpMethod(http.MethodPatch)
 )
 
 type StatusCode int
@@ -32,22 +33,24 @@ func ToHttpMethod(method interface{}) HttpMethod {
 	switch method.(type) {
 	case string:
 		switch strings.ToUpper(method.(string)) {
-		case "OPTIONS":
+		case http.MethodOptions:
 			return Options
-		case "GET":
+		case http.MethodGet:
 			return Get
-		case "HEAD":
+		case http.MethodHead:
 			return Head
-		case "POST":
+		case http.MethodPost:
 			return Post
-		case "PUT":
+		case http.MethodPut:
 			return Put
-		case "DELETE":
+		case http.MethodDelete:
 			return Delete
-		case "TRACE":
+		case http.MethodTrace:
 			return Trace
-		case "CONNECT":
+		case http.MethodConnect:
 			return Connect
+		case http.MethodPatch:
+			return Patch
 		}
 	}
 

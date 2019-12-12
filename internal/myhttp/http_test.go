@@ -18,6 +18,7 @@ func TestToHttpMethod(t *testing.T) {
 	assert.Equal(Delete, ToHttpMethod("dElEtE"))
 	assert.Equal(Trace, ToHttpMethod("trAcE"))
 	assert.Equal(Connect, ToHttpMethod("CONNECT"))
+	assert.Equal(Patch, ToHttpMethod("PAtch"))
 	assert.Equal(Any, ToHttpMethod("@any"))
 }
 
