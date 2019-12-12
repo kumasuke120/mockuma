@@ -74,7 +74,7 @@ func (p *parser) parse() (*MockuMappings, error) {
 	}
 
 	p.reset()
-	return result, err
+	return p.sortMappings(result), err
 }
 
 func (p *parser) load(preprocessors ...filter) (interface{}, error) {
@@ -102,6 +102,10 @@ func (p *parser) reset() {
 }
 
 func (p *parser) sortMappings(mappings *MockuMappings) *MockuMappings {
+	if mappings == nil {
+		return nil
+	}
+
 	uri2mappings := make(map[string][]*Mapping)
 	var uriOrder []string
 	for _, m := range mappings.Mappings {
@@ -497,20 +501,21 @@ type templateParser struct {
 }
 
 func (p *templateParser) parse() (*template, error) {
-	json, err := p.load(ppRemoveComment)
-	if err != nil {
-		return nil, err
+	if p.json == nil {
+		json, err := p.load(ppRemoveComment)
+		if err != nil {
+			return nil, err
+		}
+
+		switch json.(type) {
+		case myjson.Object:
+			p.json = json.(myjson.Object)
+		default:
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
 	}
 
-	p.jsonPath = myjson.NewPath()
-	switch json.(type) {
-	case myjson.Object:
-		p.jsonPath.Append("")
-		p.json = json.(myjson.Object)
-	default:
-		return nil, newParserError(p.filename, p.jsonPath)
-	}
-
+	p.jsonPath = myjson.NewPath("")
 	p.jsonPath.SetLast(dType)
 	_type, err := p.json.GetString(dType)
 	if err != nil || string(_type) != tTemplate {
@@ -542,20 +547,22 @@ type varsParser struct {
 }
 
 func (p *varsParser) parse() ([]*vars, error) {
-	json, err := p.load(ppRemoveComment)
-	if err != nil {
-		return nil, err
+	if p.json == nil {
+		json, err := p.load(ppRemoveComment)
+		if err != nil {
+			return nil, err
+		}
+
+		p.jsonPath = myjson.NewPath()
+		switch json.(type) {
+		case myjson.Object:
+			p.json = json.(myjson.Object)
+		default:
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
 	}
 
-	p.jsonPath = myjson.NewPath()
-	switch json.(type) {
-	case myjson.Object:
-		p.jsonPath.Append("")
-		p.json = json.(myjson.Object)
-	default:
-		return nil, newParserError(p.filename, p.jsonPath)
-	}
-
+	p.jsonPath = myjson.NewPath("")
 	p.jsonPath.SetLast(dType)
 	_type, err := p.json.GetString(dType)
 	if err != nil || string(_type) != tVars {
