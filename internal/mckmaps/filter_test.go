@@ -85,3 +85,33 @@ func TestParseRegexp(t *testing.T) {
 		}
 	}
 }
+
+//noinspection GoImportUsedAsName
+func TestRenderTemplate(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	oldWd, err := os.Getwd()
+	require.Nil(err)
+
+	fb0, err := ioutil.ReadFile(filepath.Join("testdata", "renderTemplate.json"))
+	require.Nil(err)
+	j0, err := myjson.Unmarshal(fb0)
+	require.Nil(err)
+
+	fbe, err := ioutil.ReadFile(filepath.Join("testdata", "renderTemplate-expected.json"))
+	require.Nil(err)
+	je, err := myjson.Unmarshal(fbe)
+	require.Nil(err)
+
+	err = os.Chdir(filepath.Join(oldWd, "testdata"))
+	require.Nil(err)
+
+	ja, err := doFiltersOnV(j0, makeTemplateFilter())
+	if assert.Nil(err) {
+		assert.Equal(je, ja)
+	}
+
+	err = os.Chdir(oldWd)
+	require.Nil(err)
+}

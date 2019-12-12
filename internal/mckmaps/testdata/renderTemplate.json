@@ -1,0 +1,41 @@
+{
+  "a": {
+    "@template": "renderTemplate.template.json",
+    "vars": [
+      {
+        "a": 1
+      }
+    ]
+  },
+  "bc": {
+    "@template": "renderTemplate.template.json",
+    "vars": [
+      {
+        "a": 2
+      },
+      {
+        "a": 3
+      }
+    ]
+  },
+  "l": [
+    {
+      "@template": "renderTemplate.template.json",
+      "@vars": "renderTemplate-1.vars.json"
+    },
+    {
+      "@template": "renderTemplate.template.json",
+      "@vars": "renderTemplate-2.vars.json"
+    }
+  ],
+  "l2": [
+    {
+      "@template": "renderTemplate.template.json",
+      "@vars": "renderTemplate-1.vars.json"
+    },
+    {
+      "@template": "renderTemplate.template.json",
+      "@vars": "renderTemplate-2.vars.json"
+    }
+  ]
+}
