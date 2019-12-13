@@ -1,3 +1,5 @@
+//+build !test
+
 package main
 
 import (
@@ -11,7 +13,7 @@ import (
 
 const (
 	appName       = "MocKuma"
-	versionNumber = "1.1.2"
+	versionNumber = "1.1.3"
 	author        = "kumasuke120<bearcomingx@gmail.com>"
 	github        = "https://github.com/kumasuke120/mockuma"
 	gitee         = "https://gitee.com/kumasuke/mockuma"

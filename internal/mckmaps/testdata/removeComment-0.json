@@ -1,0 +1,11 @@
+{
+  "@comment": "comment",
+  "a": [
+    {
+      "@comment": {
+        "a1": "comment"
+      },
+      "value": 1
+    }
+  ]
+}

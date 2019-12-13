@@ -178,13 +178,12 @@ func (f *templateFilter) getTemplateFromDTemplate(v myjson.Object) (*template, *
 	return template, &renderContext{filename: _filename}, nil
 }
 
-func (f *templateFilter) getVarsFromDTemplate(v myjson.Object) ([]*vars, error) {
-	var varsSlice []*vars
-	var err error
+func (f *templateFilter) getVarsFromDTemplate(v myjson.Object) (varsSlice []*vars, err error) {
 	if v.Has(tVars) { // if @template directive has a 'vars' attribute
 		varsSlice, err = new(varsParser).parseVars(v)
 	} else {
-		filename, err := v.GetString(dVars)
+		var filename myjson.String
+		filename, err = v.GetString(dVars)
 		if err != nil {
 			return nil, errors.New("cannot read filename from " + dVars)
 		}
@@ -197,7 +196,7 @@ func (f *templateFilter) getVarsFromDTemplate(v myjson.Object) ([]*vars, error) 
 			f.varsSliceCache[_filename] = varsSlice
 		}
 	}
-	return varsSlice, err
+	return
 }
 
 func (f *templateFilter) reset() { // clears caches
@@ -431,15 +430,15 @@ func (f *jsonMatcherFilter) generateObject(v myjson.Object) (interface{}, error)
 		}
 		return myjson.MakeExtJsonMatcher(raw), nil
 	} else {
-		rV := make(myjson.Object)
+		gV := make(myjson.Object)
 		for name, value := range v {
-			rValue, err := f.generate(value)
+			gValue, err := f.generate(value)
 			if err != nil {
 				return nil, err
 			}
-			rV[name] = rValue
+			gV[name] = gValue
 		}
-		return rV, nil
+		return gV, nil
 	}
 }
 
@@ -470,18 +469,18 @@ func (f *jsonMatcherFilter) objectToRawJsonMatcher(v myjson.Object) (myjson.Obje
 	result := make(myjson.Object)
 	jPaths := make(map[string]interface{})
 	for name, value := range v {
-		rValue, err := f.toRawJsonMatcher(value)
+		gValue, err := f.generate(value)
 		if err != nil {
 			return nil, err
 		}
 
 		if strings.HasPrefix(name, "$$") {
 			name = name[1:]
-			result[name] = rValue
+			result[name] = gValue
 		} else if strings.HasPrefix(name, "$") { // treats as json-path
-			jPaths[name] = rValue
+			jPaths[name] = gValue
 		} else {
-			result[name] = rValue
+			result[name] = gValue
 		}
 	}
 
@@ -503,11 +502,11 @@ func (f *jsonMatcherFilter) objectToRawJsonMatcher(v myjson.Object) (myjson.Obje
 func (f *jsonMatcherFilter) arrayToRawJsonMatcher(v myjson.Array) (myjson.Array, error) {
 	result := make(myjson.Array, len(v))
 	for idx, value := range v {
-		rValue, err := f.toRawJsonMatcher(value)
+		gValue, err := f.generate(value)
 		if err != nil {
 			return nil, err
 		}
-		result[idx] = rValue
+		result[idx] = gValue
 	}
 	return result, nil
 }

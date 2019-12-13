@@ -1,0 +1,71 @@
+{
+  "@type": "template",
+  "template": {
+    "@comment": "show books list for page x",
+    "uri": "/api/books",
+    "method": "GET",
+    "policies": [
+      {
+        "when": {
+          "headers": {
+            "Content-Type": {
+              "@regexp": "^application/xml.*$"
+            }
+          },
+          "body": {
+            "@regexp": "(?s)^.+?<page>@{page}</page>.+?<perPage>20</perPage>.*$"
+          }
+        },
+        "returns": {
+          "headers": {
+            "@comment": "the type of body is '.xml'",
+            "Content-Type": "application/xml; charset=utf8"
+          },
+          "body": {
+            "@file": "static/books-page@{page}.xml"
+          }
+        }
+      },
+      {
+        "when": {
+          "headers": {
+            "Accept": {
+              "@regexp": "^application/xml.*$"
+            }
+          },
+          "params": {
+            "page": "@{page}",
+            "perPage": 20
+          }
+        },
+        "returns": {
+          "headers": {
+            "@comment": "the type of body is '.xml'",
+            "Content-Type": "application/xml; charset=utf8"
+          },
+          "body": {
+            "@file": "static/books-page@{page}.xml"
+          }
+        }
+      },
+      {
+        "when": {
+          "params": {
+            "page": "@{page}",
+            "perPage": 20,
+            "xml": ""
+          }
+        },
+        "returns": {
+          "headers": {
+            "@comment": "the type of body is '.xml'",
+            "Content-Type": "application/xml; charset=utf8"
+          },
+          "body": {
+            "@file": "static/books-page@{page}.xml"
+          }
+        }
+      }
+    ]
+  }
+}

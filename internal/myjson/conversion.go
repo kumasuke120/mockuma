@@ -14,9 +14,9 @@ type valueError struct {
 func (e *valueError) Error() string {
 	if e.name == "" {
 		return "cannot interpret value as json value"
-	} else {
-		return fmt.Sprintf("cannot read value of name '%s'", e.name)
 	}
+
+	return fmt.Sprintf("cannot read value of name '%s'", e.name)
 }
 
 func ToObject(v interface{}) (Object, error) {
@@ -32,6 +32,10 @@ func toObject(v interface{}, name string) (Object, error) {
 	}
 }
 
+func ToArray(v interface{}) (Array, error) {
+	return toArray(v, "")
+}
+
 func toArray(v interface{}, name string) (Array, error) {
 	switch v.(type) {
 	case Array:
@@ -39,6 +43,10 @@ func toArray(v interface{}, name string) (Array, error) {
 	default:
 		return Array{}, &valueError{name: name}
 	}
+}
+
+func ToNumber(v interface{}) (Number, error) {
+	return toNumber(v, "")
 }
 
 func toNumber(v interface{}, name string) (Number, error) {

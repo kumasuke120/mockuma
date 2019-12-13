@@ -1,0 +1,277 @@
+{
+  "code": 2000,
+  "message": "Succeed",
+  "data": {
+    "page": 1,
+    "perPage": 20,
+    "total": 21,
+    "list": [
+      {
+        "id": 1,
+        "name": "The Three-Body Problem",
+        "authors": [
+          "Cixin Liu",
+          "Ken Liu"
+        ],
+        "publisher": "Tor Books",
+        "isbn": "978-0765382030",
+        "releaseDate": "2016-01-12",
+        "price": 11.06,
+        "language": "English",
+        "pages": 416
+      },
+      {
+        "id": 2,
+        "name": "The Dark Forest (Remembrance of Earth's Past)",
+        "authors": [
+          "Cixin Liu",
+          "Joel Martinsen"
+        ],
+        "publisher": "Tor Books",
+        "isbn": "978-0765386694",
+        "releaseDate": "2016-08-16",
+        "price": 13.99,
+        "language": "English",
+        "pages": 528
+      },
+      {
+        "id": 3,
+        "name": "Death's End (Remembrance of Earth's Past Book 3)",
+        "authors": [
+          "Cixin Liu",
+          "Ken Liu"
+        ],
+        "publisher": "Tor Books",
+        "isbn": "978-0765377104",
+        "releaseDate": "2016-09-20",
+        "price": 16.74,
+        "language": "English",
+        "pages": 605
+      },
+      {
+        "id": 4,
+        "name": "Fifty Shades of Grey: Book One of the Fifty Shades Trilogy (Fifty Shades of Grey Series)",
+        "authors": [
+          "E L James"
+        ],
+        "publisher": "Vintage Books; 1 edition (April 3, 2012)",
+        "isbn": "978-0345803481",
+        "releaseDate": "2012-04-03",
+        "price": 7.34,
+        "language": "English",
+        "pages": 514
+      },
+      {
+        "id": 5,
+        "name": "The Hunger Games (Book 1)",
+        "authors": [
+          "Suzanne Collins"
+        ],
+        "publisher": "Scholastic Press; Reprint edition (July 3, 2010)",
+        "isbn": "978-0439023528",
+        "releaseDate": "2010-07-03",
+        "price": 7.36,
+        "language": "English",
+        "pages": 384
+      },
+      {
+        "id": 6,
+        "name": "StrengthsFinder 2.0",
+        "authors": [
+          "Tom Rath"
+        ],
+        "publisher": "Gallup Press; 1 edition (February 1, 2007)",
+        "isbn": "978-1595620156",
+        "releaseDate": "2007-02-01",
+        "price": 17.79,
+        "language": "English",
+        "pages": 175
+      },
+      {
+        "id": 7,
+        "name": "Steve Jobs",
+        "authors": [
+          "Walter Isaacson"
+        ],
+        "publisher": "Simon & Schuster; 1 edition (October 24, 2011)",
+        "isbn": "978-1451648539",
+        "releaseDate": "2011-10-24",
+        "price": 11.83,
+        "language": "English",
+        "pages": 656
+      },
+      {
+        "id": 8,
+        "name": "The Fault in Our Stars",
+        "authors": [
+          "John Green"
+        ],
+        "publisher": "Penguin Books; Reprint edition (April 8, 2014)",
+        "isbn": "978-0142424179",
+        "releaseDate": "2014-04-08",
+        "price": 7.27,
+        "language": "English",
+        "pages": 352
+      },
+      {
+        "id": 9,
+        "name": "Harry Potter Und der Stein der Weisen (German Edition)",
+        "authors": [
+          "J. K. Rowling",
+          "Klaus Fritz"
+        ],
+        "publisher": "Carlsen Verlag GmbH (July 1, 2005)",
+        "isbn": "978-3551354013",
+        "releaseDate": "2005-06-01",
+        "price": 19.20,
+        "language": "German",
+        "pages": 334
+      },
+      {
+        "id": 10,
+        "name": "Höhere Technische Mechanik: Nach Vorlesungen (German Edition)",
+        "authors": [
+          "István Szabó"
+        ],
+        "publisher": "Springer; 2 edition (January 1, 1958)",
+        "isbn": "978-3662235058",
+        "releaseDate": "1977-10-07",
+        "price": 58.36,
+        "language": "German",
+        "pages": 498
+      },
+      {
+        "id": 11,
+        "name": "Harry Potter and the Deathly Hallows (Book 7)",
+        "authors": [
+          "J. K. Rowling"
+        ],
+        "publisher": "Arthur A. Levine Books (July 1, 2009)",
+        "isbn": "978-0545139700",
+        "releaseDate": "2009-07-07",
+        "price": 12.38,
+        "language": "English",
+        "pages": 784
+      },
+      {
+        "id": 12,
+        "name": "Asterix - Lateinisch: Asterix latein 15 Olympius - Latin edition",
+        "authors": [
+          "Goscinny"
+        ],
+        "publisher": "French and European Publications Inc (November 20, 1990)",
+        "isbn": "978-3770400652",
+        "releaseDate": "1990-11-20",
+        "price": 23.87,
+        "language": "Latin",
+        "pages": 48
+      },
+      {
+        "id": 13,
+        "name": "Code: The Hidden Language of Computer Hardware and Software",
+        "authors": [
+          "Charles Petzold"
+        ],
+        "publisher": "Microsoft Press; 1 edition (October 21, 2000)",
+        "isbn": "978-0735611313",
+        "releaseDate": "2000-10-21",
+        "price": 16.37,
+        "language": "English",
+        "pages": 400
+      },
+      {
+        "id": 14,
+        "name": "魂でもいいから、そばにいて ─3・11後の霊体験を聞く",
+        "authors": [
+          "奥野 修司"
+        ],
+        "publisher": "新潮社 (2017/2/28)",
+        "isbn": "978-4104049028",
+        "releaseDate": "2017-02-28",
+        "price": 15.12,
+        "language": "日本語",
+        "pages": 256
+      },
+      {
+        "id": 15,
+        "name": "秋霖やまず: 吉原裏同心抄(三) (光文社時代小説文庫)",
+        "authors": [
+          "佐伯 泰英"
+        ],
+        "publisher": "光文社 (2018/3/9)",
+        "isbn": "978-4334776138",
+        "releaseDate": "2018-03-09",
+        "price": 6.48,
+        "language": "日本語",
+        "pages": 314
+      },
+      {
+        "id": 16,
+        "name": "流浪地球 - 经典短篇选",
+        "authors": [
+          "刘慈欣"
+        ],
+        "publisher": "万卷出版公司",
+        "isbn": "978-1784978518",
+        "releaseDate": "2014-11-01",
+        "price": 10.04,
+        "language": "简体中文",
+        "pages": 142
+      },
+      {
+        "id": 17,
+        "name": "Gone Girl",
+        "authors": [
+          "Gillian Flynn"
+        ],
+        "publisher": "Broadway Books; Reprint",
+        "isbn": "978-0307588371",
+        "releaseDate": "2014-04-22",
+        "price": 9.99,
+        "language": "English",
+        "pages": 422
+      },
+      {
+        "id": 18,
+        "name": "东方快车谋杀案：阿加莎·克里斯蒂侦探作品集",
+        "authors": [
+          "阿加莎·克里斯蒂",
+          "郑桥"
+        ],
+        "publisher": "新星出版社",
+        "isbn": "978-7513311632",
+        "releaseDate": "2013-04-01",
+        "price": 1.99,
+        "language": "简体中文",
+        "pages": null
+      },
+      {
+        "id": 19,
+        "name": "ABC谋杀案：阿加莎·克里斯蒂侦探作品集",
+        "authors": [
+          "阿加莎·克里斯蒂",
+          "赵文伟"
+        ],
+        "publisher": "新星出版社",
+        "isbn": "978-7513312462",
+        "releaseDate": "2013-04-01",
+        "price": 1.99,
+        "language": "简体中文",
+        "pages": 236
+      },
+      {
+        "id": 20,
+        "name": "落花",
+        "authors": [
+          "澤田 瞳子"
+        ],
+        "publisher": "中央公論新社 (2019/3/16)",
+        "isbn": "978-4120051746",
+        "releaseDate": "2019-03-16",
+        "price": 18.7,
+        "language": "日本語",
+        "pages": 416
+      }
+    ]
+  }
+}

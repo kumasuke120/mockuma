@@ -34,6 +34,7 @@ type boundMatcher struct {
 	m              *pathMatcher
 	r              *http.Request
 	matchedMapping *mckmaps.Mapping
+	is405          bool
 	bodyCache      []byte
 }
 
@@ -47,9 +48,15 @@ func (bm *boundMatcher) matches() bool {
 				return true
 			}
 		}
+
+		bm.is405 = true
 	}
 
 	return false
+}
+
+func (bm *boundMatcher) isMethodNotAllowed() bool {
+	return bm.is405
 }
 
 func getUriWithoutQuery(url0 *url.URL) string {

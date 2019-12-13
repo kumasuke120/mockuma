@@ -42,7 +42,10 @@ func (o Object) Get(name string) interface{} {
 }
 
 func (o Object) Set(name string, v interface{}) Object {
-	m := map[string]interface{}(o)
+	m := make(map[string]interface{}, len(o))
+	for k, v := range o {
+		m[k] = v
+	}
 	m[name] = toMyJson(v)
 	return m
 }
@@ -65,6 +68,10 @@ func (o Object) GetNumber(name string) (Number, error) {
 func (o Object) GetString(name string) (String, error) {
 	v := o.Get(name)
 	return toString(v, name)
+}
+
+func (a Array) Has(idx int) bool {
+	return len(a) > idx && 0 <= idx
 }
 
 func (a Array) Get(idx int) interface{} {

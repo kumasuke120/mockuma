@@ -40,6 +40,7 @@ type Returns struct {
 	StatusCode myhttp.StatusCode
 	Headers    []*NameValuesPair
 	Body       []byte
+	Latency    *Interval
 }
 
 type NameValuesPair struct {
@@ -55,6 +56,11 @@ type NameRegexpPair struct {
 type NameJsonPair struct {
 	Name string
 	Json myjson.ExtJsonMatcher
+}
+
+type Interval struct {
+	Min int64
+	Max int64
 }
 
 func (m *MockuMappings) GetUriWithItsMethods() map[string][]myhttp.HttpMethod {

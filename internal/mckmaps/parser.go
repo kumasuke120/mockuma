@@ -74,7 +74,7 @@ func (p *parser) parse() (*MockuMappings, error) {
 	}
 
 	p.reset()
-	return result, err
+	return p.sortMappings(result), err
 }
 
 func (p *parser) load(preprocessors ...filter) (interface{}, error) {
@@ -99,6 +99,43 @@ func (p *parser) reset() {
 	ppRenderTemplate.reset()
 	ppLoadFile.reset()
 	ppParseRegexp.reset()
+}
+
+func (p *parser) sortMappings(mappings *MockuMappings) *MockuMappings {
+	if mappings == nil {
+		return nil
+	}
+
+	uri2mappings := make(map[string][]*Mapping)
+	var uriOrder []string
+	for _, m := range mappings.Mappings {
+		mappingsOfUri := uri2mappings[m.Uri]
+		mappingsOfUri = appendToMappingsOfUri(mappingsOfUri, m)
+		uri2mappings[m.Uri] = mappingsOfUri
+		uriOrder = append(uriOrder, m.Uri)
+	}
+
+	ms := make([]*Mapping, 0, len(mappings.Mappings))
+	for _, uri := range uriOrder {
+		mappingsOfUri := uri2mappings[uri]
+		ms = append(ms, mappingsOfUri...)
+	}
+	return &MockuMappings{Mappings: ms}
+}
+
+func appendToMappingsOfUri(dst []*Mapping, m *Mapping) []*Mapping {
+	appended := false
+	for _, dm := range dst {
+		if dm.Uri == m.Uri && dm.Method == m.Method {
+			dm.Policies = append(dm.Policies, m.Policies...)
+			appended = true
+		}
+	}
+
+	if !appended {
+		dst = append(dst, m)
+	}
+	return dst
 }
 
 type mainParser struct {
@@ -382,6 +419,16 @@ func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
 	}
 	returns.Body = body
 
+	p.jsonPath.SetLast(pLatency)
+	if v.Has(pLatency) {
+		rawLatency := v.Get(pLatency)
+		latency, err := p.parseLatency(rawLatency)
+		if err != nil {
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
+		returns.Latency = latency
+	}
+
 	p.jsonPath.RemoveLast()
 	return returns, nil
 }
@@ -414,6 +461,39 @@ func (p *mappingsParser) parseJsonToBytes(v interface{}) ([]byte, error) {
 	return bytes, nil
 }
 
+func (p *mappingsParser) parseLatency(v interface{}) (*Interval, error) {
+	switch v.(type) {
+	case myjson.Number:
+		_v := int64(v.(myjson.Number))
+		return &Interval{
+			Min: _v,
+			Max: _v,
+		}, nil
+	case myjson.Array:
+		va := v.(myjson.Array)
+		if len(va) == 1 {
+			va0 := va[0]
+			switch va0.(type) {
+			case myjson.Number:
+				return p.parseLatency(va0)
+			}
+		} else if len(va) == 2 {
+			if myjson.IsAllNumber(va) {
+				va0 := int64(va[0].(myjson.Number))
+				va1 := int64(va[1].(myjson.Number))
+				if va1 >= va0 {
+					return &Interval{
+						Min: va0,
+						Max: va1,
+					}, nil
+				}
+			}
+		}
+	}
+
+	return nil, newParserError(p.filename, p.jsonPath)
+}
+
 type templateParser struct {
 	json     myjson.Object
 	jsonPath *myjson.Path
@@ -421,20 +501,21 @@ type templateParser struct {
 }
 
 func (p *templateParser) parse() (*template, error) {
-	json, err := p.load(ppRemoveComment)
-	if err != nil {
-		return nil, err
+	if p.json == nil {
+		json, err := p.load(ppRemoveComment)
+		if err != nil {
+			return nil, err
+		}
+
+		switch json.(type) {
+		case myjson.Object:
+			p.json = json.(myjson.Object)
+		default:
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
 	}
 
-	p.jsonPath = myjson.NewPath()
-	switch json.(type) {
-	case myjson.Object:
-		p.jsonPath.Append("")
-		p.json = json.(myjson.Object)
-	default:
-		return nil, newParserError(p.filename, p.jsonPath)
-	}
-
+	p.jsonPath = myjson.NewPath("")
 	p.jsonPath.SetLast(dType)
 	_type, err := p.json.GetString(dType)
 	if err != nil || string(_type) != tTemplate {
@@ -466,20 +547,22 @@ type varsParser struct {
 }
 
 func (p *varsParser) parse() ([]*vars, error) {
-	json, err := p.load(ppRemoveComment)
-	if err != nil {
-		return nil, err
+	if p.json == nil {
+		json, err := p.load(ppRemoveComment)
+		if err != nil {
+			return nil, err
+		}
+
+		p.jsonPath = myjson.NewPath()
+		switch json.(type) {
+		case myjson.Object:
+			p.json = json.(myjson.Object)
+		default:
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
 	}
 
-	p.jsonPath = myjson.NewPath()
-	switch json.(type) {
-	case myjson.Object:
-		p.jsonPath.Append("")
-		p.json = json.(myjson.Object)
-	default:
-		return nil, newParserError(p.filename, p.jsonPath)
-	}
-
+	p.jsonPath = myjson.NewPath("")
 	p.jsonPath.SetLast(dType)
 	_type, err := p.json.GetString(dType)
 	if err != nil || string(_type) != tVars {

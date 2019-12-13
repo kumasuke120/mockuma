@@ -3,26 +3,26 @@
   "@comment": "api mocks for /api/books/**",
   "mappings": [
     {
-      "@comment": "show books list for page 2",
-      "uri": "/api/books",
-      "method": "GET",
-      "policies": {
-        "when": {
-          "params": {
-            "page": 2,
-            "perPage": 20
-          }
+      "@template": "template/books-page-xml.template.json",
+      "vars": [
+        {
+          "page": 1
         },
-        "returns": {
-          "headers": {
-            "@comment": "the type of body is '.json'",
-            "Content-Type": "application/json; charset=utf8"
-          },
-          "body": {
-            "@file": "static/books-page2.json"
-          }
+        {
+          "page": 2
         }
-      }
+      ]
+    },
+    {
+      "@template": "template/books-page-json.template.json",
+      "vars": [
+        {
+          "page": 1
+        },
+        {
+          "page": 2
+        }
+      ]
     },
     {
       "uri": "/api/books/_search",
@@ -34,7 +34,7 @@
               "@comment": "parses the url form value as json",
               "@json": {
                 "name": {
-                  "@regexp": "^.*?Catch Me If You Can.*$"
+                  "@regexp": "(?i)^.*?Catch Me If You Can.*$"
                 },
                 "$.authors[0]": "Frank W. Abagnale"
               }
@@ -43,6 +43,7 @@
           }
         },
         "returns": {
+          "latency": [100, 3000],
           "headers": {
             "Content-Type": "application/json; charset=utf8"
           },

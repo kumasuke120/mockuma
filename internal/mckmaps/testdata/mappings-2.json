@@ -1,0 +1,59 @@
+[
+  {
+    "uri": "/",
+    "method": "GET",
+    "policies": [
+      {
+        "when": {
+          "headers": {
+            "X-BC": [
+              "2",
+              "3"
+            ],
+            "X-R": {
+              "@regexp": "^.+$"
+            },
+            "X-J": {
+              "@json": {
+                "v": "v"
+              }
+            }
+          },
+          "params": {
+            "bc": [
+              "2",
+              "3"
+            ],
+            "r": {
+              "@regexp": "^.+$"
+            },
+            "j": {
+              "@json": {
+                "v": "v"
+              }
+            }
+          },
+          "body": "123"
+        },
+        "returns": {
+          "statusCode": 201,
+          "latency": [
+            100
+          ],
+          "headers": {
+            "Content-Type": "application/json; charset=utf8"
+          },
+          "body": {
+            "v": "v"
+          }
+        }
+      },
+      {
+        "returns": {
+          "latency": 100,
+          "body": ""
+        }
+      }
+    ]
+  }
+]

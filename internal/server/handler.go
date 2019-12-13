@@ -11,8 +11,9 @@ import (
 
 // default policies
 var (
-	pNotFound        = newStatusJsonPolicy(myhttp.NotFound, "Not Found")
-	pNoPolicyMatched = newStatusJsonPolicy(myhttp.BadRequest, "No policy matched")
+	pNotFound         = newStatusJsonPolicy(myhttp.NotFound, "Not Found")
+	pNoPolicyMatched  = newStatusJsonPolicy(myhttp.BadRequest, "No policy matched")
+	pMethodNotAllowed = newStatusJsonPolicy(myhttp.MethodNotAllowed, "Method not allowed")
 )
 
 func newStatusJsonPolicy(statusCode myhttp.StatusCode, message string) *mckmaps.Policy {
@@ -53,6 +54,8 @@ func (h *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else {
 			executor.policy = pNoPolicyMatched
 		}
+	} else if matcher.isMethodNotAllowed() {
+		executor.policy = pMethodNotAllowed
 	} else {
 		executor.policy = pNotFound
 	}

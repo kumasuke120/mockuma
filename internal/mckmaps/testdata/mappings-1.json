@@ -1,0 +1,21 @@
+{
+  "@type": "mappings",
+  "mappings": [
+    {
+      "uri": "/",
+      "method": "GET",
+      "policies": {
+        "returns": {
+          "latency": [
+            100,
+            3000
+          ],
+          "headers": {
+            "Content-Type": "application/json; charset=utf8"
+          },
+          "body": "abc123"
+        }
+      }
+    }
+  ]
+}
