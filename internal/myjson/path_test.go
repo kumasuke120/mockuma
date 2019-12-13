@@ -43,6 +43,10 @@ func TestObject_SetByPath(t *testing.T) {
 	if assert.Nil(e2) {
 		assert.Equal(`map[first:[<nil> <nil> map[third:"value"]]]`, o2.String())
 	}
+
+	o3 := Object{}
+	_, e3 := o3.SetByPath(NewPath(), "")
+	assert.NotNil(e3)
 }
 
 func TestPath_Append(t *testing.T) {

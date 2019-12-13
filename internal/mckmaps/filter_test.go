@@ -115,3 +115,43 @@ func TestRenderTemplate(t *testing.T) {
 	err = os.Chdir(oldWd)
 	require.Nil(err)
 }
+
+//noinspection GoImportUsedAsName
+func TestToJsonMatcher(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	fb0, err := ioutil.ReadFile(filepath.Join("testdata", "toJsonMatcher.json"))
+	require.Nil(err)
+	j0, err := myjson.Unmarshal(fb0)
+	require.Nil(err)
+
+	expected := myjson.MakeExtJsonMatcher(myjson.Object{
+		"a": myjson.MakeExtJsonMatcher(myjson.Object{
+			"v": myjson.Number(1),
+		}),
+		"b1": myjson.Array{
+			nil,
+			myjson.Number(1),
+			myjson.Number(2),
+		},
+		"b2": myjson.Array{
+			myjson.MakeExtJsonMatcher(myjson.Object{
+				"v": myjson.String("1"),
+			}),
+			myjson.MakeExtJsonMatcher(myjson.Object{
+				"v": myjson.String("2"),
+			}),
+		},
+		"b3": myjson.MakeExtJsonMatcher(myjson.Array{
+			myjson.Number(1),
+			myjson.Number(2),
+		}),
+		"$c": myjson.String("3"),
+	})
+
+	ja, err := doFiltersOnV(j0, &jsonMatcherFilter{})
+	if assert.Nil(err) {
+		assert.Equal(expected, ja)
+	}
+}

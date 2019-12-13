@@ -240,7 +240,11 @@ func (o Object) SetByPath(path *Path, v interface{}) (Object, error) {
 		d = vToSet
 	}
 
-	return d.(Object), nil
+	if do, ok := d.(Object); ok {
+		return do, nil
+	} else {
+		return nil, errors.New("cannot replace Object itself")
+	}
 }
 
 func (o Object) toAllPathDs(path *Path) ([]interface{}, error) {
