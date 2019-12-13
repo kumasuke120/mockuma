@@ -128,7 +128,17 @@ func TestMappingsParser_parse(t *testing.T) {
 								Body: []byte(`{"v":"v"}`),
 								Latency: &Interval{
 									Min: 100,
-									Max: 3000,
+									Max: 100,
+								},
+							},
+						},
+						{
+							Returns: &Returns{
+								StatusCode: myhttp.Ok,
+								Body:       []byte(""),
+								Latency: &Interval{
+									Min: 100,
+									Max: 100,
 								},
 							},
 						},

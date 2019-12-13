@@ -38,8 +38,7 @@
         "returns": {
           "statusCode": 201,
           "latency": [
-            100,
-            3000
+            100
           ],
           "headers": {
             "Content-Type": "application/json; charset=utf8"
@@ -47,6 +46,12 @@
           "body": {
             "v": "v"
           }
+        }
+      },
+      {
+        "returns": {
+          "latency": 100,
+          "body": ""
         }
       }
     ]

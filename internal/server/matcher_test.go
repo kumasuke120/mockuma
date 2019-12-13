@@ -107,6 +107,15 @@ var mappings = &mckmaps.MockuMappings{
 					When: &mckmaps.When{
 						BodyRegexp: regexp.MustCompile("^\\d{3}$"),
 					},
+					Returns: &mckmaps.Returns{
+						StatusCode: myhttp.Ok,
+						Headers: []*mckmaps.NameValuesPair{
+							{
+								Name:   "Server",
+								Values: []string{"TEST/v1"},
+							},
+						},
+					},
 				},
 				{
 					When: &mckmaps.When{

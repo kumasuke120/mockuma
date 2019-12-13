@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,6 +34,12 @@ func TestMockHandler_ServeHTTP(t *testing.T) {
 	rr4 := httptest.NewRecorder()
 	handler.ServeHTTP(rr4, req4)
 	assert.Equal(http.StatusBadRequest, rr4.Code)
+
+	req5 := httptest.NewRequest("POST", "/m", strings.NewReader("120"))
+	rr5 := httptest.NewRecorder()
+	handler.ServeHTTP(rr5, req5)
+	assert.Equal(http.StatusOK, rr5.Code)
+	assert.Equal("TEST/v1", rr5.Header().Get("Server"))
 }
 
 func TestMockHandler_listAllMappings(t *testing.T) {
