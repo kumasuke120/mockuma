@@ -6,6 +6,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
+	"time"
 
 	"github.com/kumasuke120/mockuma/internal/mckmaps"
 	"github.com/kumasuke120/mockuma/internal/server"
@@ -24,6 +26,10 @@ var port = flag.Int("p", 3214,
 var mapfile = flag.String("mapfile", "",
 	"sets the name of a json file which defines mockuMappings")
 var showVersion = flag.Bool("version", false, "shows the version information for MocKuma")
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 func main() {
 	flag.Parse()
