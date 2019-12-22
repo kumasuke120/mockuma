@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/kumasuke120/mockuma/internal"
 	"github.com/kumasuke120/mockuma/internal/mckmaps"
 	"github.com/kumasuke120/mockuma/internal/myhttp"
 )
@@ -28,10 +29,11 @@ func newStatusJsonPolicy(statusCode myhttp.StatusCode, message string) *mckmaps.
 	}
 }
 
+var HeaderValueServer = fmt.Sprintf("%s/%s", internal.AppName, internal.VersionNumber)
+
 type mockHandler struct {
-	serverHeader string
-	mappings     *mckmaps.MockuMappings
-	pathMatcher  *pathMatcher
+	mappings    *mckmaps.MockuMappings
+	pathMatcher *pathMatcher
 }
 
 func newMockHandler(mappings *mckmaps.MockuMappings) *mockHandler {
@@ -42,7 +44,7 @@ func newMockHandler(mappings *mckmaps.MockuMappings) *mockHandler {
 }
 
 func (h *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set(myhttp.HeaderServer, h.serverHeader)
+	w.Header().Set(myhttp.HeaderServer, HeaderValueServer)
 
 	matcher := h.pathMatcher.bind(r)
 	executor := &policyExecutor{r: r, w: &w}
