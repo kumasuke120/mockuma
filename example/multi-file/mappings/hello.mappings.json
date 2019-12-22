@@ -19,6 +19,12 @@
         },
         {
           "method": "CONNECT"
+        },
+        {
+          "method": "PATCH"
+        },
+        {
+          "method": "DELETE"
         }
       ]
     },
