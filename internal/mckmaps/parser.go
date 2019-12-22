@@ -4,12 +4,19 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"regexp"
 
 	"github.com/kumasuke120/mockuma/internal/myhttp"
 	"github.com/kumasuke120/mockuma/internal/myjson"
 	"github.com/kumasuke120/mockuma/internal/typeutil"
 )
+
+var loadedFilenames []string
+
+func recordLoadedFile(name string) {
+	loadedFilenames = append(loadedFilenames, name)
+}
 
 type loadError struct {
 	filename string
@@ -45,11 +52,15 @@ func (e *parserError) Error() string {
 	return result
 }
 
-type parser struct {
+type Parser struct {
 	filename string
 }
 
-func (p *parser) parse() (*MockuMappings, error) {
+func NewParser(filename string) *Parser {
+	return &Parser{filename: filename}
+}
+
+func (p *Parser) Parse() (*MockuMappings, error) {
 	var json interface{}
 	var err error
 	if json, err = p.load(ppRemoveComment, ppRenderTemplate); err != nil {
@@ -59,10 +70,10 @@ func (p *parser) parse() (*MockuMappings, error) {
 	var result *MockuMappings
 	switch json.(type) {
 	case myjson.Object: // parses in multi-file mode
-		parser := &mainParser{json: json.(myjson.Object), parser: *p}
+		parser := &mainParser{json: json.(myjson.Object), Parser: *p}
 		result, err = parser.parse()
 	case myjson.Array: // parses in single-file mode
-		parser := &mappingsParser{json: json, parser: *p}
+		parser := &mappingsParser{json: json, Parser: *p}
 		mappings, _err := parser.parse()
 		if _err == nil {
 			result, err = &MockuMappings{Mappings: mappings}, _err
@@ -73,11 +84,19 @@ func (p *parser) parse() (*MockuMappings, error) {
 		result, err = nil, newParserError(p.filename, nil)
 	}
 
+	if result != nil {
+		absFilenames, err := p.allAbs(loadedFilenames)
+		if err != nil {
+			return nil, err
+		}
+		result.Filenames = absFilenames
+	}
+
 	p.reset()
 	return p.sortMappings(result), err
 }
 
-func (p *parser) load(preprocessors ...filter) (interface{}, error) {
+func (p *Parser) load(preprocessors ...filter) (interface{}, error) {
 	bytes, err := ioutil.ReadFile(p.filename)
 	if err != nil {
 		return nil, err
@@ -92,16 +111,32 @@ func (p *parser) load(preprocessors ...filter) (interface{}, error) {
 	if err != nil {
 		return nil, &loadError{filename: p.filename, err: err}
 	}
+
+	recordLoadedFile(p.filename)
 	return v, nil
 }
 
-func (p *parser) reset() {
+func (p *Parser) allAbs(filenames []string) ([]string, error) {
+	result := make([]string, len(filenames))
+	for i, p := range filenames {
+		absPath, err := filepath.Abs(p)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = absPath
+	}
+	return result, nil
+}
+
+func (p *Parser) reset() {
 	ppRenderTemplate.reset()
 	ppLoadFile.reset()
 	ppParseRegexp.reset()
+
+	loadedFilenames = nil
 }
 
-func (p *parser) sortMappings(mappings *MockuMappings) *MockuMappings {
+func (p *Parser) sortMappings(mappings *MockuMappings) *MockuMappings {
 	if mappings == nil {
 		return nil
 	}
@@ -126,19 +161,19 @@ func (p *parser) sortMappings(mappings *MockuMappings) *MockuMappings {
 		mappingsOfUri := uri2mappings[uri]
 		ms = append(ms, mappingsOfUri...)
 	}
-	return &MockuMappings{Mappings: ms}
+	return &MockuMappings{Mappings: ms, Filenames: mappings.Filenames}
 }
 
 func appendToMappingsOfUri(dst []*Mapping, m *Mapping) []*Mapping {
-	appended := false
+	merged := false
 	for _, dm := range dst {
 		if dm.Uri == m.Uri && dm.Method == m.Method {
 			dm.Policies = append(dm.Policies, m.Policies...)
-			appended = true
+			merged = true
 		}
 	}
 
-	if !appended {
+	if !merged {
 		dst = append(dst, m)
 	}
 	return dst
@@ -146,7 +181,7 @@ func appendToMappingsOfUri(dst []*Mapping, m *Mapping) []*Mapping {
 
 type mainParser struct {
 	json myjson.Object
-	parser
+	Parser
 }
 
 func (p *mainParser) parse() (*MockuMappings, error) {
@@ -172,7 +207,7 @@ func (p *mainParser) parse() (*MockuMappings, error) {
 			return nil, newParserError(p.filename, myjson.NewPath(dInclude, tMappings, idx))
 		}
 
-		parser := &mappingsParser{parser: parser{filename: string(_filename)}}
+		parser := &mappingsParser{Parser: Parser{filename: string(_filename)}}
 		partOfMappings, err := parser.parse() // parses mappings for each included file
 		if err != nil {
 			return nil, err
@@ -187,7 +222,7 @@ func (p *mainParser) parse() (*MockuMappings, error) {
 type mappingsParser struct {
 	json     interface{}
 	jsonPath *myjson.Path
-	parser
+	Parser
 }
 
 func (p *mappingsParser) parse() ([]*Mapping, error) {
@@ -503,7 +538,7 @@ func (p *mappingsParser) parseLatency(v interface{}) (*Interval, error) {
 type templateParser struct {
 	json     myjson.Object
 	jsonPath *myjson.Path
-	parser
+	Parser
 }
 
 func (p *templateParser) parse() (*template, error) {
@@ -549,7 +584,7 @@ func (p *templateParser) parse() (*template, error) {
 type varsParser struct {
 	json     myjson.Object
 	jsonPath *myjson.Path
-	parser
+	Parser
 }
 
 func (p *varsParser) parse() ([]*vars, error) {

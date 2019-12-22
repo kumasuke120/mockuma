@@ -1,4 +1,4 @@
-package mckmaps
+package loader
 
 import (
 	"os"

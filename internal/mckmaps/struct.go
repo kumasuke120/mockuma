@@ -8,7 +8,8 @@ import (
 )
 
 type MockuMappings struct {
-	Mappings []*Mapping
+	Mappings  []*Mapping
+	Filenames []string
 }
 
 type Mapping struct {
