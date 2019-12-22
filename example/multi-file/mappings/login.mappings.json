@@ -1,6 +1,9 @@
 {
   "@type": "mappings",
-  "@comment": "the suffix '.mappings' of this file is not required",
+  "@comment": {
+    "en": "the suffix '.mappings' of this file is recommended but not required",
+    "cn": "推荐在文件名中使用后缀 '.mappings' 但不是必须的"
+  },
   "mappings": [
     {
       "uri": "/api/login",
@@ -20,7 +23,10 @@
         {
           "when": {
             "headers": {
-              "@comment": "use regexp /^Basic [a-z0-9=]+$/i to match header 'Authorization'",
+              "@comment": {
+                "en": "uses regexp /^Basic [a-z0-9=]+$/i to match header 'Authorization'",
+                "cn": "使用正则 /^Basic [a-z0-9=]+$/i 匹配请求头 'Authorization'"
+              },
               "Authorization": {
                 "@regexp": "(?i)Basic [a-z0-9=]+"
               }

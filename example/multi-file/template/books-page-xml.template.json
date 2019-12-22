@@ -9,6 +9,10 @@
         "when": {
           "headers": {
             "Content-Type": {
+              "@comment": {
+                "en": "refines the request header, specifying the content type is xml",
+                "cn": "限定请求头，指定内容类型为 XML"
+              },
               "@regexp": "^application/xml.*$"
             }
           },
@@ -18,7 +22,10 @@
         },
         "returns": {
           "headers": {
-            "@comment": "the type of body is '.xml'",
+            "@comment": {
+              "en": "set the response header, specifying the content type is xml",
+              "cn": "设置返回头，指定内容类型为 XML"
+            },
             "Content-Type": "application/xml; charset=utf8"
           },
           "body": {
@@ -40,10 +47,15 @@
         },
         "returns": {
           "headers": {
-            "@comment": "the type of body is '.xml'",
             "Content-Type": "application/xml; charset=utf8"
           },
           "body": {
+            "@comment": {
+              "@{page}": {
+                "en": "the included file path changes as the corresponding value changes",
+                "cn": "引入的文件路径随着对应变量值的改编而改变"
+              }
+            },
             "@file": "static/books-page@{page}.xml"
           }
         }
@@ -51,6 +63,12 @@
       {
         "when": {
           "params": {
+            "@comment": {
+              "xml": {
+                "en": "empty value '' means the parameter exists but has no value",
+                "cn": "空置 '' 意味着参数存在但没有值"
+              }
+            },
             "page": "@{page}",
             "perPage": 20,
             "xml": ""
@@ -58,7 +76,6 @@
         },
         "returns": {
           "headers": {
-            "@comment": "the type of body is '.xml'",
             "Content-Type": "application/xml; charset=utf8"
           },
           "body": {
