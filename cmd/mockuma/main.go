@@ -6,10 +6,11 @@ import (
 	"flag"
 	"log"
 	"math/rand"
+	"runtime"
 	"time"
 
 	"github.com/kumasuke120/mockuma/internal"
-	"github.com/kumasuke120/mockuma/internal/mckmaps"
+	"github.com/kumasuke120/mockuma/internal/loader"
 	"github.com/kumasuke120/mockuma/internal/server"
 )
 
@@ -29,14 +30,17 @@ func main() {
 	if *showVersion {
 		internal.PrintVersion()
 	} else {
-		mappings, err := mckmaps.LoadFromFile(*mapfile)
+		mappings, err := loader.LoadFromFile(*mapfile)
 		if err != nil {
-			log.Fatal("[main] cannot load mockuMappings:", err)
+			log.Fatalln("[main] cannot load mockuMappings:", err)
 		}
 
-		s := server.NewMockServer(*port, mappings)
-		if err := s.Start(); err != nil {
-			log.Fatal("[main] cannot start server:", err)
+		s := server.NewMockServer(*port)
+		if err = loader.EnableAutoReload(mappings.Filenames, s.SetMappings); err != nil {
+			log.Fatalln("[main] fail to enable automatic reload:", err)
 		}
+		go s.Start(mappings)
+
+		runtime.Goexit()
 	}
 }

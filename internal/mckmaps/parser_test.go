@@ -12,6 +12,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestNewParser(t *testing.T) {
+	p1 := NewParser("123")
+	assert.Equal(t, "123", p1.filename)
+}
+
 //noinspection GoImportUsedAsName
 func TestMappingsParser_parse(t *testing.T) {
 	assert := assert.New(t)
@@ -164,11 +169,11 @@ func TestTemplateParser_parse(t *testing.T) {
 	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
 
-	t0 := &templateParser{parser: parser{filename: filepath.Join("testdata", "template-0.json")}}
+	t0 := &templateParser{Parser: Parser{filename: filepath.Join("testdata", "template-0.json")}}
 	_, e0 := t0.parse()
 	assert.NotNil(e0)
 
-	t1 := &templateParser{parser: parser{filename: filepath.Join("testdata", "template-1.json")}}
+	t1 := &templateParser{Parser: Parser{filename: filepath.Join("testdata", "template-1.json")}}
 	p1, e1 := t1.parse()
 	if assert.Nil(e1) {
 		expected1 := &template{
@@ -185,11 +190,11 @@ func TestVarsParser_parse(t *testing.T) {
 	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
 
-	t0 := &varsParser{parser: parser{filename: filepath.Join("testdata", "vars-0.json")}}
+	t0 := &varsParser{Parser: Parser{filename: filepath.Join("testdata", "vars-0.json")}}
 	_, e0 := t0.parse()
 	assert.NotNil(e0)
 
-	t1 := &varsParser{parser: parser{filename: filepath.Join("testdata", "vars-1.json")}}
+	t1 := &varsParser{Parser: Parser{filename: filepath.Join("testdata", "vars-1.json")}}
 	p1, e1 := t1.parse()
 	if assert.Nil(e1) {
 		expected1 := []*vars{
@@ -253,7 +258,7 @@ func TestParser_sortMappings(t *testing.T) {
 			},
 		},
 	}}
-	p1 := &parser{filename: ""}
+	p1 := &Parser{filename: ""}
 	actual1 := p1.sortMappings(testdata1)
 	assert.Equal(expected1, actual1)
 }

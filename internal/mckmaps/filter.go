@@ -169,7 +169,7 @@ func (f *templateFilter) getTemplateFromDTemplate(v myjson.Object) (*template, *
 	var ok bool
 	_filename := string(filename)
 	if template, ok = f.templateCache[_filename]; !ok {
-		tParser := &templateParser{parser: parser{filename: _filename}}
+		tParser := &templateParser{Parser: Parser{filename: _filename}}
 		template, err = tParser.parse()
 		if err != nil {
 			return nil, nil, err
@@ -191,7 +191,7 @@ func (f *templateFilter) getVarsFromDTemplate(v myjson.Object) (varsSlice []*var
 		var ok bool
 		_filename := string(filename)
 		if varsSlice, ok = f.varsSliceCache[_filename]; !ok {
-			vParser := &varsParser{parser: parser{filename: _filename}}
+			vParser := &varsParser{Parser: Parser{filename: _filename}}
 			varsSlice, err = vParser.parse()
 			f.varsSliceCache[_filename] = varsSlice
 		}
@@ -269,6 +269,7 @@ func (f *loadFileFilter) loadForObject(v myjson.Object) (interface{}, error) {
 			if err != nil {
 				return nil, err
 			}
+			recordLoadedFile(_filename)
 		}
 
 		return myjson.String(string(bytes)), nil
