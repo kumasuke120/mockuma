@@ -208,3 +208,52 @@ func TestVarsParser_parse(t *testing.T) {
 		assert.Equal(expected1, p1)
 	}
 }
+
+func TestParser_sortMappings(t *testing.T) {
+	//noinspection GoImportUsedAsName
+	assert := assert.New(t)
+
+	testdata1 := &MockuMappings{Mappings: []*Mapping{
+		{
+			Uri:    "/",
+			Method: myhttp.Get,
+			Policies: []*Policy{
+				{},
+			},
+		},
+		{
+			Uri:    "/",
+			Method: myhttp.Get,
+			Policies: []*Policy{
+				{},
+			},
+		},
+		{
+			Uri:    "/",
+			Method: myhttp.Post,
+			Policies: []*Policy{
+				{},
+			},
+		},
+	}}
+	expected1 := &MockuMappings{Mappings: []*Mapping{
+		{
+			Uri:    "/",
+			Method: myhttp.Get,
+			Policies: []*Policy{
+				testdata1.Mappings[0].Policies[0],
+				testdata1.Mappings[1].Policies[0],
+			},
+		},
+		{
+			Uri:    "/",
+			Method: myhttp.Post,
+			Policies: []*Policy{
+				testdata1.Mappings[2].Policies[0],
+			},
+		},
+	}}
+	p1 := &parser{filename: ""}
+	actual1 := p1.sortMappings(testdata1)
+	assert.Equal(expected1, actual1)
+}

@@ -107,12 +107,18 @@ func (p *parser) sortMappings(mappings *MockuMappings) *MockuMappings {
 	}
 
 	uri2mappings := make(map[string][]*Mapping)
+
 	var uriOrder []string
+	uriOrderContains := make(map[string]bool)
 	for _, m := range mappings.Mappings {
 		mappingsOfUri := uri2mappings[m.Uri]
+
 		mappingsOfUri = appendToMappingsOfUri(mappingsOfUri, m)
 		uri2mappings[m.Uri] = mappingsOfUri
-		uriOrder = append(uriOrder, m.Uri)
+		if _, ok := uriOrderContains[m.Uri]; !ok {
+			uriOrderContains[m.Uri] = true
+			uriOrder = append(uriOrder, m.Uri)
+		}
 	}
 
 	ms := make([]*Mapping, 0, len(mappings.Mappings))
