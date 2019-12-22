@@ -2,7 +2,10 @@
   "@type": "mappings",
   "mappings": [
     {
-      "@comment": "will be matched first, to override the next @any mapping",
+      "@comment": {
+        "en": "the mappings rendered by the template applying will be matched first, to override the next @any mapping",
+        "cn": "该模板应用所渲染的映射将会首先进行匹配，覆盖之后的 @any 映射"
+      },
       "@template": "template/hello-method-not-allowed.template.json",
       "vars": [
         {
@@ -20,7 +23,12 @@
       ]
     },
     {
-      "@comment": "'method' is optional, the default value is '@any'",
+      "@comment": {
+        "method": {
+          "en": "optional, the default value is @any which matches any method",
+          "cn": "选填，默认值为 @any，@any 表示匹配任意方法(method)"
+        }
+      },
       "uri": "/api/hello",
       "method": "@any",
       "policies": [
