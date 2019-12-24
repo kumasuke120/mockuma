@@ -23,6 +23,8 @@ func TestParser_Parse(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
+	loadedFilenames = nil
+
 	oldWd, err := os.Getwd()
 	require.Nil(err)
 
