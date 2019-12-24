@@ -8,23 +8,23 @@ import (
 
 type ExtRegexp *regexp.Regexp
 
-type ExtJsonMatcher struct {
+type ExtJSONMatcher struct {
 	v interface{}
 }
 
-func MakeExtJsonMatcher(v interface{}) ExtJsonMatcher {
-	return ExtJsonMatcher{v: v}
+func MakeExtJSONMatcher(v interface{}) ExtJSONMatcher {
+	return ExtJSONMatcher{v: v}
 }
 
-func (m ExtJsonMatcher) Unwrap() interface{} {
+func (m ExtJSONMatcher) Unwrap() interface{} {
 	return m.v
 }
 
-func (m ExtJsonMatcher) Matches(v interface{}) bool {
+func (m ExtJSONMatcher) Matches(v interface{}) bool {
 	return m.matches(m.v, v)
 }
 
-func (m ExtJsonMatcher) matches(mv interface{}, v interface{}) bool {
+func (m ExtJSONMatcher) matches(mv interface{}, v interface{}) bool {
 	switch mv.(type) {
 	case nil:
 		return v == nil
@@ -40,14 +40,14 @@ func (m ExtJsonMatcher) matches(mv interface{}, v interface{}) bool {
 		return m.booleanMatches(mv.(Boolean), v)
 	case ExtRegexp:
 		return m.regexpMatches(mv.(ExtRegexp), v)
-	case ExtJsonMatcher:
-		return m.matches(mv.(ExtJsonMatcher).v, v)
+	case ExtJSONMatcher:
+		return m.matches(mv.(ExtJSONMatcher).v, v)
 	}
 
 	return false
 }
 
-func (m ExtJsonMatcher) objectMatches(mv Object, v interface{}) bool {
+func (m ExtJSONMatcher) objectMatches(mv Object, v interface{}) bool {
 	switch v.(type) {
 	case Object:
 		_v := v.(Object)
@@ -63,7 +63,7 @@ func (m ExtJsonMatcher) objectMatches(mv Object, v interface{}) bool {
 	}
 }
 
-func (m ExtJsonMatcher) arrayMatches(mv Array, v interface{}) bool {
+func (m ExtJSONMatcher) arrayMatches(mv Array, v interface{}) bool {
 	switch v.(type) {
 	case Array:
 		_v := v.(Array)
@@ -83,7 +83,7 @@ func (m ExtJsonMatcher) arrayMatches(mv Array, v interface{}) bool {
 	}
 }
 
-func (m ExtJsonMatcher) numberMatches(mv Number, v interface{}) bool {
+func (m ExtJSONMatcher) numberMatches(mv Number, v interface{}) bool {
 	_mv := float64(mv)
 	switch v.(type) {
 	case Number:
@@ -95,7 +95,7 @@ func (m ExtJsonMatcher) numberMatches(mv Number, v interface{}) bool {
 	}
 }
 
-func (m ExtJsonMatcher) stringMatches(mv String, v interface{}) bool {
+func (m ExtJSONMatcher) stringMatches(mv String, v interface{}) bool {
 	_mv := string(mv)
 	switch v.(type) {
 	case String:
@@ -109,7 +109,7 @@ func (m ExtJsonMatcher) stringMatches(mv String, v interface{}) bool {
 	}
 }
 
-func (m ExtJsonMatcher) booleanMatches(mv Boolean, v interface{}) bool {
+func (m ExtJSONMatcher) booleanMatches(mv Boolean, v interface{}) bool {
 	_mv := bool(mv)
 	switch v.(type) {
 	case Boolean:
@@ -121,7 +121,7 @@ func (m ExtJsonMatcher) booleanMatches(mv Boolean, v interface{}) bool {
 	}
 }
 
-func (m ExtJsonMatcher) regexpMatches(mv ExtRegexp, v interface{}) bool {
+func (m ExtJSONMatcher) regexpMatches(mv ExtRegexp, v interface{}) bool {
 	var _mv *regexp.Regexp = mv
 	switch v.(type) {
 	case String:

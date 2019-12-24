@@ -4,19 +4,15 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
+	"math/rand"
+	"runtime"
+	"time"
 
+	"github.com/kumasuke120/mockuma/internal"
+	"github.com/kumasuke120/mockuma/internal/loader"
 	"github.com/kumasuke120/mockuma/internal/mckmaps"
 	"github.com/kumasuke120/mockuma/internal/server"
-)
-
-const (
-	appName       = "MocKuma"
-	versionNumber = "1.1.3"
-	author        = "kumasuke120<bearcomingx@gmail.com>"
-	github        = "https://github.com/kumasuke120/mockuma"
-	gitee         = "https://gitee.com/kumasuke/mockuma"
 )
 
 var port = flag.Int("p", 3214,
@@ -25,33 +21,36 @@ var mapfile = flag.String("mapfile", "",
 	"sets the name of a json file which defines mockuMappings")
 var showVersion = flag.Bool("version", false, "shows the version information for MocKuma")
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
 func main() {
 	flag.Parse()
 
 	if *showVersion {
-		printVersion()
+		internal.PrintVersion()
 	} else {
-		mappings, err := mckmaps.LoadFromFile(*mapfile)
-		if err != nil {
-			log.Fatal("[main] cannot load mockuMappings: ", err)
-		}
+		ld := loader.New(*mapfile)
+		mappings := loadMappings(ld)
 
-		s := server.NewMockServer(*port, mappings)
-		s.SetNameAndVersion(appName, versionNumber)
-		if err := s.Start(); err != nil {
-			log.Fatal("[main] cannot start server: ", err)
+		s := server.NewMockServer(*port)
+		if err := ld.EnableAutoReload(s.SetMappings); err != nil {
+			log.Fatalln("[main] fail to enable automatic reloading:", err)
 		}
+		go s.ListenAndServe(mappings)
+
+		runtime.Goexit()
 	}
 }
 
-func printVersion() {
-	fmt.Println(` _______              __  __                       `)
-	fmt.Println(`|   |   |.-----.----.|  |/  |.--.--.--------.---.-.`)
-	fmt.Println(`|       ||  _  |  __||     < |  |  |        |  _  |`)
-	fmt.Println(`|__|_|__||_____|____||__|\__||_____|__|__|__|___._|`)
-	fmt.Println()
-	fmt.Printf("Version\t: %s\n", versionNumber)
-	fmt.Printf("Author\t: %s\n", author)
-	fmt.Printf("GitHub\t: %s\n", github)
-	fmt.Printf("Gitee\t: %s\n", gitee)
+func loadMappings(ld *loader.Loader) *mckmaps.MockuMappings {
+	mappings, err := ld.Load()
+	if err != nil {
+		log.Fatalln("[main] cannot load mockuMappings:", err)
+	}
+	if mappings.IsEmpty() {
+		log.Fatalln("[main] the given mockuMappings is empty")
+	}
+	return mappings
 }

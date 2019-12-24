@@ -7,11 +7,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestExtJsonMatcher_Matches(t *testing.T) {
+func TestExtJSONMatcher_Matches(t *testing.T) {
 	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
 
-	jm := MakeExtJsonMatcher(Object(map[string]interface{}{
+	jm := MakeExtJSONMatcher(Object(map[string]interface{}{
 		"a": Array([]interface{}{
 			nil,
 			Number(1),

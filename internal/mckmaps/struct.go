@@ -8,12 +8,13 @@ import (
 )
 
 type MockuMappings struct {
-	Mappings []*Mapping
+	Mappings  []*Mapping
+	Filenames []string
 }
 
 type Mapping struct {
-	Uri      string
-	Method   myhttp.HttpMethod
+	URI      string
+	Method   myhttp.HTTPMethod
 	Policies []*Policy
 }
 
@@ -25,15 +26,15 @@ type Policy struct {
 type When struct {
 	Headers       []*NameValuesPair
 	HeaderRegexps []*NameRegexpPair
-	HeaderJsons   []*NameJsonPair
+	HeaderJSONs   []*NameJSONPair
 
 	Params       []*NameValuesPair
 	ParamRegexps []*NameRegexpPair
-	ParamJsons   []*NameJsonPair
+	ParamJSONs   []*NameJSONPair
 
 	Body       []byte
 	BodyRegexp *regexp.Regexp
-	BodyJson   *myjson.ExtJsonMatcher
+	BodyJSON   *myjson.ExtJSONMatcher
 }
 
 type Returns struct {
@@ -53,9 +54,9 @@ type NameRegexpPair struct {
 	Regexp *regexp.Regexp
 }
 
-type NameJsonPair struct {
+type NameJSONPair struct {
 	Name string
-	Json myjson.ExtJsonMatcher
+	JSON myjson.ExtJSONMatcher
 }
 
 type Interval struct {
@@ -63,12 +64,16 @@ type Interval struct {
 	Max int64
 }
 
-func (m *MockuMappings) GetUriWithItsMethods() map[string][]myhttp.HttpMethod {
-	result := make(map[string][]myhttp.HttpMethod)
+func (m *MockuMappings) IsEmpty() bool {
+	return len(m.Mappings) == 0 && len(m.Filenames) == 0
+}
+
+func (m *MockuMappings) GroupMethodsByURI() map[string][]myhttp.HTTPMethod {
+	result := make(map[string][]myhttp.HTTPMethod)
 	for _, m := range m.Mappings {
-		mappingsOfUri := result[m.Uri]
-		mappingsOfUri = append(mappingsOfUri, m.Method)
-		result[m.Uri] = mappingsOfUri
+		mappingsOfURI := result[m.URI]
+		mappingsOfURI = append(mappingsOfURI, m.Method)
+		result[m.URI] = mappingsOfURI
 	}
 	return result
 }

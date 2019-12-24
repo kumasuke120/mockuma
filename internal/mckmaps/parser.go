@@ -4,12 +4,19 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"regexp"
 
 	"github.com/kumasuke120/mockuma/internal/myhttp"
 	"github.com/kumasuke120/mockuma/internal/myjson"
 	"github.com/kumasuke120/mockuma/internal/typeutil"
 )
+
+var loadedFilenames []string
+
+func recordLoadedFile(name string) {
+	loadedFilenames = append(loadedFilenames, name)
+}
 
 type loadError struct {
 	filename string
@@ -45,11 +52,15 @@ func (e *parserError) Error() string {
 	return result
 }
 
-type parser struct {
+type Parser struct {
 	filename string
 }
 
-func (p *parser) parse() (*MockuMappings, error) {
+func NewParser(filename string) *Parser {
+	return &Parser{filename: filename}
+}
+
+func (p *Parser) Parse() (*MockuMappings, error) {
 	var json interface{}
 	var err error
 	if json, err = p.load(ppRemoveComment, ppRenderTemplate); err != nil {
@@ -59,10 +70,10 @@ func (p *parser) parse() (*MockuMappings, error) {
 	var result *MockuMappings
 	switch json.(type) {
 	case myjson.Object: // parses in multi-file mode
-		parser := &mainParser{json: json.(myjson.Object), parser: *p}
+		parser := &mainParser{json: json.(myjson.Object), Parser: *p}
 		result, err = parser.parse()
 	case myjson.Array: // parses in single-file mode
-		parser := &mappingsParser{json: json, parser: *p}
+		parser := &mappingsParser{json: json, Parser: *p}
 		mappings, _err := parser.parse()
 		if _err == nil {
 			result, err = &MockuMappings{Mappings: mappings}, _err
@@ -73,11 +84,19 @@ func (p *parser) parse() (*MockuMappings, error) {
 		result, err = nil, newParserError(p.filename, nil)
 	}
 
+	if result != nil {
+		absFilenames, err := p.allAbs(loadedFilenames)
+		if err != nil {
+			return nil, err
+		}
+		result.Filenames = absFilenames
+	}
+
 	p.reset()
 	return p.sortMappings(result), err
 }
 
-func (p *parser) load(preprocessors ...filter) (interface{}, error) {
+func (p *Parser) load(preprocessors ...filter) (interface{}, error) {
 	bytes, err := ioutil.ReadFile(p.filename)
 	if err != nil {
 		return nil, err
@@ -92,47 +111,69 @@ func (p *parser) load(preprocessors ...filter) (interface{}, error) {
 	if err != nil {
 		return nil, &loadError{filename: p.filename, err: err}
 	}
+
+	recordLoadedFile(p.filename)
 	return v, nil
 }
 
-func (p *parser) reset() {
+func (p *Parser) allAbs(filenames []string) ([]string, error) {
+	result := make([]string, len(filenames))
+	for i, p := range filenames {
+		absPath, err := filepath.Abs(p)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = absPath
+	}
+	return result, nil
+}
+
+func (p *Parser) reset() {
 	ppRenderTemplate.reset()
 	ppLoadFile.reset()
 	ppParseRegexp.reset()
+
+	loadedFilenames = nil
 }
 
-func (p *parser) sortMappings(mappings *MockuMappings) *MockuMappings {
+func (p *Parser) sortMappings(mappings *MockuMappings) *MockuMappings {
 	if mappings == nil {
 		return nil
 	}
 
 	uri2mappings := make(map[string][]*Mapping)
+
 	var uriOrder []string
+	uriOrderContains := make(map[string]bool)
 	for _, m := range mappings.Mappings {
-		mappingsOfUri := uri2mappings[m.Uri]
-		mappingsOfUri = appendToMappingsOfUri(mappingsOfUri, m)
-		uri2mappings[m.Uri] = mappingsOfUri
-		uriOrder = append(uriOrder, m.Uri)
+		mappingsOfURI := uri2mappings[m.URI]
+
+		mappingsOfURI = appendToMappingsOfURI(mappingsOfURI, m)
+		uri2mappings[m.URI] = mappingsOfURI
+		if _, ok := uriOrderContains[m.URI]; !ok {
+			uriOrderContains[m.URI] = true
+			uriOrder = append(uriOrder, m.URI)
+		}
 	}
 
 	ms := make([]*Mapping, 0, len(mappings.Mappings))
 	for _, uri := range uriOrder {
-		mappingsOfUri := uri2mappings[uri]
-		ms = append(ms, mappingsOfUri...)
+		mappingsOfURI := uri2mappings[uri]
+		ms = append(ms, mappingsOfURI...)
 	}
-	return &MockuMappings{Mappings: ms}
+	return &MockuMappings{Mappings: ms, Filenames: mappings.Filenames}
 }
 
-func appendToMappingsOfUri(dst []*Mapping, m *Mapping) []*Mapping {
-	appended := false
+func appendToMappingsOfURI(dst []*Mapping, m *Mapping) []*Mapping {
+	merged := false
 	for _, dm := range dst {
-		if dm.Uri == m.Uri && dm.Method == m.Method {
+		if dm.URI == m.URI && dm.Method == m.Method {
 			dm.Policies = append(dm.Policies, m.Policies...)
-			appended = true
+			merged = true
 		}
 	}
 
-	if !appended {
+	if !merged {
 		dst = append(dst, m)
 	}
 	return dst
@@ -140,7 +181,7 @@ func appendToMappingsOfUri(dst []*Mapping, m *Mapping) []*Mapping {
 
 type mainParser struct {
 	json myjson.Object
-	parser
+	Parser
 }
 
 func (p *mainParser) parse() (*MockuMappings, error) {
@@ -166,7 +207,7 @@ func (p *mainParser) parse() (*MockuMappings, error) {
 			return nil, newParserError(p.filename, myjson.NewPath(dInclude, tMappings, idx))
 		}
 
-		parser := &mappingsParser{parser: parser{filename: string(_filename)}}
+		parser := &mappingsParser{Parser: Parser{filename: string(_filename)}}
 		partOfMappings, err := parser.parse() // parses mappings for each included file
 		if err != nil {
 			return nil, err
@@ -181,7 +222,7 @@ func (p *mainParser) parse() (*MockuMappings, error) {
 type mappingsParser struct {
 	json     interface{}
 	jsonPath *myjson.Path
-	parser
+	Parser
 }
 
 func (p *mappingsParser) parse() ([]*Mapping, error) {
@@ -206,7 +247,7 @@ func (p *mappingsParser) parse() ([]*Mapping, error) {
 		}
 
 		p.jsonPath.SetLast(tMappings)
-		rawMappings = ensureJsonArray(jsonObject.Get(tMappings))
+		rawMappings = ensureJSONArray(jsonObject.Get(tMappings))
 	case myjson.Array: // parses in single-file mode
 		p.jsonPath = myjson.NewPath()
 		rawMappings = p.json.(myjson.Array)
@@ -236,17 +277,20 @@ func (p *mappingsParser) parse() ([]*Mapping, error) {
 	return mappings, nil
 }
 
+/// refers to: https://tools.ietf.org/html/rfc7230#section-3.2.6
+var validMethodRegexp = regexp.MustCompile("(?i)^[-!#$%&'*+._`|~\\da-z]+$")
+
 func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
 	p.jsonPath.Append("")
 
 	mapping := new(Mapping)
 
-	p.jsonPath.SetLast(mapUri)
-	uri, err := v.GetString(mapUri)
+	p.jsonPath.SetLast(mapURI)
+	uri, err := v.GetString(mapURI)
 	if err != nil {
 		return nil, newParserError(p.filename, p.jsonPath)
 	}
-	mapping.Uri = string(uri)
+	mapping.URI = string(uri)
 
 	p.jsonPath.SetLast(mapMethod)
 	if v.Has(mapMethod) {
@@ -254,15 +298,20 @@ func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
 		if err != nil {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
-		mapping.Method = myhttp.ToHttpMethod(string(method))
+		_method := string(method)
+		if validMethodRegexp.MatchString(_method) {
+			mapping.Method = myhttp.ToHTTPMethod(_method)
+		} else {
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
 	} else {
-		mapping.Method = myhttp.Any
+		mapping.Method = myhttp.MethodAny
 	}
 
 	p.jsonPath.SetLast(mapPolicies)
 	p.jsonPath.Append(0)
 	var policies []*Policy
-	for idx, rp := range ensureJsonArray(v.Get(mapPolicies)) {
+	for idx, rp := range ensureJSONArray(v.Get(mapPolicies)) {
 		p.jsonPath.SetLast(idx)
 
 		switch rp.(type) {
@@ -320,7 +369,7 @@ func (p *mappingsParser) parsePolicy(v myjson.Object) (*Policy, error) {
 func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 	p.jsonPath.Append("")
 
-	_v, err := doFiltersOnV(v, ppToJsonMatcher, ppParseRegexp, ppLoadFile)
+	_v, err := doFiltersOnV(v, ppToJSONMatcher, ppParseRegexp, ppLoadFile)
 	if err != nil {
 		return nil, &loadError{filename: p.filename, err: err}
 	}
@@ -343,7 +392,7 @@ func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 		normalHeaders, regexpHeaders, jsonMHeaders := divideIntoWhenMatchers(rawHeaders)
 		when.Headers = parseAsNameValuesPairs(normalHeaders)
 		when.HeaderRegexps = parseAsNameRegexpPairs(regexpHeaders)
-		when.HeaderJsons = parseAsNameJsonPairs(jsonMHeaders)
+		when.HeaderJSONs = parseAsNameJSONPairs(jsonMHeaders)
 	}
 
 	p.jsonPath.SetLast(pParams)
@@ -356,7 +405,7 @@ func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 		normalParams, regexpParams, jsonMHeaders := divideIntoWhenMatchers(rawParams)
 		when.Params = parseAsNameValuesPairs(normalParams)
 		when.ParamRegexps = parseAsNameRegexpPairs(regexpParams)
-		when.ParamJsons = parseAsNameJsonPairs(jsonMHeaders)
+		when.ParamJSONs = parseAsNameJSONPairs(jsonMHeaders)
 	}
 
 	p.jsonPath.SetLast(pBody)
@@ -365,21 +414,21 @@ func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 		bytes, bodyRegexp, jMatcher := p.parseWhenBody(rawBody)
 		when.Body = bytes
 		when.BodyRegexp = bodyRegexp
-		when.BodyJson = jMatcher
+		when.BodyJSON = jMatcher
 	}
 
 	p.jsonPath.RemoveLast()
 	return when, nil
 }
 
-func (p *mappingsParser) parseWhenBody(v interface{}) ([]byte, myjson.ExtRegexp, *myjson.ExtJsonMatcher) {
+func (p *mappingsParser) parseWhenBody(v interface{}) ([]byte, myjson.ExtRegexp, *myjson.ExtJSONMatcher) {
 	switch v.(type) {
 	case myjson.String:
 		return []byte(v.(myjson.String)), nil, nil
 	case myjson.ExtRegexp:
 		return nil, v.(myjson.ExtRegexp), nil
-	case myjson.ExtJsonMatcher:
-		_v := v.(myjson.ExtJsonMatcher)
+	case myjson.ExtJSONMatcher:
+		_v := v.(myjson.ExtJSONMatcher)
 		return nil, nil, &_v
 	default:
 		return []byte(typeutil.ToString(v.(myjson.Number))), nil, nil
@@ -399,7 +448,7 @@ func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
 		}
 		returns.StatusCode = myhttp.StatusCode(int(statusCode))
 	} else {
-		returns.StatusCode = myhttp.Ok
+		returns.StatusCode = myhttp.StatusOk
 	}
 
 	p.jsonPath.SetLast(pHeaders)
@@ -445,15 +494,15 @@ func (p *mappingsParser) parseReturnsBody(v interface{}) ([]byte, error) {
 	case myjson.String:
 		return []byte(string(v.(myjson.String))), nil
 	case myjson.Object:
-		return p.parseJsonToBytes(v)
+		return p.parseJSONToBytes(v)
 	case myjson.Array:
-		return p.parseJsonToBytes(v)
+		return p.parseJSONToBytes(v)
 	}
 
 	return nil, newParserError(p.filename, p.jsonPath)
 }
 
-func (p *mappingsParser) parseJsonToBytes(v interface{}) ([]byte, error) {
+func (p *mappingsParser) parseJSONToBytes(v interface{}) ([]byte, error) {
 	bytes, err := myjson.Marshal(v)
 	if err != nil {
 		return nil, newParserError(p.filename, p.jsonPath)
@@ -497,7 +546,7 @@ func (p *mappingsParser) parseLatency(v interface{}) (*Interval, error) {
 type templateParser struct {
 	json     myjson.Object
 	jsonPath *myjson.Path
-	parser
+	Parser
 }
 
 func (p *templateParser) parse() (*template, error) {
@@ -543,7 +592,7 @@ func (p *templateParser) parse() (*template, error) {
 type varsParser struct {
 	json     myjson.Object
 	jsonPath *myjson.Path
-	parser
+	Parser
 }
 
 func (p *varsParser) parse() ([]*vars, error) {
@@ -581,7 +630,7 @@ func (p *varsParser) parse() ([]*vars, error) {
 }
 
 func (p *varsParser) parseVars(v myjson.Object) ([]*vars, error) {
-	rawVarsArray := ensureJsonArray(v.Get(tVars))
+	rawVarsArray := ensureJSONArray(v.Get(tVars))
 	varsSlice := make([]*vars, len(rawVarsArray))
 	for idx, rawVars := range rawVarsArray {
 		if p.json != nil {
@@ -603,7 +652,7 @@ func newParserError(filename string, jsonPath *myjson.Path) *parserError {
 	return &parserError{filename: filename, jsonPath: jsonPath}
 }
 
-func ensureJsonArray(v interface{}) myjson.Array {
+func ensureJSONArray(v interface{}) myjson.Array {
 	switch v.(type) {
 	case myjson.Array:
 		return v.(myjson.Array)
@@ -613,16 +662,16 @@ func ensureJsonArray(v interface{}) myjson.Array {
 }
 
 func divideIntoWhenMatchers(v myjson.Object) (myjson.Object,
-	map[string]myjson.ExtRegexp, map[string]myjson.ExtJsonMatcher) {
+	map[string]myjson.ExtRegexp, map[string]myjson.ExtJSONMatcher) {
 
 	direct := make(myjson.Object)
 	regexps := make(map[string]myjson.ExtRegexp)
-	jsonMatchers := make(map[string]myjson.ExtJsonMatcher)
+	jsonMatchers := make(map[string]myjson.ExtJSONMatcher)
 
 	for name, rawValue := range v {
 		var normV myjson.Array
 
-		for _, rV := range ensureJsonArray(rawValue) { // divides normals and regexps
+		for _, rV := range ensureJSONArray(rawValue) { // divides normals and regexps
 			switch rV.(type) {
 			case myjson.ExtRegexp:
 				_rV := rV.(myjson.ExtRegexp)
@@ -630,8 +679,8 @@ func divideIntoWhenMatchers(v myjson.Object) (myjson.Object,
 					regexps[name] = _rV
 				}
 				continue
-			case myjson.ExtJsonMatcher:
-				_rV := rV.(myjson.ExtJsonMatcher)
+			case myjson.ExtJSONMatcher:
+				_rV := rV.(myjson.ExtJSONMatcher)
 				if _, ok := jsonMatchers[name]; !ok { // only first @json is effective
 					jsonMatchers[name] = _rV
 				}
@@ -651,7 +700,7 @@ func divideIntoWhenMatchers(v myjson.Object) (myjson.Object,
 func parseAsNameValuesPairs(o myjson.Object) []*NameValuesPair {
 	var pairs []*NameValuesPair
 	for name, rawValues := range o {
-		p := parseAsNameValuesPair(name, ensureJsonArray(rawValues))
+		p := parseAsNameValuesPair(name, ensureJSONArray(rawValues))
 		pairs = append(pairs, p)
 	}
 	return pairs
@@ -693,12 +742,12 @@ func parseAsNameRegexpPairs(o map[string]myjson.ExtRegexp) []*NameRegexpPair {
 	return pairs
 }
 
-func parseAsNameJsonPairs(o map[string]myjson.ExtJsonMatcher) []*NameJsonPair {
-	var pairs []*NameJsonPair
+func parseAsNameJSONPairs(o map[string]myjson.ExtJSONMatcher) []*NameJSONPair {
+	var pairs []*NameJSONPair
 	for name, value := range o {
-		pair := new(NameJsonPair)
+		pair := new(NameJSONPair)
 		pair.Name = name
-		pair.Json = value
+		pair.JSON = value
 
 		pairs = append(pairs, pair)
 	}

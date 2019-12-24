@@ -1,0 +1,53 @@
+[
+  {
+    "uri": "/m1",
+    "method": "RESET",
+    "policies": {
+      "returns": {
+        "body": "m1"
+      }
+    }
+  },
+  {
+    "uri": "/m2",
+    "method": "POST",
+    "policies": [
+      {
+        "when": {
+          "params": {
+            "p": 1
+          }
+        },
+        "returns": {
+          "body": "m2:1"
+        }
+      },
+      {
+        "when": {
+          "params": {
+            "p": 2
+          }
+        },
+        "returns": {
+          "body": "m2:2"
+        }
+      }
+    ]
+  },
+  {
+    "uri": "/m2",
+    "method": "POST",
+    "policies": [
+      {
+        "when": {
+          "params": {
+            "p": 3
+          }
+        },
+        "returns": {
+          "body": "m2:3"
+        }
+      }
+    ]
+  }
+]

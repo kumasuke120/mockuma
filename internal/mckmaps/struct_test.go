@@ -7,29 +7,35 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMockuMappings_GetUriWithItsMethods(t *testing.T) {
-	mappings := &MockuMappings{Mappings: []*Mapping{
-		{
-			Uri:      "/a1",
-			Method:   myhttp.Put,
-			Policies: nil,
-		},
-		{
-			Uri:      "/a2",
-			Method:   myhttp.Post,
-			Policies: nil,
-		},
-		{
-			Uri:      "/a1",
-			Method:   myhttp.Get,
-			Policies: nil,
-		},
-	}}
-	expected := map[string][]myhttp.HttpMethod{
-		"/a1": {myhttp.Put, myhttp.Get},
-		"/a2": {myhttp.Post},
+var mappings = &MockuMappings{Mappings: []*Mapping{
+	{
+		URI:      "/a1",
+		Method:   myhttp.MethodPut,
+		Policies: nil,
+	},
+	{
+		URI:      "/a2",
+		Method:   myhttp.MethodPost,
+		Policies: nil,
+	},
+	{
+		URI:      "/a1",
+		Method:   myhttp.MethodGet,
+		Policies: nil,
+	},
+}}
+
+func TestMockuMappings_GroupMethodsByURI(t *testing.T) {
+	expected := map[string][]myhttp.HTTPMethod{
+		"/a1": {myhttp.MethodPut, myhttp.MethodGet},
+		"/a2": {myhttp.MethodPost},
 	}
-	actual := mappings.GetUriWithItsMethods()
+	actual := mappings.GroupMethodsByURI()
 
 	assert.Equal(t, expected, actual)
+}
+
+func TestMockuMappings_IsEmpty(t *testing.T) {
+	assert.False(t, mappings.IsEmpty())
+	assert.True(t, new(MockuMappings).IsEmpty())
 }

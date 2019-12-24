@@ -11,15 +11,15 @@ func Unmarshal(data []byte) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return toMyJson(v), nil
+	return toMyJSON(v), nil
 }
 
-func toMyJson(v interface{}) interface{} {
+func toMyJSON(v interface{}) interface{} {
 	switch v.(type) {
 	case map[string]interface{}:
-		return toMyJsonObject(v.(map[string]interface{}))
+		return toMyJSONObject(v.(map[string]interface{}))
 	case []interface{}:
-		return toMyJsonArray(v.([]interface{}))
+		return toMyJSONArray(v.([]interface{}))
 	case float64:
 		return Number(v.(float64))
 	case string:
@@ -29,9 +29,9 @@ func toMyJson(v interface{}) interface{} {
 	case *regexp.Regexp:
 		return ExtRegexp(v.(*regexp.Regexp))
 	case Object:
-		return toMyJsonObject(v.(Object))
+		return toMyJSONObject(v.(Object))
 	case Array:
-		return toMyJsonArray(v.(Array))
+		return toMyJSONArray(v.(Array))
 	case Number:
 		return v.(Number)
 	case String:
@@ -40,8 +40,8 @@ func toMyJson(v interface{}) interface{} {
 		return v.(Boolean)
 	case ExtRegexp:
 		return v.(ExtRegexp)
-	case ExtJsonMatcher:
-		return v.(ExtJsonMatcher)
+	case ExtJSONMatcher:
+		return v.(ExtJSONMatcher)
 	case nil:
 		return nil
 	}
@@ -49,18 +49,18 @@ func toMyJson(v interface{}) interface{} {
 	panic("Shouldn't happen")
 }
 
-func toMyJsonObject(v map[string]interface{}) Object {
+func toMyJSONObject(v map[string]interface{}) Object {
 	result := make(map[string]interface{}, len(v))
 	for key, value := range v {
-		result[key] = toMyJson(value)
+		result[key] = toMyJSON(value)
 	}
 	return result
 }
 
-func toMyJsonArray(v []interface{}) Array {
+func toMyJSONArray(v []interface{}) Array {
 	result := make([]interface{}, len(v))
 	for i, _v := range v {
-		result[i] = toMyJson(_v)
+		result[i] = toMyJSON(_v)
 	}
 	return result
 }

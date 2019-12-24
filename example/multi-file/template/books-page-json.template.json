@@ -1,7 +1,10 @@
 {
   "@type": "template",
   "template": {
-    "@comment": "show books list for page x",
+    "@comment": {
+      "en": "defines a template which shows the books list for page x",
+      "cn": "定义了展示第 X 页书籍列表的模板"
+    },
     "uri": "/api/books",
     "method": "GET",
     "policies": [
@@ -21,7 +24,10 @@
         },
         "returns": {
           "headers": {
-            "@comment": "the type of body is '.json'",
+            "@comment": {
+              "en": "set the response header, specifying the content type is json",
+              "cn": "设置返回头，指定内容类型为 JSON"
+            },
             "Content-Type": "application/json; charset=utf8"
           },
           "body": {
@@ -38,7 +44,6 @@
         },
         "returns": {
           "headers": {
-            "@comment": "the type of body is '.json'",
             "Content-Type": "application/json; charset=utf8"
           },
           "body": {

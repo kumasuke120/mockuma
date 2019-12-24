@@ -28,7 +28,7 @@ func TestUnmarshal(t *testing.T) {
 	assert.Equal(expected1, u1)
 }
 
-func TestToMyJson(t *testing.T) {
+func TestToMyJSON(t *testing.T) {
 	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
 
@@ -46,7 +46,7 @@ func TestToMyJson(t *testing.T) {
 		"arr":  []interface{}{Number(1), String("a"), nil},
 		"null": nil,
 	})
-	assert.Equal(expected1, toMyJson(from1))
+	assert.Equal(expected1, toMyJSON(from1))
 
 	expected2 := Object(map[string]interface{}{
 		"str":  String("hello"),
@@ -60,5 +60,5 @@ func TestToMyJson(t *testing.T) {
 		"bool": Boolean(false),
 		"arr":  Array([]interface{}{Number(1), String("a"), nil}),
 	}
-	assert.Equal(expected2, toMyJson(from2))
+	assert.Equal(expected2, toMyJSON(from2))
 }

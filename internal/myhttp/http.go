@@ -5,62 +5,62 @@ import (
 	"strings"
 )
 
-type HttpMethod string
+type HTTPMethod string
 
 const (
-	Any     = HttpMethod("*")
-	Options = HttpMethod(http.MethodOptions)
-	Get     = HttpMethod(http.MethodGet)
-	Head    = HttpMethod(http.MethodHead)
-	Post    = HttpMethod(http.MethodPost)
-	Put     = HttpMethod(http.MethodPut)
-	Delete  = HttpMethod(http.MethodDelete)
-	Trace   = HttpMethod(http.MethodTrace)
-	Connect = HttpMethod(http.MethodConnect)
-	Patch   = HttpMethod(http.MethodPatch)
+	MethodAny     = HTTPMethod("*")
+	MethodOptions = HTTPMethod(http.MethodOptions)
+	MethodGet     = HTTPMethod(http.MethodGet)
+	MethodHead    = HTTPMethod(http.MethodHead)
+	MethodPost    = HTTPMethod(http.MethodPost)
+	MethodPut     = HTTPMethod(http.MethodPut)
+	MethodDelete  = HTTPMethod(http.MethodDelete)
+	MethodTrace   = HTTPMethod(http.MethodTrace)
+	MethodConnect = HTTPMethod(http.MethodConnect)
+	MethodPatch   = HTTPMethod(http.MethodPatch)
 )
 
 type StatusCode int
 
 const (
-	Ok               = StatusCode(http.StatusOK)
-	BadRequest       = StatusCode(http.StatusBadRequest)
-	MethodNotAllowed = StatusCode(http.StatusMethodNotAllowed)
-	NotFound         = StatusCode(http.StatusNotFound)
+	StatusOk               = StatusCode(http.StatusOK)
+	StatusBadRequest       = StatusCode(http.StatusBadRequest)
+	StatusMethodNotAllowed = StatusCode(http.StatusMethodNotAllowed)
+	StatusNotFound         = StatusCode(http.StatusNotFound)
 )
 
-func ToHttpMethod(method interface{}) HttpMethod {
-	switch method.(type) {
-	case string:
-		switch strings.ToUpper(method.(string)) {
-		case http.MethodOptions:
-			return Options
-		case http.MethodGet:
-			return Get
-		case http.MethodHead:
-			return Head
-		case http.MethodPost:
-			return Post
-		case http.MethodPut:
-			return Put
-		case http.MethodDelete:
-			return Delete
-		case http.MethodTrace:
-			return Trace
-		case http.MethodConnect:
-			return Connect
-		case http.MethodPatch:
-			return Patch
-		}
+func ToHTTPMethod(method string) HTTPMethod {
+	upper := strings.ToUpper(method)
+	switch upper {
+	case "*":
+		return MethodAny
+	case http.MethodOptions:
+		return MethodOptions
+	case http.MethodGet:
+		return MethodGet
+	case http.MethodHead:
+		return MethodHead
+	case http.MethodPost:
+		return MethodPost
+	case http.MethodPut:
+		return MethodPut
+	case http.MethodDelete:
+		return MethodDelete
+	case http.MethodTrace:
+		return MethodTrace
+	case http.MethodConnect:
+		return MethodConnect
+	case http.MethodPatch:
+		return MethodPatch
+	default:
+		return HTTPMethod(upper)
 	}
-
-	return Any
 }
 
-func (m HttpMethod) Matches(s string) bool {
-	return m == Any || m == ToHttpMethod(s)
+func (m HTTPMethod) Matches(s string) bool {
+	return m == MethodAny || m == ToHTTPMethod(s)
 }
 
-func (m HttpMethod) String() string {
+func (m HTTPMethod) String() string {
 	return string(m)
 }

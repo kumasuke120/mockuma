@@ -9,7 +9,16 @@
           "Content-Type": "text/html; charset=utf8"
         },
         "body": {
-          "@comment": "all paths are relative to the main file 'mockuMappings.main.json'",
+          "@comment": {
+            "path": {
+              "en": "all paths are relative to the main file 'mockuMappings.main.json'",
+              "cn": "所有路径都是相对于主入口文件 'mockuMappings.main.json' 的"
+            },
+            "@file": {
+              "en": "includes the content of the file through given path",
+              "cn": "通过给定路径引入文件内容"
+            }
+          },
           "@file": "static/whoami.html"
         }
       }

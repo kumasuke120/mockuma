@@ -12,17 +12,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var emptyJsonMatcher = myjson.MakeExtJsonMatcher(myjson.Object{})
+var emptyJSONMatcher = myjson.MakeExtJSONMatcher(myjson.Object{})
 var mappings = &mckmaps.MockuMappings{
 	Mappings: []*mckmaps.Mapping{
 		{
-			Uri:      "/hello",
-			Method:   myhttp.Post,
-			Policies: []*mckmaps.Policy{newStatusJsonPolicy(myhttp.Ok, "OK")},
+			URI:      "/hello",
+			Method:   myhttp.MethodPost,
+			Policies: []*mckmaps.Policy{newStatusJSONPolicy(myhttp.StatusOk, "OK")},
 		},
 		{
-			Uri:    "/m",
-			Method: myhttp.Get,
+			URI:    "/m",
+			Method: myhttp.MethodGet,
 			Policies: []*mckmaps.Policy{
 				{
 					When: &mckmaps.When{
@@ -50,10 +50,10 @@ var mappings = &mckmaps.MockuMappings{
 				},
 				{
 					When: &mckmaps.When{
-						ParamJsons: []*mckmaps.NameJsonPair{
+						ParamJSONs: []*mckmaps.NameJSONPair{
 							{
 								Name: "j",
-								Json: myjson.MakeExtJsonMatcher(myjson.Object{}),
+								JSON: myjson.MakeExtJSONMatcher(myjson.Object{}),
 							},
 						},
 					},
@@ -84,10 +84,10 @@ var mappings = &mckmaps.MockuMappings{
 				},
 				{
 					When: &mckmaps.When{
-						HeaderJsons: []*mckmaps.NameJsonPair{
+						HeaderJSONs: []*mckmaps.NameJSONPair{
 							{
 								Name: "X-J1",
-								Json: myjson.MakeExtJsonMatcher(myjson.Object{}),
+								JSON: myjson.MakeExtJSONMatcher(myjson.Object{}),
 							},
 						},
 					},
@@ -95,8 +95,8 @@ var mappings = &mckmaps.MockuMappings{
 			},
 		},
 		{
-			Uri:    "/m",
-			Method: myhttp.Post,
+			URI:    "/m",
+			Method: myhttp.MethodPost,
 			Policies: []*mckmaps.Policy{
 				{
 					When: &mckmaps.When{
@@ -108,7 +108,7 @@ var mappings = &mckmaps.MockuMappings{
 						BodyRegexp: regexp.MustCompile("^\\d{3}$"),
 					},
 					Returns: &mckmaps.Returns{
-						StatusCode: myhttp.Ok,
+						StatusCode: myhttp.StatusOk,
 						Headers: []*mckmaps.NameValuesPair{
 							{
 								Name:   "Server",
@@ -119,7 +119,7 @@ var mappings = &mckmaps.MockuMappings{
 				},
 				{
 					When: &mckmaps.When{
-						BodyJson: &emptyJsonMatcher,
+						BodyJSON: &emptyJSONMatcher,
 					},
 				},
 			},
@@ -134,8 +134,8 @@ func TestNewPathMatcher(t *testing.T) {
 		"/hello": {mappings.Mappings[0]},
 		"/m": {
 			&mckmaps.Mapping{
-				Uri:      "/m",
-				Method:   myhttp.Get,
+				URI:      "/m",
+				Method:   myhttp.MethodGet,
 				Policies: mappings.Mappings[1].Policies,
 			},
 			mappings.Mappings[2],

@@ -3,7 +3,6 @@
   "mappings": [
     {
       "uri": "/",
-      "method": "GET",
       "policies": {
         "returns": {
           "latency": [

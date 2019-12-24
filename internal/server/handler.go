@@ -5,33 +5,35 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/kumasuke120/mockuma/internal"
 	"github.com/kumasuke120/mockuma/internal/mckmaps"
 	"github.com/kumasuke120/mockuma/internal/myhttp"
 )
 
 // default policies
 var (
-	pNotFound         = newStatusJsonPolicy(myhttp.NotFound, "Not Found")
-	pNoPolicyMatched  = newStatusJsonPolicy(myhttp.BadRequest, "No policy matched")
-	pMethodNotAllowed = newStatusJsonPolicy(myhttp.MethodNotAllowed, "Method not allowed")
+	pNotFound         = newStatusJSONPolicy(myhttp.StatusNotFound, "Not Found")
+	pNoPolicyMatched  = newStatusJSONPolicy(myhttp.StatusBadRequest, "No policy matched")
+	pMethodNotAllowed = newStatusJSONPolicy(myhttp.StatusMethodNotAllowed, "Method not allowed")
 )
 
-func newStatusJsonPolicy(statusCode myhttp.StatusCode, message string) *mckmaps.Policy {
+func newStatusJSONPolicy(statusCode myhttp.StatusCode, message string) *mckmaps.Policy {
 	return &mckmaps.Policy{
 		Returns: &mckmaps.Returns{
 			StatusCode: statusCode,
 			Headers: []*mckmaps.NameValuesPair{
-				{Name: myhttp.HeaderContentType, Values: []string{myhttp.ContentTypeJson}},
+				{Name: myhttp.HeaderContentType, Values: []string{myhttp.ContentTypeJSON}},
 			},
 			Body: []byte(fmt.Sprintf(`{"statusCode": %d, "message": "%s"}`, statusCode, message)),
 		},
 	}
 }
 
+var HeaderValueServer = fmt.Sprintf("%s/%s", internal.AppName, internal.VersionNumber)
+
 type mockHandler struct {
-	serverHeader string
-	mappings     *mckmaps.MockuMappings
-	pathMatcher  *pathMatcher
+	mappings    *mckmaps.MockuMappings
+	pathMatcher *pathMatcher
 }
 
 func newMockHandler(mappings *mckmaps.MockuMappings) *mockHandler {
@@ -42,7 +44,7 @@ func newMockHandler(mappings *mckmaps.MockuMappings) *mockHandler {
 }
 
 func (h *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set(myhttp.HeaderServer, h.serverHeader)
+	w.Header().Set(myhttp.HeaderServer, HeaderValueServer)
 
 	matcher := h.pathMatcher.bind(r)
 	executor := &policyExecutor{r: r, w: &w}
@@ -66,7 +68,7 @@ func (h *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *mockHandler) listAllMappings() {
-	for uri, methods := range h.mappings.GetUriWithItsMethods() {
+	for uri, methods := range h.mappings.GroupMethodsByURI() {
 		log.Printf("[handler] mapped: %s, methods = %v\n", uri, methods)
 	}
 }

@@ -25,7 +25,7 @@ func toRawType(v interface{}) interface{} {
 		return bool(v.(Boolean))
 	case ExtRegexp:
 		return nil
-	case ExtJsonMatcher:
+	case ExtJSONMatcher:
 		return nil
 	default:
 		return v
