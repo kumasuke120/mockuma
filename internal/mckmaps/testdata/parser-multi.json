@@ -1,0 +1,8 @@
+{
+  "@type": "main",
+  "@include": {
+    "mappings": [
+      "parser-single.json"
+    ]
+  }
+}
