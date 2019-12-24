@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/kumasuke120/mockuma/internal/mckmaps"
 )
@@ -11,19 +12,42 @@ import (
 var defaultMapfile = []string{
 	"mockuMappings.json",
 	"mockuMappings.main.json",
+	"main.json",
 }
 
-func LoadFromFile(filename string) (*mckmaps.MockuMappings, error) {
-	return loadFromFile(filename, true)
+type Loader struct {
+	mux      sync.Mutex
+	filename string
+	loaded   *mckmaps.MockuMappings
 }
 
-func loadFromFile(filename string, chdir bool) (*mckmaps.MockuMappings, error) {
-	var mappings *mckmaps.MockuMappings
-	var err error
+func New(filename string) *Loader {
+	return &Loader{filename: filename}
+}
 
-	if filename == "" {
-		return loadFromDefaultMapfile(mappings, err)
+func (l *Loader) Load() (*mckmaps.MockuMappings, error) {
+	l.mux.Lock()
+	defer l.mux.Unlock()
+
+	if l.filename == "" {
+		return l.loadDefault()
 	}
+
+	return l.loadFromFile(l.filename, true)
+}
+
+func (l *Loader) loadDefault() (m *mckmaps.MockuMappings, e error) {
+	for _, f := range defaultMapfile {
+		m, e = l.loadFromFile(f, false)
+		if e == nil {
+			return
+		}
+	}
+	return
+}
+
+func (l *Loader) loadFromFile(filename string, chdir bool) (*mckmaps.MockuMappings, error) {
+	var err error
 
 	filename, err = filepath.Abs(filename) // gets absolute path before chdir
 	if err != nil {
@@ -36,17 +60,13 @@ func loadFromFile(filename string, chdir bool) (*mckmaps.MockuMappings, error) {
 	}
 
 	parser := mckmaps.NewParser(filename)
-	return parser.Parse()
-}
-
-func loadFromDefaultMapfile(mappings *mckmaps.MockuMappings, err error) (*mckmaps.MockuMappings, error) {
-	for _, _filename := range defaultMapfile {
-		mappings, err = loadFromFile(_filename, false)
-		if err == nil {
-			return mappings, nil
-		}
+	var mappings *mckmaps.MockuMappings
+	mappings, err = parser.Parse()
+	if err == nil { // saves filename if succeeded
+		l.filename = filename
+		l.loaded = mappings
 	}
-	return nil, err
+	return mappings, err
 }
 
 func chdirBasedOnFilename(filename string) error {
