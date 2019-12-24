@@ -55,9 +55,9 @@ func TestObject_Get(t *testing.T) {
 }
 
 func TestObject_Set(t *testing.T) {
-	o2 := o.Set("k2", "v2")
-	assert.Equal(t, String("v2"), o2.Get("k2"))
-	assert.Nil(t, o.Get("k2"))
+	o2 := o.Set("x", "v2")
+	assert.Equal(t, String("v2"), o2.Get("x"))
+	assert.Nil(t, o.Get("x"))
 }
 
 func TestArray_Has(t *testing.T) {
