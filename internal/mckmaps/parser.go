@@ -297,7 +297,7 @@ func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
 		}
 		mapping.Method = myhttp.ToHTTPMethod(string(method))
 	} else {
-		mapping.Method = myhttp.Any
+		mapping.Method = myhttp.MethodAny
 	}
 
 	p.jsonPath.SetLast(mapPolicies)
@@ -440,7 +440,7 @@ func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
 		}
 		returns.StatusCode = myhttp.StatusCode(int(statusCode))
 	} else {
-		returns.StatusCode = myhttp.Ok
+		returns.StatusCode = myhttp.StatusOk
 	}
 
 	p.jsonPath.SetLast(pHeaders)

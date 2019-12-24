@@ -10,31 +10,31 @@ func TestToHTTPMethod(t *testing.T) {
 	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
 
-	assert.Equal(Options, ToHTTPMethod("Options"))
-	assert.Equal(Get, ToHTTPMethod("get"))
-	assert.Equal(Head, ToHTTPMethod("HEAD"))
-	assert.Equal(Post, ToHTTPMethod("POST"))
-	assert.Equal(Put, ToHTTPMethod("put"))
-	assert.Equal(Delete, ToHTTPMethod("dElEtE"))
-	assert.Equal(Trace, ToHTTPMethod("trAcE"))
-	assert.Equal(Connect, ToHTTPMethod("CONNECT"))
-	assert.Equal(Patch, ToHTTPMethod("PAtch"))
-	assert.Equal(Any, ToHTTPMethod("@any"))
+	assert.Equal(MethodOptions, ToHTTPMethod("Options"))
+	assert.Equal(MethodGet, ToHTTPMethod("get"))
+	assert.Equal(MethodHead, ToHTTPMethod("HEAD"))
+	assert.Equal(MethodPost, ToHTTPMethod("POST"))
+	assert.Equal(MethodPut, ToHTTPMethod("put"))
+	assert.Equal(MethodDelete, ToHTTPMethod("dElEtE"))
+	assert.Equal(MethodTrace, ToHTTPMethod("trAcE"))
+	assert.Equal(MethodConnect, ToHTTPMethod("CONNECT"))
+	assert.Equal(MethodPatch, ToHTTPMethod("PAtch"))
+	assert.Equal(MethodAny, ToHTTPMethod("@any"))
 }
 
 func TestHTTPMethod_Matches(t *testing.T) {
 	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
 
-	assert.True(Get.Matches("GET"))
-	assert.True(Any.Matches("POST"))
-	assert.False(Post.Matches("GET"))
+	assert.True(MethodGet.Matches("GET"))
+	assert.True(MethodAny.Matches("POST"))
+	assert.False(MethodPost.Matches("GET"))
 }
 
 func TestHTTPMethod_String(t *testing.T) {
 	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
 
-	assert.Equal("GET", Get.String())
-	assert.Equal("OPTIONS", Options.String())
+	assert.Equal("GET", MethodGet.String())
+	assert.Equal("OPTIONS", MethodOptions.String())
 }

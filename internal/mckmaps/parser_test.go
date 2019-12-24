@@ -33,11 +33,11 @@ func TestParser_Parse(t *testing.T) {
 	expectedMappings := []*Mapping{
 		{
 			URI:    "/m1",
-			Method: myhttp.Get,
+			Method: myhttp.MethodGet,
 			Policies: []*Policy{
 				{
 					Returns: &Returns{
-						StatusCode: myhttp.Ok,
+						StatusCode: myhttp.StatusOk,
 						Body:       []byte("m1"),
 					},
 				},
@@ -45,7 +45,7 @@ func TestParser_Parse(t *testing.T) {
 		},
 		{
 			URI:    "/m2",
-			Method: myhttp.Post,
+			Method: myhttp.MethodPost,
 			Policies: []*Policy{
 				{
 					When: &When{
@@ -57,7 +57,7 @@ func TestParser_Parse(t *testing.T) {
 						},
 					},
 					Returns: &Returns{
-						StatusCode: myhttp.Ok,
+						StatusCode: myhttp.StatusOk,
 						Body:       []byte("m2:1"),
 					},
 				},
@@ -71,7 +71,7 @@ func TestParser_Parse(t *testing.T) {
 						},
 					},
 					Returns: &Returns{
-						StatusCode: myhttp.Ok,
+						StatusCode: myhttp.StatusOk,
 						Body:       []byte("m2:2"),
 					},
 				},
@@ -85,7 +85,7 @@ func TestParser_Parse(t *testing.T) {
 						},
 					},
 					Returns: &Returns{
-						StatusCode: myhttp.Ok,
+						StatusCode: myhttp.StatusOk,
 						Body:       []byte("m2:3"),
 					},
 				},
@@ -146,11 +146,11 @@ func TestMappingsParser_parse(t *testing.T) {
 			expected1 := []*Mapping{
 				{
 					URI:    "/",
-					Method: myhttp.Get,
+					Method: myhttp.MethodGet,
 					Policies: []*Policy{
 						{
 							Returns: &Returns{
-								StatusCode: myhttp.Ok,
+								StatusCode: myhttp.StatusOk,
 								Headers: []*NameValuesPair{
 									{
 										Name:   myhttp.HeaderContentType,
@@ -181,7 +181,7 @@ func TestMappingsParser_parse(t *testing.T) {
 			expected2 := []*Mapping{
 				{
 					URI:    "/",
-					Method: myhttp.Get,
+					Method: myhttp.MethodGet,
 					Policies: []*Policy{
 						{
 							When: &When{
@@ -244,7 +244,7 @@ func TestMappingsParser_parse(t *testing.T) {
 						},
 						{
 							Returns: &Returns{
-								StatusCode: myhttp.Ok,
+								StatusCode: myhttp.StatusOk,
 								Body:       []byte(""),
 								Latency: &Interval{
 									Min: 100,
@@ -326,21 +326,21 @@ func TestParser_sortMappings(t *testing.T) {
 	testdata1 := &MockuMappings{Mappings: []*Mapping{
 		{
 			URI:    "/",
-			Method: myhttp.Get,
+			Method: myhttp.MethodGet,
 			Policies: []*Policy{
 				{},
 			},
 		},
 		{
 			URI:    "/",
-			Method: myhttp.Get,
+			Method: myhttp.MethodGet,
 			Policies: []*Policy{
 				{},
 			},
 		},
 		{
 			URI:    "/",
-			Method: myhttp.Post,
+			Method: myhttp.MethodPost,
 			Policies: []*Policy{
 				{},
 			},
@@ -349,7 +349,7 @@ func TestParser_sortMappings(t *testing.T) {
 	expected1 := &MockuMappings{Mappings: []*Mapping{
 		{
 			URI:    "/",
-			Method: myhttp.Get,
+			Method: myhttp.MethodGet,
 			Policies: []*Policy{
 				testdata1.Mappings[0].Policies[0],
 				testdata1.Mappings[1].Policies[0],
@@ -357,7 +357,7 @@ func TestParser_sortMappings(t *testing.T) {
 		},
 		{
 			URI:    "/",
-			Method: myhttp.Post,
+			Method: myhttp.MethodPost,
 			Policies: []*Policy{
 				testdata1.Mappings[2].Policies[0],
 			},

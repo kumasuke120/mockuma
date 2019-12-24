@@ -12,9 +12,9 @@ import (
 
 // default policies
 var (
-	pNotFound         = newStatusJSONPolicy(myhttp.NotFound, "Not Found")
-	pNoPolicyMatched  = newStatusJSONPolicy(myhttp.BadRequest, "No policy matched")
-	pMethodNotAllowed = newStatusJSONPolicy(myhttp.MethodNotAllowed, "Method not allowed")
+	pNotFound         = newStatusJSONPolicy(myhttp.StatusNotFound, "Not Found")
+	pNoPolicyMatched  = newStatusJSONPolicy(myhttp.StatusBadRequest, "No policy matched")
+	pMethodNotAllowed = newStatusJSONPolicy(myhttp.StatusMethodNotAllowed, "Method not allowed")
 )
 
 func newStatusJSONPolicy(statusCode myhttp.StatusCode, message string) *mckmaps.Policy {

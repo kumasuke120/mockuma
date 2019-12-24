@@ -10,25 +10,25 @@ import (
 var mappings = &MockuMappings{Mappings: []*Mapping{
 	{
 		URI:      "/a1",
-		Method:   myhttp.Put,
+		Method:   myhttp.MethodPut,
 		Policies: nil,
 	},
 	{
 		URI:      "/a2",
-		Method:   myhttp.Post,
+		Method:   myhttp.MethodPost,
 		Policies: nil,
 	},
 	{
 		URI:      "/a1",
-		Method:   myhttp.Get,
+		Method:   myhttp.MethodGet,
 		Policies: nil,
 	},
 }}
 
 func TestMockuMappings_GroupMethodsByURI(t *testing.T) {
 	expected := map[string][]myhttp.HTTPMethod{
-		"/a1": {myhttp.Put, myhttp.Get},
-		"/a2": {myhttp.Post},
+		"/a1": {myhttp.MethodPut, myhttp.MethodGet},
+		"/a2": {myhttp.MethodPost},
 	}
 	actual := mappings.GroupMethodsByURI()
 
