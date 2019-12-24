@@ -277,6 +277,9 @@ func (p *mappingsParser) parse() ([]*Mapping, error) {
 	return mappings, nil
 }
 
+/// refers to: https://tools.ietf.org/html/rfc7230#section-3.2.6
+var validMethodRegexp = regexp.MustCompile("(?i)^[-!#$%&'*+._`|~\\da-z]+$")
+
 func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
 	p.jsonPath.Append("")
 
@@ -295,7 +298,12 @@ func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
 		if err != nil {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
-		mapping.Method = myhttp.ToHTTPMethod(string(method))
+		_method := string(method)
+		if validMethodRegexp.MatchString(_method) {
+			mapping.Method = myhttp.ToHTTPMethod(_method)
+		} else {
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
 	} else {
 		mapping.Method = myhttp.MethodAny
 	}

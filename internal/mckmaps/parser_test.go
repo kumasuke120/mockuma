@@ -33,7 +33,7 @@ func TestParser_Parse(t *testing.T) {
 	expectedMappings := []*Mapping{
 		{
 			URI:    "/m1",
-			Method: myhttp.MethodGet,
+			Method: myhttp.HTTPMethod("RESET"),
 			Policies: []*Policy{
 				{
 					Returns: &Returns{
@@ -146,7 +146,7 @@ func TestMappingsParser_parse(t *testing.T) {
 			expected1 := []*Mapping{
 				{
 					URI:    "/",
-					Method: myhttp.MethodGet,
+					Method: myhttp.MethodAny,
 					Policies: []*Policy{
 						{
 							Returns: &Returns{
@@ -264,9 +264,19 @@ func TestMappingsParser_parse(t *testing.T) {
 	j3, e3 := myjson.Unmarshal(fb3)
 	if assert.Nil(e3) {
 		m3 := &mappingsParser{json: j3}
-		_, e3 := m3.parse()
+		_, e3 = m3.parse()
 		assert.NotNil(e3)
 		assert.NotEmpty(e3.Error())
+	}
+
+	fb4, e4 := ioutil.ReadFile(filepath.Join("testdata", "mappings-4.json"))
+	require.Nil(e4)
+	j4, e4 := myjson.Unmarshal(fb4)
+	if assert.Nil(e4) {
+		m4 := &mappingsParser{json: j4}
+		_, e4 = m4.parse()
+		assert.NotNil(e4)
+		assert.NotEmpty(e4.Error())
 	}
 }
 

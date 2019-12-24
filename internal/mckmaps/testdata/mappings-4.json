@@ -1,0 +1,11 @@
+[
+  {
+    "uri": "/",
+    "method": "@any",
+    "policies": {
+      "returns": {
+        "body": ""
+      }
+    }
+  }
+]
