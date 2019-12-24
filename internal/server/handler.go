@@ -12,17 +12,17 @@ import (
 
 // default policies
 var (
-	pNotFound         = newStatusJsonPolicy(myhttp.NotFound, "Not Found")
-	pNoPolicyMatched  = newStatusJsonPolicy(myhttp.BadRequest, "No policy matched")
-	pMethodNotAllowed = newStatusJsonPolicy(myhttp.MethodNotAllowed, "Method not allowed")
+	pNotFound         = newStatusJSONPolicy(myhttp.NotFound, "Not Found")
+	pNoPolicyMatched  = newStatusJSONPolicy(myhttp.BadRequest, "No policy matched")
+	pMethodNotAllowed = newStatusJSONPolicy(myhttp.MethodNotAllowed, "Method not allowed")
 )
 
-func newStatusJsonPolicy(statusCode myhttp.StatusCode, message string) *mckmaps.Policy {
+func newStatusJSONPolicy(statusCode myhttp.StatusCode, message string) *mckmaps.Policy {
 	return &mckmaps.Policy{
 		Returns: &mckmaps.Returns{
 			StatusCode: statusCode,
 			Headers: []*mckmaps.NameValuesPair{
-				{Name: myhttp.HeaderContentType, Values: []string{myhttp.ContentTypeJson}},
+				{Name: myhttp.HeaderContentType, Values: []string{myhttp.ContentTypeJSON}},
 			},
 			Body: []byte(fmt.Sprintf(`{"statusCode": %d, "message": "%s"}`, statusCode, message)),
 		},
@@ -68,7 +68,7 @@ func (h *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *mockHandler) listAllMappings() {
-	for uri, methods := range h.mappings.GetUriWithItsMethods() {
+	for uri, methods := range h.mappings.GroupMethodsByURI() {
 		log.Printf("[handler] mapped: %s, methods = %v\n", uri, methods)
 	}
 }

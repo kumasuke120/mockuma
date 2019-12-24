@@ -15,7 +15,7 @@ var (
 	ppRenderTemplate = makeTemplateFilter()
 	ppLoadFile       = makeLoadFileFilter()
 	ppParseRegexp    = makeParseRegexpFilter()
-	ppToJsonMatcher  = &jsonMatcherFilter{}
+	ppToJSONMatcher  = &jsonMatcherFilter{}
 )
 
 func doFiltersOnV(v interface{}, filters ...filter) (interface{}, error) {
@@ -298,13 +298,13 @@ func (f *loadFileFilter) loadForArray(v myjson.Array) (interface{}, error) {
 	return rV, nil
 }
 
-func (f *loadFileFilter) loadForExtJsonMatcher(v myjson.ExtJsonMatcher) (interface{}, error) {
+func (f *loadFileFilter) loadForExtJSONMatcher(v myjson.ExtJSONMatcher) (interface{}, error) {
 	_v := v.Unwrap()
 	rV, err := f.load(_v)
 	if err != nil {
 		return nil, err
 	}
-	return myjson.MakeExtJsonMatcher(rV), nil
+	return myjson.MakeExtJSONMatcher(rV), nil
 }
 
 func (f *loadFileFilter) reset() {
@@ -335,8 +335,8 @@ func (f *parseRegexpFilter) parse(v interface{}) (rV interface{}, err error) {
 		rV, err = f.parseForObject(v.(myjson.Object))
 	case myjson.Array:
 		rV, err = f.parseForArray(v.(myjson.Array))
-	case myjson.ExtJsonMatcher:
-		rV, err = f.parseForExtJsonMatcher(v.(myjson.ExtJsonMatcher))
+	case myjson.ExtJSONMatcher:
+		rV, err = f.parseForExtJSONMatcher(v.(myjson.ExtJSONMatcher))
 	default:
 		rV, err = v, nil
 	}
@@ -386,13 +386,13 @@ func (f *parseRegexpFilter) parseForArray(v myjson.Array) (interface{}, error) {
 	return rV, nil
 }
 
-func (f *parseRegexpFilter) parseForExtJsonMatcher(v myjson.ExtJsonMatcher) (interface{}, error) {
+func (f *parseRegexpFilter) parseForExtJSONMatcher(v myjson.ExtJSONMatcher) (interface{}, error) {
 	_v := v.Unwrap()
 	rV, err := f.parse(_v)
 	if err != nil {
 		return nil, err
 	}
-	return myjson.MakeExtJsonMatcher(rV), nil
+	return myjson.MakeExtJSONMatcher(rV), nil
 }
 
 func (f *parseRegexpFilter) reset() {
@@ -423,13 +423,13 @@ func (f *jsonMatcherFilter) generate(v interface{}) (gV interface{}, err error) 
 }
 
 func (f *jsonMatcherFilter) generateObject(v myjson.Object) (interface{}, error) {
-	if v.Has(dJson) {
-		json := v.Get(dJson)
-		raw, err := f.toRawJsonMatcher(json)
+	if v.Has(dJSON) {
+		json := v.Get(dJSON)
+		raw, err := f.toRawJSONMatcher(json)
 		if err != nil {
 			return nil, err
 		}
-		return myjson.MakeExtJsonMatcher(raw), nil
+		return myjson.MakeExtJSONMatcher(raw), nil
 	} else {
 		gV := make(myjson.Object)
 		for name, value := range v {
@@ -455,18 +455,18 @@ func (f *jsonMatcherFilter) generateForArray(v myjson.Array) (myjson.Array, erro
 	return result, nil
 }
 
-func (f *jsonMatcherFilter) toRawJsonMatcher(v interface{}) (interface{}, error) {
+func (f *jsonMatcherFilter) toRawJSONMatcher(v interface{}) (interface{}, error) {
 	switch v.(type) {
 	case myjson.Object:
-		return f.objectToRawJsonMatcher(v.(myjson.Object))
+		return f.objectToRawJSONMatcher(v.(myjson.Object))
 	case myjson.Array:
-		return f.arrayToRawJsonMatcher(v.(myjson.Array))
+		return f.arrayToRawJSONMatcher(v.(myjson.Array))
 	default:
 		return v, nil
 	}
 }
 
-func (f *jsonMatcherFilter) objectToRawJsonMatcher(v myjson.Object) (myjson.Object, error) {
+func (f *jsonMatcherFilter) objectToRawJSONMatcher(v myjson.Object) (myjson.Object, error) {
 	result := make(myjson.Object)
 	jPaths := make(map[string]interface{})
 	for name, value := range v {
@@ -500,7 +500,7 @@ func (f *jsonMatcherFilter) objectToRawJsonMatcher(v myjson.Object) (myjson.Obje
 	return result, nil
 }
 
-func (f *jsonMatcherFilter) arrayToRawJsonMatcher(v myjson.Array) (myjson.Array, error) {
+func (f *jsonMatcherFilter) arrayToRawJSONMatcher(v myjson.Array) (myjson.Array, error) {
 	result := make(myjson.Array, len(v))
 	for idx, value := range v {
 		gValue, err := f.generate(value)

@@ -32,7 +32,7 @@ func TestParser_Parse(t *testing.T) {
 
 	expectedMappings := []*Mapping{
 		{
-			Uri:    "/m1",
+			URI:    "/m1",
 			Method: myhttp.Get,
 			Policies: []*Policy{
 				{
@@ -44,7 +44,7 @@ func TestParser_Parse(t *testing.T) {
 			},
 		},
 		{
-			Uri:    "/m2",
+			URI:    "/m2",
 			Method: myhttp.Post,
 			Policies: []*Policy{
 				{
@@ -145,7 +145,7 @@ func TestMappingsParser_parse(t *testing.T) {
 		if assert.Nil(e1) {
 			expected1 := []*Mapping{
 				{
-					Uri:    "/",
+					URI:    "/",
 					Method: myhttp.Get,
 					Policies: []*Policy{
 						{
@@ -180,7 +180,7 @@ func TestMappingsParser_parse(t *testing.T) {
 		if assert.Nil(e2) {
 			expected2 := []*Mapping{
 				{
-					Uri:    "/",
+					URI:    "/",
 					Method: myhttp.Get,
 					Policies: []*Policy{
 						{
@@ -197,10 +197,10 @@ func TestMappingsParser_parse(t *testing.T) {
 										Regexp: regexp.MustCompile("^.+$"),
 									},
 								},
-								HeaderJsons: []*NameJsonPair{
+								HeaderJSONs: []*NameJSONPair{
 									{
 										Name: "X-J",
-										Json: myjson.MakeExtJsonMatcher(myjson.Object(map[string]interface{}{
+										JSON: myjson.MakeExtJSONMatcher(myjson.Object(map[string]interface{}{
 											"v": myjson.String("v"),
 										})),
 									},
@@ -217,10 +217,10 @@ func TestMappingsParser_parse(t *testing.T) {
 										Regexp: regexp.MustCompile("^.+$"),
 									},
 								},
-								ParamJsons: []*NameJsonPair{
+								ParamJSONs: []*NameJSONPair{
 									{
 										Name: "j",
-										Json: myjson.MakeExtJsonMatcher(myjson.Object(map[string]interface{}{
+										JSON: myjson.MakeExtJSONMatcher(myjson.Object(map[string]interface{}{
 											"v": myjson.String("v"),
 										})),
 									},
@@ -325,21 +325,21 @@ func TestParser_sortMappings(t *testing.T) {
 
 	testdata1 := &MockuMappings{Mappings: []*Mapping{
 		{
-			Uri:    "/",
+			URI:    "/",
 			Method: myhttp.Get,
 			Policies: []*Policy{
 				{},
 			},
 		},
 		{
-			Uri:    "/",
+			URI:    "/",
 			Method: myhttp.Get,
 			Policies: []*Policy{
 				{},
 			},
 		},
 		{
-			Uri:    "/",
+			URI:    "/",
 			Method: myhttp.Post,
 			Policies: []*Policy{
 				{},
@@ -348,7 +348,7 @@ func TestParser_sortMappings(t *testing.T) {
 	}}
 	expected1 := &MockuMappings{Mappings: []*Mapping{
 		{
-			Uri:    "/",
+			URI:    "/",
 			Method: myhttp.Get,
 			Policies: []*Policy{
 				testdata1.Mappings[0].Policies[0],
@@ -356,7 +356,7 @@ func TestParser_sortMappings(t *testing.T) {
 			},
 		},
 		{
-			Uri:    "/",
+			URI:    "/",
 			Method: myhttp.Post,
 			Policies: []*Policy{
 				testdata1.Mappings[2].Policies[0],

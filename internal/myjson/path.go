@@ -232,7 +232,7 @@ func (o Object) SetByPath(path *Path, v interface{}) (Object, error) {
 	}
 
 	var d interface{}
-	vToSet := toMyJson(v)
+	vToSet := toMyJSON(v)
 	for i := len(ds) - 1; i >= 0; i-- {
 		d = ds[i]
 		k := path.paths[i]

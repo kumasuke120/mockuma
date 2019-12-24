@@ -19,9 +19,9 @@ type pathMatcher struct {
 func newPathMatcher(mappings *mckmaps.MockuMappings) *pathMatcher {
 	uri2mappings := make(map[string][]*mckmaps.Mapping)
 	for _, m := range mappings.Mappings {
-		mappingsOfUri := uri2mappings[m.Uri]
-		mappingsOfUri = append(mappingsOfUri, m)
-		uri2mappings[m.Uri] = mappingsOfUri
+		mappingsOfURI := uri2mappings[m.URI]
+		mappingsOfURI = append(mappingsOfURI, m)
+		uri2mappings[m.URI] = mappingsOfURI
 	}
 	return &pathMatcher{uri2mappings: uri2mappings}
 }
@@ -39,12 +39,12 @@ type boundMatcher struct {
 }
 
 func (bm *boundMatcher) matches() bool {
-	uri := getUriWithoutQuery(bm.r.URL)
+	uri := getURIWithoutQuery(bm.r.URL)
 
-	if mappingsOfUri, ok := bm.m.uri2mappings[uri]; ok {
-		for _, mappingOfUri := range mappingsOfUri {
-			if mappingOfUri.Method.Matches(bm.r.Method) {
-				bm.matchedMapping = mappingOfUri
+	if mappingsOfURI, ok := bm.m.uri2mappings[uri]; ok {
+		for _, mappingOfURI := range mappingsOfURI {
+			if mappingOfURI.Method.Matches(bm.r.Method) {
+				bm.matchedMapping = mappingOfURI
 				return true
 			}
 		}
@@ -59,7 +59,7 @@ func (bm *boundMatcher) isMethodNotAllowed() bool {
 	return bm.is405
 }
 
-func getUriWithoutQuery(url0 *url.URL) string {
+func getURIWithoutQuery(url0 *url.URL) string {
 	url1 := &url.URL{}
 	*url1 = *url0
 
@@ -106,7 +106,7 @@ func (bm *boundMatcher) paramsMatch(when *mckmaps.When) bool {
 	if !regexpsMatch(when.ParamRegexps, bm.r.Form) {
 		return false
 	}
-	if !asJsonsMatch(when.ParamJsons, bm.r.Form) {
+	if !asJSONsMatch(when.ParamJSONs, bm.r.Form) {
 		return false
 	}
 
@@ -120,7 +120,7 @@ func (bm *boundMatcher) headersMatch(when *mckmaps.When) bool {
 	if !regexpsMatch(when.HeaderRegexps, bm.r.Header) {
 		return false
 	}
-	if !asJsonsMatch(when.HeaderJsons, bm.r.Header) {
+	if !asJSONsMatch(when.HeaderJSONs, bm.r.Header) {
 		return false
 	}
 
@@ -141,12 +141,12 @@ func (bm *boundMatcher) bodyMatches(when *mckmaps.When) bool {
 		return bytes.Equal(when.Body, body)
 	} else if when.BodyRegexp != nil {
 		return when.BodyRegexp.Match(body)
-	} else if when.BodyJson != nil {
+	} else if when.BodyJSON != nil {
 		json, err := myjson.Unmarshal(body)
 		if err != nil {
 			return false
 		}
-		return when.BodyJson.Matches(json)
+		return when.BodyJSON.Matches(json)
 	} else {
 		return true
 	}
@@ -210,11 +210,11 @@ func regexpAnyMatches(r *regexp.Regexp, values []string) bool {
 	return false
 }
 
-func asJsonsMatch(expected []*mckmaps.NameJsonPair, actual map[string][]string) bool {
+func asJSONsMatch(expected []*mckmaps.NameJSONPair, actual map[string][]string) bool {
 	for _, e := range expected {
 		formValues := actual[e.Name]
 
-		if !asJsonAnyMatches(e.Json, formValues) {
+		if !asJSONAnyMatches(e.JSON, formValues) {
 			return false
 		}
 	}
@@ -222,7 +222,7 @@ func asJsonsMatch(expected []*mckmaps.NameJsonPair, actual map[string][]string) 
 	return true
 }
 
-func asJsonAnyMatches(m myjson.ExtJsonMatcher, values []string) bool {
+func asJSONAnyMatches(m myjson.ExtJSONMatcher, values []string) bool {
 	for _, v := range values {
 		json, err := myjson.Unmarshal([]byte(v))
 		if err != nil {

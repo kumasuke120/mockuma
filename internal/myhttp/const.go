@@ -5,4 +5,4 @@ const (
 	HeaderContentType = "Content-Type"
 )
 
-const ContentTypeJson = "application/json; charset=utf8"
+const ContentTypeJSON = "application/json; charset=utf8"

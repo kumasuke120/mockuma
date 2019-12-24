@@ -5,19 +5,19 @@ import (
 	"strings"
 )
 
-type HttpMethod string
+type HTTPMethod string
 
 const (
-	Any     = HttpMethod("*")
-	Options = HttpMethod(http.MethodOptions)
-	Get     = HttpMethod(http.MethodGet)
-	Head    = HttpMethod(http.MethodHead)
-	Post    = HttpMethod(http.MethodPost)
-	Put     = HttpMethod(http.MethodPut)
-	Delete  = HttpMethod(http.MethodDelete)
-	Trace   = HttpMethod(http.MethodTrace)
-	Connect = HttpMethod(http.MethodConnect)
-	Patch   = HttpMethod(http.MethodPatch)
+	Any     = HTTPMethod("*")
+	Options = HTTPMethod(http.MethodOptions)
+	Get     = HTTPMethod(http.MethodGet)
+	Head    = HTTPMethod(http.MethodHead)
+	Post    = HTTPMethod(http.MethodPost)
+	Put     = HTTPMethod(http.MethodPut)
+	Delete  = HTTPMethod(http.MethodDelete)
+	Trace   = HTTPMethod(http.MethodTrace)
+	Connect = HTTPMethod(http.MethodConnect)
+	Patch   = HTTPMethod(http.MethodPatch)
 )
 
 type StatusCode int
@@ -29,7 +29,7 @@ const (
 	NotFound         = StatusCode(http.StatusNotFound)
 )
 
-func ToHttpMethod(method interface{}) HttpMethod {
+func ToHTTPMethod(method interface{}) HTTPMethod {
 	switch method.(type) {
 	case string:
 		switch strings.ToUpper(method.(string)) {
@@ -57,10 +57,10 @@ func ToHttpMethod(method interface{}) HttpMethod {
 	return Any
 }
 
-func (m HttpMethod) Matches(s string) bool {
-	return m == Any || m == ToHttpMethod(s)
+func (m HTTPMethod) Matches(s string) bool {
+	return m == Any || m == ToHTTPMethod(s)
 }
 
-func (m HttpMethod) String() string {
+func (m HTTPMethod) String() string {
 	return string(m)
 }

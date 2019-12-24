@@ -46,7 +46,7 @@ func (o Object) Set(name string, v interface{}) Object {
 	for k, v := range o {
 		m[k] = v
 	}
-	m[name] = toMyJson(v)
+	m[name] = toMyJSON(v)
 	return m
 }
 
@@ -85,6 +85,6 @@ func (a Array) Set(idx int, v interface{}) Array {
 			_a = append(_a, nil)
 		}
 	}
-	_a[idx] = toMyJson(v)
+	_a[idx] = toMyJSON(v)
 	return _a
 }

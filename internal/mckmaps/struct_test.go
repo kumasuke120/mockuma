@@ -9,28 +9,28 @@ import (
 
 var mappings = &MockuMappings{Mappings: []*Mapping{
 	{
-		Uri:      "/a1",
+		URI:      "/a1",
 		Method:   myhttp.Put,
 		Policies: nil,
 	},
 	{
-		Uri:      "/a2",
+		URI:      "/a2",
 		Method:   myhttp.Post,
 		Policies: nil,
 	},
 	{
-		Uri:      "/a1",
+		URI:      "/a1",
 		Method:   myhttp.Get,
 		Policies: nil,
 	},
 }}
 
-func TestMockuMappings_GetUriWithItsMethods(t *testing.T) {
-	expected := map[string][]myhttp.HttpMethod{
+func TestMockuMappings_GroupMethodsByURI(t *testing.T) {
+	expected := map[string][]myhttp.HTTPMethod{
 		"/a1": {myhttp.Put, myhttp.Get},
 		"/a2": {myhttp.Post},
 	}
-	actual := mappings.GetUriWithItsMethods()
+	actual := mappings.GroupMethodsByURI()
 
 	assert.Equal(t, expected, actual)
 }
