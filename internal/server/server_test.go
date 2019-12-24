@@ -1,6 +1,7 @@
 package server
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -18,8 +19,26 @@ func TestNewMockServer(t *testing.T) {
 func TestMockServer_Start(t *testing.T) {
 	s := NewMockServer(3214)
 	go func() {
-		time.Sleep(3 * time.Second)
+		time.Sleep(2 * time.Second)
 		s.shutdown()
 	}()
-	s.Start(mappings)
+	s.ListenAndServe(mappings)
+}
+
+func TestMockServer_SetMappings(t *testing.T) {
+	s := NewMockServer(3214)
+	s.SetMappings(mappings)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go s.ListenAndServe(mappings)
+	go func() {
+		defer wg.Done()
+
+		time.Sleep(1 * time.Second)
+		s.SetMappings(mappings)
+		time.Sleep(2 * time.Second)
+		s.shutdown()
+	}()
+	wg.Wait()
 }

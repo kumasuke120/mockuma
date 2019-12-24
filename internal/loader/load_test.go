@@ -11,21 +11,21 @@ import (
 )
 
 //noinspection GoImportUsedAsName
-func TestLoadFromFile(t *testing.T) {
+func TestLoader_Load(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
 	oldWd, err := os.Getwd()
 	require.Nil(err)
 
-	file1, err1 := LoadFromFile(filepath.Join("testdata", "mappings-0.json"))
+	file1, err1 := New(filepath.Join("testdata", "mappings-0.json")).Load()
 	assert.Nil(file1)
 	assert.NotNil(err1)
 	wd1, err1 := os.Getwd()
 	require.Nil(err)
 	assert.True(strings.HasSuffix(wd1, "testdata"))
 
-	file2, err2 := LoadFromFile("")
+	file2, err2 := New("").Load()
 	require.Nil(err2)
 	assert.NotNil(file2)
 

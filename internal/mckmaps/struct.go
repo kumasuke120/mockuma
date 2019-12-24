@@ -64,6 +64,10 @@ type Interval struct {
 	Max int64
 }
 
+func (m *MockuMappings) IsEmpty() bool {
+	return len(m.Mappings) == 0 && len(m.Filenames) == 0
+}
+
 func (m *MockuMappings) GetUriWithItsMethods() map[string][]myhttp.HttpMethod {
 	result := make(map[string][]myhttp.HttpMethod)
 	for _, m := range m.Mappings {
