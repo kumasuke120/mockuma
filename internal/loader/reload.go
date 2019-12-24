@@ -4,6 +4,7 @@ import (
 	"log"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/kumasuke120/mockuma/internal/mckmaps"
@@ -71,6 +72,8 @@ func (w *fileChangeWatcher) watch() {
 				return
 			}
 			log.Println("[loader] failure encountered when watching files:", err)
+		default:
+			time.Sleep(500 * time.Millisecond)
 		}
 	}
 }

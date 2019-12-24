@@ -59,13 +59,15 @@ func TestFileChangeWatcher(t *testing.T) {
 	}
 	w1.addListener(l)
 	go w1.watch()
-	defer w1.cancel()
 
 	time.Sleep(1 * time.Second)
 	require.Nil(ioutil.WriteFile(n1, expected, 0644))
 
 	time.Sleep(1 * time.Second)
 	assert.True(<-l.okChan)
+
+	w1.cancel()
+	time.Sleep(1 * time.Second)
 
 	require.Nil(os.Remove(n1))
 }
