@@ -40,7 +40,7 @@ func TestPolicyExecutor_executor(t *testing.T) {
 	exe1 := &policyExecutor{
 		r:      httptest.NewRequest("GET", "/TestPolicyExecutor_executor", nil),
 		w:      &rw1,
-		policy: newStatusJSONPolicy(myhttp.Ok, "OK"),
+		policy: newStatusJSONPolicy(myhttp.StatusOk, "OK"),
 	}
 	e1 := exe1.execute()
 	assert.Nil(e1)

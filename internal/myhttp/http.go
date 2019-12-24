@@ -8,25 +8,25 @@ import (
 type HTTPMethod string
 
 const (
-	Any     = HTTPMethod("*")
-	Options = HTTPMethod(http.MethodOptions)
-	Get     = HTTPMethod(http.MethodGet)
-	Head    = HTTPMethod(http.MethodHead)
-	Post    = HTTPMethod(http.MethodPost)
-	Put     = HTTPMethod(http.MethodPut)
-	Delete  = HTTPMethod(http.MethodDelete)
-	Trace   = HTTPMethod(http.MethodTrace)
-	Connect = HTTPMethod(http.MethodConnect)
-	Patch   = HTTPMethod(http.MethodPatch)
+	MethodAny     = HTTPMethod("*")
+	MethodOptions = HTTPMethod(http.MethodOptions)
+	MethodGet     = HTTPMethod(http.MethodGet)
+	MethodHead    = HTTPMethod(http.MethodHead)
+	MethodPost    = HTTPMethod(http.MethodPost)
+	MethodPut     = HTTPMethod(http.MethodPut)
+	MethodDelete  = HTTPMethod(http.MethodDelete)
+	MethodTrace   = HTTPMethod(http.MethodTrace)
+	MethodConnect = HTTPMethod(http.MethodConnect)
+	MethodPatch   = HTTPMethod(http.MethodPatch)
 )
 
 type StatusCode int
 
 const (
-	Ok               = StatusCode(http.StatusOK)
-	BadRequest       = StatusCode(http.StatusBadRequest)
-	MethodNotAllowed = StatusCode(http.StatusMethodNotAllowed)
-	NotFound         = StatusCode(http.StatusNotFound)
+	StatusOk               = StatusCode(http.StatusOK)
+	StatusBadRequest       = StatusCode(http.StatusBadRequest)
+	StatusMethodNotAllowed = StatusCode(http.StatusMethodNotAllowed)
+	StatusNotFound         = StatusCode(http.StatusNotFound)
 )
 
 func ToHTTPMethod(method interface{}) HTTPMethod {
@@ -34,31 +34,31 @@ func ToHTTPMethod(method interface{}) HTTPMethod {
 	case string:
 		switch strings.ToUpper(method.(string)) {
 		case http.MethodOptions:
-			return Options
+			return MethodOptions
 		case http.MethodGet:
-			return Get
+			return MethodGet
 		case http.MethodHead:
-			return Head
+			return MethodHead
 		case http.MethodPost:
-			return Post
+			return MethodPost
 		case http.MethodPut:
-			return Put
+			return MethodPut
 		case http.MethodDelete:
-			return Delete
+			return MethodDelete
 		case http.MethodTrace:
-			return Trace
+			return MethodTrace
 		case http.MethodConnect:
-			return Connect
+			return MethodConnect
 		case http.MethodPatch:
-			return Patch
+			return MethodPatch
 		}
 	}
 
-	return Any
+	return MethodAny
 }
 
 func (m HTTPMethod) Matches(s string) bool {
-	return m == Any || m == ToHTTPMethod(s)
+	return m == MethodAny || m == ToHTTPMethod(s)
 }
 
 func (m HTTPMethod) String() string {

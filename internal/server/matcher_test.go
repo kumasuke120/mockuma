@@ -17,12 +17,12 @@ var mappings = &mckmaps.MockuMappings{
 	Mappings: []*mckmaps.Mapping{
 		{
 			URI:      "/hello",
-			Method:   myhttp.Post,
-			Policies: []*mckmaps.Policy{newStatusJSONPolicy(myhttp.Ok, "OK")},
+			Method:   myhttp.MethodPost,
+			Policies: []*mckmaps.Policy{newStatusJSONPolicy(myhttp.StatusOk, "OK")},
 		},
 		{
 			URI:    "/m",
-			Method: myhttp.Get,
+			Method: myhttp.MethodGet,
 			Policies: []*mckmaps.Policy{
 				{
 					When: &mckmaps.When{
@@ -96,7 +96,7 @@ var mappings = &mckmaps.MockuMappings{
 		},
 		{
 			URI:    "/m",
-			Method: myhttp.Post,
+			Method: myhttp.MethodPost,
 			Policies: []*mckmaps.Policy{
 				{
 					When: &mckmaps.When{
@@ -108,7 +108,7 @@ var mappings = &mckmaps.MockuMappings{
 						BodyRegexp: regexp.MustCompile("^\\d{3}$"),
 					},
 					Returns: &mckmaps.Returns{
-						StatusCode: myhttp.Ok,
+						StatusCode: myhttp.StatusOk,
 						Headers: []*mckmaps.NameValuesPair{
 							{
 								Name:   "Server",
@@ -135,7 +135,7 @@ func TestNewPathMatcher(t *testing.T) {
 		"/m": {
 			&mckmaps.Mapping{
 				URI:      "/m",
-				Method:   myhttp.Get,
+				Method:   myhttp.MethodGet,
 				Policies: mappings.Mappings[1].Policies,
 			},
 			mappings.Mappings[2],
