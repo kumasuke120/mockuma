@@ -19,7 +19,8 @@ func TestToHTTPMethod(t *testing.T) {
 	assert.Equal(MethodTrace, ToHTTPMethod("trAcE"))
 	assert.Equal(MethodConnect, ToHTTPMethod("CONNECT"))
 	assert.Equal(MethodPatch, ToHTTPMethod("PAtch"))
-	assert.Equal(MethodAny, ToHTTPMethod("@any"))
+	assert.Equal(MethodAny, ToHTTPMethod("*"))
+	assert.Equal(HTTPMethod("RESET"), ToHTTPMethod("RESet"))
 }
 
 func TestHTTPMethod_Matches(t *testing.T) {

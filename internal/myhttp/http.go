@@ -29,32 +29,32 @@ const (
 	StatusNotFound         = StatusCode(http.StatusNotFound)
 )
 
-func ToHTTPMethod(method interface{}) HTTPMethod {
-	switch method.(type) {
-	case string:
-		switch strings.ToUpper(method.(string)) {
-		case http.MethodOptions:
-			return MethodOptions
-		case http.MethodGet:
-			return MethodGet
-		case http.MethodHead:
-			return MethodHead
-		case http.MethodPost:
-			return MethodPost
-		case http.MethodPut:
-			return MethodPut
-		case http.MethodDelete:
-			return MethodDelete
-		case http.MethodTrace:
-			return MethodTrace
-		case http.MethodConnect:
-			return MethodConnect
-		case http.MethodPatch:
-			return MethodPatch
-		}
+func ToHTTPMethod(method string) HTTPMethod {
+	upper := strings.ToUpper(method)
+	switch upper {
+	case "*":
+		return MethodAny
+	case http.MethodOptions:
+		return MethodOptions
+	case http.MethodGet:
+		return MethodGet
+	case http.MethodHead:
+		return MethodHead
+	case http.MethodPost:
+		return MethodPost
+	case http.MethodPut:
+		return MethodPut
+	case http.MethodDelete:
+		return MethodDelete
+	case http.MethodTrace:
+		return MethodTrace
+	case http.MethodConnect:
+		return MethodConnect
+	case http.MethodPatch:
+		return MethodPatch
+	default:
+		return HTTPMethod(upper)
 	}
-
-	return MethodAny
 }
 
 func (m HTTPMethod) Matches(s string) bool {
