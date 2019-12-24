@@ -2,6 +2,7 @@ package mckmaps
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"testing"
@@ -15,6 +16,108 @@ import (
 func TestNewParser(t *testing.T) {
 	p1 := NewParser("123")
 	assert.Equal(t, "123", p1.filename)
+}
+
+//noinspection GoImportUsedAsName
+func TestParser_Parse(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	oldWd, err := os.Getwd()
+	require.Nil(err)
+
+	require.Nil(os.Chdir("testdata"))
+
+	expectedMappings := []*Mapping{
+		{
+			Uri:    "/m1",
+			Method: myhttp.Get,
+			Policies: []*Policy{
+				{
+					Returns: &Returns{
+						StatusCode: myhttp.Ok,
+						Body:       []byte("m1"),
+					},
+				},
+			},
+		},
+		{
+			Uri:    "/m2",
+			Method: myhttp.Post,
+			Policies: []*Policy{
+				{
+					When: &When{
+						Params: []*NameValuesPair{
+							{
+								Name:   "p",
+								Values: []string{"1"},
+							},
+						},
+					},
+					Returns: &Returns{
+						StatusCode: myhttp.Ok,
+						Body:       []byte("m2:1"),
+					},
+				},
+				{
+					When: &When{
+						Params: []*NameValuesPair{
+							{
+								Name:   "p",
+								Values: []string{"2"},
+							},
+						},
+					},
+					Returns: &Returns{
+						StatusCode: myhttp.Ok,
+						Body:       []byte("m2:2"),
+					},
+				},
+				{
+					When: &When{
+						Params: []*NameValuesPair{
+							{
+								Name:   "p",
+								Values: []string{"3"},
+							},
+						},
+					},
+					Returns: &Returns{
+						StatusCode: myhttp.Ok,
+						Body:       []byte("m2:3"),
+					},
+				},
+			},
+		},
+	}
+
+	fn1 := "parser-single.json"
+	path1, e1 := filepath.Abs(fn1)
+	require.Nil(e1)
+	expected1 := &MockuMappings{
+		Mappings:  expectedMappings,
+		Filenames: []string{path1},
+	}
+	parser1 := NewParser(path1)
+	actual1, e1 := parser1.Parse()
+	if assert.Nil(e1) {
+		assert.Equal(expected1, actual1)
+	}
+
+	fn2 := "parser-multi.json"
+	path2, e2 := filepath.Abs(fn2)
+	require.Nil(e2)
+	expected2 := &MockuMappings{
+		Mappings:  expectedMappings,
+		Filenames: []string{path2, path1},
+	}
+	parser2 := NewParser(fn2)
+	actual2, e2 := parser2.Parse()
+	if assert.Nil(e2) {
+		assert.Equal(expected2, actual2)
+	}
+
+	require.Nil(os.Chdir(oldWd))
 }
 
 //noinspection GoImportUsedAsName
