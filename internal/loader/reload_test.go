@@ -14,23 +14,26 @@ import (
 )
 
 type lForTestFileChangeWatcher struct {
-	result bool
+	okChan chan bool
 	name   string
 	bytes  []byte
 }
 
 func (l *lForTestFileChangeWatcher) onFileChange(path string) {
 	if l.name != path {
+		l.okChan <- false
 		return
 	}
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
+		l.okChan <- false
 		return
 	}
 	if !reflect.DeepEqual(l.bytes, bytes) {
+		l.okChan <- false
 		return
 	}
-	l.result = true
+	l.okChan <- true
 }
 
 //noinspection GoImportUsedAsName
@@ -50,8 +53,9 @@ func TestFileChangeWatcher(t *testing.T) {
 	require.Nil(e1)
 
 	l := &lForTestFileChangeWatcher{
-		name:  n1,
-		bytes: expected,
+		okChan: make(chan bool),
+		name:   n1,
+		bytes:  expected,
 	}
 	w1.addListener(l)
 	go w1.watch()
@@ -61,7 +65,7 @@ func TestFileChangeWatcher(t *testing.T) {
 	require.Nil(ioutil.WriteFile(n1, expected, 0644))
 
 	time.Sleep(1 * time.Second)
-	assert.True(l.result)
+	assert.True(<-l.okChan)
 
 	require.Nil(os.Remove(n1))
 }
