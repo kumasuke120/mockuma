@@ -15,11 +15,11 @@ const (
 	dTemplate = "@template"
 	dVars     = "@vars"
 	dRegexp   = "@regexp"
-	dJson     = "@json"
+	dJSON     = "@json"
 )
 
 const (
-	mapUri           = "uri"
+	mapURI           = "uri"
 	mapMethod        = "method"
 	mapPolicies      = "policies"
 	mapPolicyWhen    = "when"

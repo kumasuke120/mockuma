@@ -80,5 +80,5 @@ func toString(v interface{}, name string) (String, error) {
 }
 
 func NewArray(v ...interface{}) Array {
-	return toMyJsonArray(v)
+	return toMyJSONArray(v)
 }

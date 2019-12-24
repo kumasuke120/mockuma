@@ -79,7 +79,7 @@ func TestParseRegexp(t *testing.T) {
 		if assert.Nil(e1) {
 			assert.IsType(myjson.ExtRegexp(nil), o1.Get("r"))
 		}
-		o2, e2 := myjson.ToObject(o1.Get("j").(myjson.ExtJsonMatcher).Unwrap())
+		o2, e2 := myjson.ToObject(o1.Get("j").(myjson.ExtJSONMatcher).Unwrap())
 		if assert.Nil(e2) {
 			assert.IsType(myjson.ExtRegexp(nil), o2.Get("r"))
 		}
@@ -117,17 +117,17 @@ func TestRenderTemplate(t *testing.T) {
 }
 
 //noinspection GoImportUsedAsName
-func TestToJsonMatcher(t *testing.T) {
+func TestToJSONMatcher(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	fb0, err := ioutil.ReadFile(filepath.Join("testdata", "toJsonMatcher.json"))
+	fb0, err := ioutil.ReadFile(filepath.Join("testdata", "toJSONMatcher.json"))
 	require.Nil(err)
 	j0, err := myjson.Unmarshal(fb0)
 	require.Nil(err)
 
-	expected := myjson.MakeExtJsonMatcher(myjson.Object{
-		"a": myjson.MakeExtJsonMatcher(myjson.Object{
+	expected := myjson.MakeExtJSONMatcher(myjson.Object{
+		"a": myjson.MakeExtJSONMatcher(myjson.Object{
 			"v": myjson.Number(1),
 		}),
 		"b1": myjson.Array{
@@ -136,14 +136,14 @@ func TestToJsonMatcher(t *testing.T) {
 			myjson.Number(2),
 		},
 		"b2": myjson.Array{
-			myjson.MakeExtJsonMatcher(myjson.Object{
+			myjson.MakeExtJSONMatcher(myjson.Object{
 				"v": myjson.String("1"),
 			}),
-			myjson.MakeExtJsonMatcher(myjson.Object{
+			myjson.MakeExtJSONMatcher(myjson.Object{
 				"v": myjson.String("2"),
 			}),
 		},
-		"b3": myjson.MakeExtJsonMatcher(myjson.Array{
+		"b3": myjson.MakeExtJSONMatcher(myjson.Array{
 			myjson.Number(1),
 			myjson.Number(2),
 		}),

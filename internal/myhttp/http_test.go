@@ -6,23 +6,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestToHttpMethod(t *testing.T) {
+func TestToHTTPMethod(t *testing.T) {
 	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
 
-	assert.Equal(Options, ToHttpMethod("Options"))
-	assert.Equal(Get, ToHttpMethod("get"))
-	assert.Equal(Head, ToHttpMethod("HEAD"))
-	assert.Equal(Post, ToHttpMethod("POST"))
-	assert.Equal(Put, ToHttpMethod("put"))
-	assert.Equal(Delete, ToHttpMethod("dElEtE"))
-	assert.Equal(Trace, ToHttpMethod("trAcE"))
-	assert.Equal(Connect, ToHttpMethod("CONNECT"))
-	assert.Equal(Patch, ToHttpMethod("PAtch"))
-	assert.Equal(Any, ToHttpMethod("@any"))
+	assert.Equal(Options, ToHTTPMethod("Options"))
+	assert.Equal(Get, ToHTTPMethod("get"))
+	assert.Equal(Head, ToHTTPMethod("HEAD"))
+	assert.Equal(Post, ToHTTPMethod("POST"))
+	assert.Equal(Put, ToHTTPMethod("put"))
+	assert.Equal(Delete, ToHTTPMethod("dElEtE"))
+	assert.Equal(Trace, ToHTTPMethod("trAcE"))
+	assert.Equal(Connect, ToHTTPMethod("CONNECT"))
+	assert.Equal(Patch, ToHTTPMethod("PAtch"))
+	assert.Equal(Any, ToHTTPMethod("@any"))
 }
 
-func TestHttpMethod_Matches(t *testing.T) {
+func TestHTTPMethod_Matches(t *testing.T) {
 	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
 
@@ -31,7 +31,7 @@ func TestHttpMethod_Matches(t *testing.T) {
 	assert.False(Post.Matches("GET"))
 }
 
-func TestHttpMethod_String(t *testing.T) {
+func TestHTTPMethod_String(t *testing.T) {
 	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
 

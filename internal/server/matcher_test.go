@@ -12,16 +12,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var emptyJsonMatcher = myjson.MakeExtJsonMatcher(myjson.Object{})
+var emptyJSONMatcher = myjson.MakeExtJSONMatcher(myjson.Object{})
 var mappings = &mckmaps.MockuMappings{
 	Mappings: []*mckmaps.Mapping{
 		{
-			Uri:      "/hello",
+			URI:      "/hello",
 			Method:   myhttp.Post,
-			Policies: []*mckmaps.Policy{newStatusJsonPolicy(myhttp.Ok, "OK")},
+			Policies: []*mckmaps.Policy{newStatusJSONPolicy(myhttp.Ok, "OK")},
 		},
 		{
-			Uri:    "/m",
+			URI:    "/m",
 			Method: myhttp.Get,
 			Policies: []*mckmaps.Policy{
 				{
@@ -50,10 +50,10 @@ var mappings = &mckmaps.MockuMappings{
 				},
 				{
 					When: &mckmaps.When{
-						ParamJsons: []*mckmaps.NameJsonPair{
+						ParamJSONs: []*mckmaps.NameJSONPair{
 							{
 								Name: "j",
-								Json: myjson.MakeExtJsonMatcher(myjson.Object{}),
+								JSON: myjson.MakeExtJSONMatcher(myjson.Object{}),
 							},
 						},
 					},
@@ -84,10 +84,10 @@ var mappings = &mckmaps.MockuMappings{
 				},
 				{
 					When: &mckmaps.When{
-						HeaderJsons: []*mckmaps.NameJsonPair{
+						HeaderJSONs: []*mckmaps.NameJSONPair{
 							{
 								Name: "X-J1",
-								Json: myjson.MakeExtJsonMatcher(myjson.Object{}),
+								JSON: myjson.MakeExtJSONMatcher(myjson.Object{}),
 							},
 						},
 					},
@@ -95,7 +95,7 @@ var mappings = &mckmaps.MockuMappings{
 			},
 		},
 		{
-			Uri:    "/m",
+			URI:    "/m",
 			Method: myhttp.Post,
 			Policies: []*mckmaps.Policy{
 				{
@@ -119,7 +119,7 @@ var mappings = &mckmaps.MockuMappings{
 				},
 				{
 					When: &mckmaps.When{
-						BodyJson: &emptyJsonMatcher,
+						BodyJSON: &emptyJSONMatcher,
 					},
 				},
 			},
@@ -134,7 +134,7 @@ func TestNewPathMatcher(t *testing.T) {
 		"/hello": {mappings.Mappings[0]},
 		"/m": {
 			&mckmaps.Mapping{
-				Uri:      "/m",
+				URI:      "/m",
 				Method:   myhttp.Get,
 				Policies: mappings.Mappings[1].Policies,
 			},
