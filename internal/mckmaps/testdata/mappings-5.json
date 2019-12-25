@@ -1,0 +1,24 @@
+[
+  {
+    "uri": "/",
+    "method": "GET",
+    "policies": [
+      {
+        "when": {
+          "body": {
+            "@regexp": "^.+$"
+          }
+        }
+      },
+      {
+        "when": {
+          "body": {
+            "@json": {
+              "v": "v"
+            }
+          }
+        }
+      }
+    ]
+  }
+]

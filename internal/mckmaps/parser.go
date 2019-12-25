@@ -352,13 +352,20 @@ func (p *mappingsParser) parsePolicy(v myjson.Object) (*Policy, error) {
 	}
 
 	p.jsonPath.SetLast(mapPolicyReturns)
-	rawReturns, err := v.GetObject(mapPolicyReturns)
-	if err != nil {
-		return nil, newParserError(p.filename, p.jsonPath)
-	}
-	returns, err := p.parseReturns(rawReturns)
-	if err != nil {
-		return nil, err
+	var returns *Returns
+	if v.Has(mapPolicyReturns) {
+		rawReturns, err := v.GetObject(mapPolicyReturns)
+		if err != nil {
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
+		returns, err = p.parseReturns(rawReturns)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		returns = &Returns{
+			StatusCode: myhttp.StatusOk,
+		}
 	}
 	policy.Returns = returns
 

@@ -278,6 +278,39 @@ func TestMappingsParser_parse(t *testing.T) {
 		assert.NotNil(e4)
 		assert.NotEmpty(e4.Error())
 	}
+
+	fb5, e5 := ioutil.ReadFile(filepath.Join("testdata", "mappings-5.json"))
+	require.Nil(e5)
+	j5, e5 := myjson.Unmarshal(fb5)
+	if assert.Nil(e5) {
+		m5 := &mappingsParser{json: j5}
+		p5, e5 := m5.parse()
+		if assert.Nil(e5) {
+			expected5 := []*Mapping{
+				{
+					URI:    "/",
+					Method: myhttp.MethodGet,
+					Policies: []*Policy{
+						{
+							When: &When{
+								BodyRegexp: regexp.MustCompile("^.+$"),
+							},
+							Returns: &Returns{StatusCode: myhttp.StatusOk},
+						},
+						{
+							When: &When{
+								BodyJSON: myjson.NewExtJSONMatcher(myjson.Object{
+									"v": myjson.String("v"),
+								}),
+							},
+							Returns: &Returns{StatusCode: myhttp.StatusOk},
+						},
+					},
+				},
+			}
+			assert.Equal(expected5, p5)
+		}
+	}
 }
 
 func TestTemplateParser_parse(t *testing.T) {
