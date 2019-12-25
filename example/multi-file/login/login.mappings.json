@@ -10,15 +10,15 @@
       "method": "POST",
       "policies": [
         {
-          "@template": "template/login-policy.template.json",
+          "@template": "login/login-policy.template.json",
           "vars": {
             "username": "kumasuke120",
             "authToken": "a3VtYXN1a2UxMjAvcGEkJHcwcmQ="
           }
         },
         {
-          "@template": "template/login-policy.template.json",
-          "@vars": "vars/login-policy.vars.json"
+          "@template": "login/login-policy.template.json",
+          "@vars": "login/login-policy.vars.json"
         },
         {
           "when": {

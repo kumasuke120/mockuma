@@ -26,12 +26,12 @@
           "headers": {
             "@comment": {
               "en": "set the response header, specifying the content type is json",
-              "cn": "设置返回头，指定内容类型为 JSON"
+              "cn": "设置返回头，指定内容类型为 Json"
             },
             "Content-Type": "application/json; charset=utf8"
           },
           "body": {
-            "@file": "static/books-page@{page}.json"
+            "@file": "books/books-page@{page}.json"
           }
         }
       },
@@ -47,7 +47,7 @@
             "Content-Type": "application/json; charset=utf8"
           },
           "body": {
-            "@file": "static/books-page@{page}.json"
+            "@file": "books/books-page@{page}.json"
           }
         }
       }

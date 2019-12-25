@@ -1,0 +1,19 @@
+{
+  "@type": "mappings",
+  "@comment": {
+    "en": "mappings which defines api mocks for /api/books/{id}",
+    "cn": "定义了 /api/books/{id} 的 API Mock 的映射(mappings)"
+  },
+  "mappings": {
+    "uri": "/api/books/{id}",
+    "method": "GET",
+    "policies": {
+      "@comment": {
+        "en": "applying the template with variables provided by @vars",
+        "cn": "应用模板并使用 @vars 提供变量"
+      },
+      "@template": "books/books-detail-policy.template.json",
+      "@vars": "books/books-detail-policy.vars.json"
+    }
+  }
+}

@@ -1,7 +1,7 @@
 {
 	"@type": "template",
 	"template": {
-		"uri": "/api/hello",
+		"uri": "/hello",
 		"method": "@{method}",
 		"policies": {
 			"returns": {

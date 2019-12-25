@@ -1,0 +1,35 @@
+{
+  "@type": "mappings",
+  "@comment": {
+    "en": "mappings which defines api mocks for /api/books",
+    "cn": "定义了 /api/books 的 API Mock 的映射(mappings)"
+  },
+  "mappings": [
+    {
+      "@comment": {
+        "en": "applying the template with variables provided by vars",
+        "cn": "应用模板并使用 vars 提供变量"
+      },
+      "@template": "books/books-page-xml.template.json",
+      "vars": [
+        {
+          "page": 1
+        },
+        {
+          "page": 2
+        }
+      ]
+    },
+    {
+      "@template": "books/books-page-json.template.json",
+      "vars": [
+        {
+          "page": 1
+        },
+        {
+          "page": 2
+        }
+      ]
+    }
+  ]
+}

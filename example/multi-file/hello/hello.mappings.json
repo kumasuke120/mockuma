@@ -6,7 +6,7 @@
         "en": "the mappings rendered by the template applying will be matched first, to override the next * mapping",
         "cn": "该模板应用所渲染的映射将会首先进行匹配，覆盖之后的 * 映射"
       },
-      "@template": "template/hello-method-not-allowed.template.json",
+      "@template": "hello/hello-method-not-allowed.template.json",
       "vars": [
         {
           "method": "OPTIONS"
@@ -35,7 +35,7 @@
           "cn": "选填，默认值为 *，* 表示匹配任意方法(method)"
         }
       },
-      "uri": "/api/hello",
+      "uri": "/hello",
       "method": "*",
       "policies": [
         {
