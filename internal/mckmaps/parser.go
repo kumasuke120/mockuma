@@ -277,7 +277,7 @@ func (p *mappingsParser) parse() ([]*Mapping, error) {
 	return mappings, nil
 }
 
-/// refers to: https://tools.ietf.org/html/rfc7230#section-3.2.6
+// refers to: https://tools.ietf.org/html/rfc7230#section-3.2.6
 var validMethodRegexp = regexp.MustCompile("(?i)^[-!#$%&'*+._`|~\\da-z]+$")
 
 func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
