@@ -41,7 +41,7 @@ func TestFileChangeWatcher(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	f1, e1 := ioutil.TempFile("", "fileChangeWatcher")
+	f1, e1 := ioutil.TempFile("", "wdWatcher")
 	require.Nil(e1)
 	n1 := f1.Name()
 	fmt.Println(n1)
