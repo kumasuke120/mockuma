@@ -141,7 +141,7 @@ func TestNewPathMatcher(t *testing.T) {
 			mappings.Mappings[2],
 		},
 	}
-	assert.Equal(t, expected, matcher.uri2mappings)
+	assert.Equal(t, expected, matcher.directPath)
 }
 
 func TestPathMatcher_matches(t *testing.T) {

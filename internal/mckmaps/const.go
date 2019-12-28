@@ -30,6 +30,7 @@ const (
 	pStatusCode = "statusCode"
 	pHeaders    = "headers"
 	pParams     = "params"
+	pPathVars   = "pathVars"
 	pBody       = "body"
 	pLatency    = "latency"
 )

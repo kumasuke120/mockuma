@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/kumasuke120/mockuma/internal/myhttp"
@@ -355,6 +356,8 @@ func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
 	p.jsonPath.RemoveLast()
 	mapping.Policies = policies
 
+	p.renamePathVars(mapping)
+
 	p.jsonPath.RemoveLast()
 	return mapping, nil
 }
@@ -440,6 +443,21 @@ func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 		when.Params = parseAsNameValuesPairs(normalParams)
 		when.ParamRegexps = parseAsNameRegexpPairs(regexpParams)
 		when.ParamJSONs = parseAsNameJSONPairs(jsonMHeaders)
+	}
+
+	p.jsonPath.SetLast(pPathVars)
+	if v.Has(pPathVars) {
+		rawPathVars, err := v.GetObject(pPathVars)
+		if err != nil {
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
+
+		normalPathVars, regexpPathVars, jsonMPathVars := divideIntoWhenMatchers(rawPathVars)
+		when.PathVars = parseAsNameValuesPairs(normalPathVars)
+		when.PathVarRegexps = parseAsNameRegexpPairs(regexpPathVars)
+		if len(jsonMPathVars) != 0 {
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
 	}
 
 	p.jsonPath.SetLast(pBody)
@@ -575,6 +593,42 @@ func (p *mappingsParser) parseLatency(v interface{}) (*Interval, error) {
 	}
 
 	return nil, newParserError(p.filename, p.jsonPath)
+}
+
+func (p *mappingsParser) renamePathVars(mapping *Mapping) {
+	newURI, var2Idx := numberPathVars(mapping.URI)
+	mapping.URI = newURI
+
+	for _, p := range mapping.Policies {
+		when := p.When
+		if when != nil {
+			newPVars := make([]*NameValuesPair, len(when.PathVars))
+			for i, v := range when.PathVars {
+				if idx, ok := var2Idx[v.Name]; ok {
+					newPVars[i] = &NameValuesPair{
+						Name:   strconv.Itoa(idx),
+						Values: v.Values,
+					}
+				} else {
+					newPVars[i] = v
+				}
+			}
+			when.PathVars = newPVars
+
+			newPVarRegexps := make([]*NameRegexpPair, len(when.PathVarRegexps))
+			for i, v := range when.PathVarRegexps {
+				if idx, ok := var2Idx[v.Name]; ok {
+					newPVarRegexps[i] = &NameRegexpPair{
+						Name:   strconv.Itoa(idx),
+						Regexp: v.Regexp,
+					}
+				} else {
+					newPVarRegexps[i] = v
+				}
+			}
+			when.PathVarRegexps = newPVarRegexps
+		}
+	}
 }
 
 type templateParser struct {
@@ -821,4 +875,25 @@ func checkFilepath(path string) error {
 		return errors.New("included file isn't in the current working directory")
 	}
 	return nil
+}
+
+var pathVarRegexp = regexp.MustCompile("{[^}]*}")
+
+func numberPathVars(uri string) (n string, m map[string]int) {
+	m = make(map[string]int)
+	n = pathVarRegexp.ReplaceAllStringFunc(uri, (func() func(string) string {
+		idx := 0
+		return func(s string) string {
+			var i int
+			var ok bool
+			name := s[1 : len(s)-1]
+			if i, ok = m[name]; !ok {
+				i = idx
+				idx++
+				m[name] = i
+			}
+			return fmt.Sprintf("{%d}", i)
+		}
+	})())
+	return
 }
