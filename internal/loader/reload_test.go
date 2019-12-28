@@ -97,6 +97,17 @@ func TestWdWatcher(t *testing.T) {
 	time.Sleep(1 * time.Second)
 	assert.Equal(int32(0), atomic.LoadInt32(w1.watching))
 
+	require.Nil(os.Chdir(filepath.Join(oldWd, "testdata")))
+	time.Sleep(1 * time.Second)
+	w2, e2 := newWatcher([]string{"mappings-0.json"})
+	require.Nil(e2)
+	go w2.watch()
+
+	time.Sleep(1 * time.Second)
+	require.Nil(w2.watcher.Close())
+	time.Sleep(1 * time.Second)
+	assert.Equal(int32(0), atomic.LoadInt32(w2.watching))
+
 	require.Nil(os.Chdir(oldWd))
 	require.Nil(os.Remove(n1))
 }

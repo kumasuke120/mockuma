@@ -110,46 +110,47 @@ func (w *wdWatcher) watch() {
 	atomic.StoreInt32(w.watching, 1)
 	for atomic.LoadInt32(w.watching) == 1 { // w.watching is a flag indicates if keep watching or not
 		if w.doWatch() {
-			return
+			atomic.StoreInt32(w.watching, 0)
+			break
 		}
 	}
 }
 
 func (w *wdWatcher) doWatch() (stop bool) {
+	ok := true
+	var event fsnotify.Event
+	var err error
+
 	select {
-	case event, ok := <-w.watcher.Events:
-		if !ok {
-			stop = true
-			return
-		}
+	case event, ok = <-w.watcher.Events:
+		if ok {
+			name := event.Name
+			if !filepath.IsAbs(name) { // ensures absolute path
+				if abs, err := filepath.Abs(name); err == nil {
+					name = abs
+				} else {
+					log.Fatalln("[loader] fail to retrieve absolute path:", err)
+				}
+			}
 
-		name := event.Name
-		if !filepath.IsAbs(name) { // ensures absolute path
-			if abs, err := filepath.Abs(name); err == nil {
-				name = abs
-			} else {
-				log.Fatalln("[loader] fail to retrieve absolute path:", err)
+			if event.Op&fsnotify.Create == fsnotify.Create {
+				if err := w.addWatchRecursively(name); err != nil { // adds the newly-created file
+					log.Fatalln("[loader] fail to add new file for automatic reloading:", err)
+				}
+			}
+			if w.isConcernedFile(name) {
+				w.notifyAll(name)
 			}
 		}
-
-		if event.Op&fsnotify.Create == fsnotify.Create {
-			if err := w.addWatchRecursively(name); err != nil { // adds the newly-created file
-				log.Fatalln("[loader] fail to add new file for automatic reloading:", err)
-			}
+	case err, ok = <-w.watcher.Errors:
+		if ok {
+			log.Println("[loader] failure encountered when watching files:", err)
 		}
-		if w.isConcernedFile(name) {
-			w.notifyAll(name)
-		}
-	case err, ok := <-w.watcher.Errors:
-		if !ok {
-			stop = true
-			return
-		}
-		log.Println("[loader] failure encountered when watching files:", err)
 	default:
 		time.Sleep(500 * time.Millisecond)
 	}
 
+	stop = !ok
 	return
 }
 
