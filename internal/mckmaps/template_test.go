@@ -42,6 +42,13 @@ func TestRenderString(t *testing.T) {
 		assert.IsType(myjson.String(""), r3)
 		assert.EqualValues("a = @{a}", r3)
 	}
+
+	t4 := myjson.String("a = @{}")
+	jp4 := myjson.NewPath()
+	_, e4 := renderString(theContext, jp4, t4, theVars)
+	if assert.NotNil(e4) {
+		assert.NotEmpty(e4.Error())
+	}
 }
 
 func TestRenderObject(t *testing.T) {
