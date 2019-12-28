@@ -207,13 +207,20 @@ func (p *mainParser) parse() (*MockuMappings, error) {
 			return nil, newParserError(p.filename, myjson.NewPath(dInclude, tMappings, idx))
 		}
 
-		parser := &mappingsParser{Parser: Parser{filename: string(_filename)}}
-		partOfMappings, err := parser.parse() // parses mappings for each included file
+		glob, err := filepath.Glob(string(_filename))
 		if err != nil {
-			return nil, err
+			return nil, newParserError(p.filename, myjson.NewPath(dInclude, tMappings, idx))
 		}
 
-		mappings = append(mappings, partOfMappings...)
+		for _, f := range glob {
+			parser := &mappingsParser{Parser: Parser{filename: f}}
+			partOfMappings, err := parser.parse() // parses mappings for each included file
+			if err != nil {
+				return nil, err
+			}
+
+			mappings = append(mappings, partOfMappings...)
+		}
 	}
 
 	return &MockuMappings{Mappings: mappings}, nil

@@ -38,8 +38,8 @@ func (l *Loader) Load() (*mckmaps.MockuMappings, error) {
 
 func (l *Loader) loadDefault() (m *mckmaps.MockuMappings, e error) {
 	for _, f := range defaultMapfile {
-		m, e = l.loadFromFile(f, false)
-		if e == nil {
+		if _, e = os.Stat(f); !os.IsNotExist(e) {
+			m, e = l.loadFromFile(f, false)
 			return
 		}
 	}
