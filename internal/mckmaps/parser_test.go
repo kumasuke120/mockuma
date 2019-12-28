@@ -98,7 +98,7 @@ func TestParser_Parse(t *testing.T) {
 	require.Nil(e1)
 	expected1 := &MockuMappings{
 		Mappings:  expectedMappings,
-		Filenames: []string{path1},
+		Filenames: []string{fn1},
 	}
 	parser1 := NewParser(path1)
 	actual1, e1 := parser1.Parse()
@@ -107,11 +107,9 @@ func TestParser_Parse(t *testing.T) {
 	}
 
 	fn2 := "parser-multi.json"
-	path2, e2 := filepath.Abs(fn2)
-	require.Nil(e2)
 	expected2 := &MockuMappings{
 		Mappings:  expectedMappings,
-		Filenames: []string{path2, path1},
+		Filenames: []string{fn2, fn1},
 	}
 	parser2 := NewParser(fn2)
 	actual2, e2 := parser2.Parse()

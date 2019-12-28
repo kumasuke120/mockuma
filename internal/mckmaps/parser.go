@@ -78,7 +78,6 @@ func (p *Parser) Parse() (r *MockuMappings, e error) {
 		mappings, _err := parser.parse()
 		if _err == nil {
 			r, e = &MockuMappings{Mappings: mappings}, _err
-			recordLoadedFile(p.filename)
 		} else {
 			r, e = nil, _err
 		}
@@ -602,31 +601,37 @@ func (p *mappingsParser) renamePathVars(mapping *Mapping) {
 	for _, p := range mapping.Policies {
 		when := p.When
 		if when != nil {
-			newPVars := make([]*NameValuesPair, len(when.PathVars))
-			for i, v := range when.PathVars {
-				if idx, ok := var2Idx[v.Name]; ok {
-					newPVars[i] = &NameValuesPair{
-						Name:   strconv.Itoa(idx),
-						Values: v.Values,
+			l := len(when.PathVars)
+			if l != 0 {
+				newPVars := make([]*NameValuesPair, l)
+				for i, v := range when.PathVars {
+					if idx, ok := var2Idx[v.Name]; ok {
+						newPVars[i] = &NameValuesPair{
+							Name:   strconv.Itoa(idx),
+							Values: v.Values,
+						}
+					} else {
+						newPVars[i] = v
 					}
-				} else {
-					newPVars[i] = v
 				}
+				when.PathVars = newPVars
 			}
-			when.PathVars = newPVars
 
-			newPVarRegexps := make([]*NameRegexpPair, len(when.PathVarRegexps))
-			for i, v := range when.PathVarRegexps {
-				if idx, ok := var2Idx[v.Name]; ok {
-					newPVarRegexps[i] = &NameRegexpPair{
-						Name:   strconv.Itoa(idx),
-						Regexp: v.Regexp,
+			l = len(when.PathVarRegexps)
+			if l != 0 {
+				newPVarRegexps := make([]*NameRegexpPair, len(when.PathVarRegexps))
+				for i, v := range when.PathVarRegexps {
+					if idx, ok := var2Idx[v.Name]; ok {
+						newPVarRegexps[i] = &NameRegexpPair{
+							Name:   strconv.Itoa(idx),
+							Regexp: v.Regexp,
+						}
+					} else {
+						newPVarRegexps[i] = v
 					}
-				} else {
-					newPVarRegexps[i] = v
 				}
+				when.PathVarRegexps = newPVarRegexps
 			}
-			when.PathVarRegexps = newPVarRegexps
 		}
 	}
 }

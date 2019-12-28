@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 	"time"
@@ -37,11 +38,17 @@ func (l *lForTestFileChangeWatcher) onFileChange(path string) {
 }
 
 //noinspection GoImportUsedAsName
-func TestFileChangeWatcher(t *testing.T) {
+func TestWdWatcher(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	f1, e1 := ioutil.TempFile("", "wdWatcher")
+	oldWd, err := os.Getwd()
+	require.Nil(err)
+
+	dir := os.TempDir()
+	require.Nil(os.Chdir(dir))
+
+	f1, e1 := ioutil.TempFile(dir, "wdWatcher")
 	require.Nil(e1)
 	n1 := f1.Name()
 	fmt.Println(n1)
@@ -49,7 +56,13 @@ func TestFileChangeWatcher(t *testing.T) {
 	require.Nil(f1.Close())
 
 	expected := []byte{0xCA, 0xFE, 0xBA, 0xBE}
-	w1, e1 := newWatcher([]string{n1})
+
+	assert.Panics(func() {
+		_, _ = newWatcher([]string{n1})
+	})
+	rn1, e1 := filepath.Rel(dir, n1)
+	require.Nil(e1)
+	w1, e1 := newWatcher([]string{rn1})
 	require.Nil(e1)
 
 	l := &lForTestFileChangeWatcher{
@@ -69,6 +82,7 @@ func TestFileChangeWatcher(t *testing.T) {
 	w1.cancel()
 	time.Sleep(1 * time.Second)
 
+	require.Nil(os.Chdir(oldWd))
 	require.Nil(os.Remove(n1))
 }
 
@@ -80,7 +94,8 @@ func TestLoader_EnableAutoReload(t *testing.T) {
 	oldWd, err := os.Getwd()
 	require.Nil(err)
 
-	f1, e1 := ioutil.TempFile("", "enableAutoReload")
+	dir := os.TempDir()
+	f1, e1 := ioutil.TempFile(dir, "enableAutoReload")
 	require.Nil(e1)
 	n1 := f1.Name()
 	fmt.Println(n1)
@@ -96,9 +111,11 @@ func TestLoader_EnableAutoReload(t *testing.T) {
 	_, e1 = ld.Load()
 	assert.Nil(e1)
 
+	rn1, e1 := filepath.Rel(dir, n1)
+	require.Nil(e1)
 	okChan := make(chan bool)
 	e1 = ld.EnableAutoReload(func(m *mckmaps.MockuMappings) {
-		okChan <- m != nil && m.Filenames[0] == n1
+		okChan <- m != nil && m.Filenames[0] == rn1
 	})
 	assert.Nil(e1)
 
