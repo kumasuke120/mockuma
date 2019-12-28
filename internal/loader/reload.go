@@ -67,14 +67,6 @@ func anyAbs(names []string) bool {
 }
 
 func (w *wdWatcher) addWatchRecursively(name string) error {
-	if !filepath.IsAbs(name) { // ensures absolute path
-		if abs, err := filepath.Abs(name); err == nil {
-			name = abs
-		} else {
-			return err
-		}
-	}
-
 	if s, err := os.Stat(name); err == nil { // only adds if name represents a directory
 		if !s.IsDir() {
 			return nil
@@ -117,30 +109,48 @@ func (w *wdWatcher) watch() {
 
 	atomic.StoreInt32(w.watching, 1)
 	for atomic.LoadInt32(w.watching) == 1 { // w.watching is a flag indicates if keep watching or not
-		select {
-		case event, ok := <-w.watcher.Events:
-			if !ok {
-				return
-			}
-
-			name := event.Name
-			if event.Op&fsnotify.Create == fsnotify.Create {
-				if err := w.addWatchRecursively(name); err != nil {
-					log.Fatalln("[loader] fail to enable automatic reloading:", err)
-				}
-			}
-			if w.isConcernedFile(name) {
-				w.notifyAll(name)
-			}
-		case err, ok := <-w.watcher.Errors:
-			if !ok {
-				return
-			}
-			log.Println("[loader] failure encountered when watching files:", err)
-		default:
-			time.Sleep(500 * time.Millisecond)
+		if w.doWatch() {
+			return
 		}
 	}
+}
+
+func (w *wdWatcher) doWatch() (stop bool) {
+	select {
+	case event, ok := <-w.watcher.Events:
+		if !ok {
+			stop = true
+			return
+		}
+
+		name := event.Name
+		if !filepath.IsAbs(name) { // ensures absolute path
+			if abs, err := filepath.Abs(name); err == nil {
+				name = abs
+			} else {
+				log.Fatalln("[loader] fail to retrieve absolute path:", err)
+			}
+		}
+
+		if event.Op&fsnotify.Create == fsnotify.Create {
+			if err := w.addWatchRecursively(name); err != nil { // adds the newly-created file
+				log.Fatalln("[loader] fail to add new file for automatic reloading:", err)
+			}
+		}
+		if w.isConcernedFile(name) {
+			w.notifyAll(name)
+		}
+	case err, ok := <-w.watcher.Errors:
+		if !ok {
+			stop = true
+			return
+		}
+		log.Println("[loader] failure encountered when watching files:", err)
+	default:
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	return
 }
 
 func (w *wdWatcher) isConcernedFile(name string) bool {

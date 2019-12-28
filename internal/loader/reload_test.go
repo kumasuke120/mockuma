@@ -1,11 +1,13 @@
 package loader
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -21,6 +23,8 @@ type lForTestFileChangeWatcher struct {
 }
 
 func (l *lForTestFileChangeWatcher) onFileChange(path string) {
+	fmt.Println("changed: " + path)
+
 	if l.name != path {
 		l.okChan <- false
 		return
@@ -58,15 +62,20 @@ func TestWdWatcher(t *testing.T) {
 	expected := []byte{0xCA, 0xFE, 0xBA, 0xBE}
 
 	assert.Panics(func() {
+		_, _ = newWatcher(nil)
+	})
+	assert.Panics(func() {
 		_, _ = newWatcher([]string{n1})
 	})
 	rn1, e1 := filepath.Rel(dir, n1)
 	require.Nil(e1)
+
+	time.Sleep(1 * time.Second)
 	w1, e1 := newWatcher([]string{rn1})
 	require.Nil(e1)
 
 	l := &lForTestFileChangeWatcher{
-		okChan: make(chan bool),
+		okChan: make(chan bool, 10), // same event maybe triggered multiple times
 		name:   n1,
 		bytes:  expected,
 	}
@@ -79,8 +88,14 @@ func TestWdWatcher(t *testing.T) {
 	time.Sleep(1 * time.Second)
 	assert.True(<-l.okChan)
 
+	go func() {
+		w1.watcher.Errors <- errors.New("test")
+	}()
+	time.Sleep(1 * time.Second)
+
 	w1.cancel()
 	time.Sleep(1 * time.Second)
+	assert.Equal(int32(0), atomic.LoadInt32(w1.watching))
 
 	require.Nil(os.Chdir(oldWd))
 	require.Nil(os.Remove(n1))
@@ -121,8 +136,17 @@ func TestLoader_EnableAutoReload(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 	require.Nil(ioutil.WriteFile(n1, []byte(`{"@type": "main","@include": {"mappings": []}}`), 0644))
-
 	assert.True(<-okChan)
+
+	time.Sleep(1 * time.Second)
+	require.Nil(ioutil.WriteFile(n1, []byte(`{}`), 0644))
+	select {
+	case _ = <-okChan:
+		t.Fatal("'okChan' should be empty")
+	default:
+		t.Log("'okChan' is correct")
+	}
+	time.Sleep(1 * time.Second)
 
 	require.Nil(os.Chdir(oldWd))
 	require.Nil(os.Remove(n1))
