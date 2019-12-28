@@ -67,6 +67,14 @@ func anyAbs(names []string) bool {
 }
 
 func (w *wdWatcher) addWatchRecursively(name string) error {
+	if !filepath.IsAbs(name) { // ensures absolute path
+		if abs, err := filepath.Abs(name); err == nil {
+			name = abs
+		} else {
+			return err
+		}
+	}
+
 	if s, err := os.Stat(name); err == nil { // only adds if name represents a directory
 		if !s.IsDir() {
 			return nil
