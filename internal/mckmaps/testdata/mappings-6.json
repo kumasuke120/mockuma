@@ -1,0 +1,16 @@
+{
+  "@type": "mappings",
+  "mappings": {
+    "uri": "/{a}/{b}",
+    "policies": {
+      "when": {
+        "pathVars": {
+          "a": 1,
+          "b": {
+            "@regexp": "\\d+"
+          }
+        }
+      }
+    }
+  }
+}

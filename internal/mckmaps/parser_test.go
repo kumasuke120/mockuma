@@ -309,6 +309,42 @@ func TestMappingsParser_parse(t *testing.T) {
 			assert.Equal(expected5, p5)
 		}
 	}
+
+	fb6, e6 := ioutil.ReadFile(filepath.Join("testdata", "mappings-6.json"))
+	require.Nil(e6)
+	j6, e6 := myjson.Unmarshal(fb6)
+	if assert.Nil(e6) {
+		m6 := &mappingsParser{json: j6}
+		p6, e6 := m6.parse()
+		if assert.Nil(e6) {
+			expected6 := []*Mapping{
+				{
+					URI:    "/{0}/{1}",
+					Method: myhttp.MethodAny,
+					Policies: []*Policy{
+						{
+							When: &When{
+								PathVars: []*NameValuesPair{
+									{
+										Name:   "0",
+										Values: []string{"1"},
+									},
+								},
+								PathVarRegexps: []*NameRegexpPair{
+									{
+										Name:   "1",
+										Regexp: regexp.MustCompile("\\d+"),
+									},
+								},
+							},
+							Returns: &Returns{StatusCode: myhttp.StatusOk},
+						},
+					},
+				},
+			}
+			assert.Equal(expected6, p6)
+		}
+	}
 }
 
 func TestTemplateParser_parse(t *testing.T) {
