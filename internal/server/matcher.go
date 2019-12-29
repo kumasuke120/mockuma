@@ -23,7 +23,7 @@ func newPathMatcher(mappings *mckmaps.MockuMappings) *pathMatcher {
 	directPath := make(map[string][]*mckmaps.Mapping)
 	patternPath := make(map[*regexp.Regexp][]*mckmaps.Mapping)
 	for _, m := range mappings.Mappings {
-		if theURI := pathVarRegexp.ReplaceAllString(m.URI, "(?P<$1>.+?)"); theURI == m.URI {
+		if theURI := pathVarRegexp.ReplaceAllString(m.URI, "(?P<v$1>.+?)"); theURI == m.URI {
 			mappingsOfURI := directPath[theURI]
 			mappingsOfURI = append(mappingsOfURI, m)
 			directPath[theURI] = mappingsOfURI
@@ -46,15 +46,14 @@ func (m *pathMatcher) bind(r *http.Request) *boundMatcher {
 }
 
 type boundMatcher struct {
-	m   *pathMatcher
-	r   *http.Request
-	uri string
+	m          *pathMatcher
+	r          *http.Request
+	uri        string
+	uriPattern *regexp.Regexp
 
-	matchedPattern *regexp.Regexp
 	matchedMapping *mckmaps.Mapping
-
-	is405     bool
-	bodyCache []byte
+	is405          bool
+	bodyCache      []byte
 }
 
 func (bm *boundMatcher) matches() bool {
@@ -75,7 +74,7 @@ func (bm *boundMatcher) matches() bool {
 		if pattern.MatchString(bm.uri) {
 			matched := bm.anyMethodMatches(mappingsOfURI)
 			if matched != nil {
-				bm.matchedPattern = pattern
+				bm.uriPattern = pattern
 				bm.matchedMapping = matched
 				return true
 			}
@@ -120,7 +119,7 @@ func (bm *boundMatcher) matchPolicy() *mckmaps.Policy {
 		when := p.When
 
 		if when != nil {
-			if bm.matchedPattern != nil && !bm.pathVarsMatch(when) {
+			if bm.uriPattern != nil && !bm.pathVarsMatch(when) {
 				continue
 			}
 
@@ -144,16 +143,7 @@ func (bm *boundMatcher) matchPolicy() *mckmaps.Policy {
 }
 
 func (bm *boundMatcher) pathVarsMatch(when *mckmaps.When) bool {
-	// constructs pathVars via regexp
-	mValues := bm.matchedPattern.FindStringSubmatch(bm.uri)
-	if len(mValues) == 0 {
-		panic("Shouldn't happen")
-	}
-	mNames := bm.matchedPattern.SubexpNames()
-	pathVars := make(map[string][]string, len(mValues))
-	for i := 1; i < len(mValues); i++ {
-		pathVars[mNames[i]] = []string{mValues[i]}
-	}
+	pathVars := bm.extractPathVars()
 
 	if !valuesMatch(when.PathVars, pathVars) {
 		return false
@@ -163,6 +153,19 @@ func (bm *boundMatcher) pathVarsMatch(when *mckmaps.When) bool {
 	}
 
 	return true
+}
+
+func (bm *boundMatcher) extractPathVars() map[string][]string {
+	mValues := bm.uriPattern.FindStringSubmatch(bm.uri)
+	if len(mValues) == 0 {
+		panic("Shouldn't happen")
+	}
+	mNames := bm.uriPattern.SubexpNames()
+	pathVars := make(map[string][]string, len(mValues))
+	for i := 1; i < len(mValues); i++ {
+		pathVars[mNames[i][1:]] = []string{mValues[i]} // [1:] to remove the prefix v
+	}
+	return pathVars
 }
 
 func (bm *boundMatcher) paramsMatch(when *mckmaps.When) bool {
