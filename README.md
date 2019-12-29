@@ -17,7 +17,7 @@ $ go get -u github.com/kumasuke120/mockuma/cmd/mockuma
 ```
 
 You may also click [here](https://github.com/kumasuke120/mockuma/releases) to download an executable file of the latest
-release version, if you don't own the Go development environment or if you wanna do it quickly.
+release version if you don't own the Go development environment or if you wanna do it quickly.
 
 
 ## Quick Start
