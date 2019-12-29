@@ -30,9 +30,13 @@
               "Authorization": {
                 "@regexp": "(?i)Basic [a-z0-9=]+"
               }
+            },
+            "params": {
+              "username": null
             }
           },
           "returns": {
+            "latency": [30, 50],
             "statusCode": 400,
             "headers": {
               "Content-Type": "application/json; charset=utf8"
@@ -45,7 +49,15 @@
         },
         {
           "returns": {
-            "statusCode": 401
+            "latency": [150, 800],
+            "statusCode": 401,
+            "headers": {
+              "Content-Type": "application/json; charset=utf8"
+            },
+            "body": {
+              "code": 4011,
+              "message": "You have no premission to access"
+            }
           }
         }
       ]

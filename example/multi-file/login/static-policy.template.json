@@ -1,0 +1,22 @@
+{
+  "@type": "template",
+  "@comment": {
+    "en": "policies of static resources for uri: /login/**",
+    "cn": "静态资源策略：/login/**"
+  },
+  "template": {
+    "when": {
+      "pathVars": {
+        "path": "@{path}"
+      }
+    },
+    "returns": {
+      "headers": {
+        "Content-Type": "@{type}"
+      },
+      "body": {
+        "@file": "login/static/@{path}"
+      }
+    }
+  }
+}

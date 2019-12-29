@@ -8,7 +8,7 @@
     "mappings": [
       "whoami/whoami.mappings.json",
       "hello/hello.mappings.json",
-      "login/login.mappings.json",
+      "login/*.mappings.json",
       "books/*.mappings.json"
     ]
   }
