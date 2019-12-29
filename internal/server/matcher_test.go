@@ -124,13 +124,35 @@ var mappings = &mckmaps.MockuMappings{
 				},
 			},
 		},
+		{
+			URI:    "/p/{0}/m{1}",
+			Method: myhttp.MethodPut,
+			Policies: []*mckmaps.Policy{
+				{
+					When: &mckmaps.When{
+						PathVars: []*mckmaps.NameValuesPair{
+							{
+								Name:   "0",
+								Values: []string{"v0"},
+							},
+						},
+						PathVarRegexps: []*mckmaps.NameRegexpPair{
+							{
+								Name:   "1",
+								Regexp: regexp.MustCompile("^\\d+$"),
+							},
+						},
+					},
+				},
+			},
+		},
 	},
 }
 
 func TestNewPathMatcher(t *testing.T) {
 	matcher := newPathMatcher(mappings)
 
-	expected := map[string][]*mckmaps.Mapping{
+	expectedDirectPath := map[string][]*mckmaps.Mapping{
 		"/hello": {mappings.Mappings[0]},
 		"/m": {
 			&mckmaps.Mapping{
@@ -141,7 +163,21 @@ func TestNewPathMatcher(t *testing.T) {
 			mappings.Mappings[2],
 		},
 	}
-	assert.Equal(t, expected, matcher.uri2mappings)
+	assert.Equal(t, expectedDirectPath, matcher.directPath)
+	expectedPatternPath := map[*regexp.Regexp][]*mckmaps.Mapping{
+		regexp.MustCompile("^/p/(?P<v0>.+?)/m(?P<v1>.+?)$"): {
+			mappings.Mappings[3],
+		},
+	}
+	assert.Equal(t, formatRegexpKeyMap(expectedPatternPath), formatRegexpKeyMap(matcher.patternPath))
+}
+
+func formatRegexpKeyMap(m map[*regexp.Regexp][]*mckmaps.Mapping) map[string][]*mckmaps.Mapping {
+	result := make(map[string][]*mckmaps.Mapping, len(m))
+	for r, ms := range m {
+		result[r.String()] = ms
+	}
+	return result
 }
 
 func TestPathMatcher_matches(t *testing.T) {
@@ -226,4 +262,20 @@ func TestPathMatcher_matchPolicy(t *testing.T) {
 	bound10 := matcher.bind(httptest.NewRequest("", "/hello", nil))
 	assert.False(bound10.matches())
 	assert.True(bound10.isMethodNotAllowed())
+
+	bound11 := matcher.bind(httptest.NewRequest("PUT", "/p/v0/m1", nil))
+	assert.True(bound11.matches())
+	assert.Equal(mappings.Mappings[3].Policies[0], bound11.matchPolicy())
+
+	bound12 := matcher.bind(httptest.NewRequest("PUT", "/p/v0/ma", nil))
+	assert.True(bound12.matches())
+	assert.Nil(bound12.matchPolicy())
+
+	bound13 := matcher.bind(httptest.NewRequest("", "/p/v0/m1", nil))
+	assert.False(bound13.matches())
+	assert.True(bound13.isMethodNotAllowed())
+
+	bound14 := matcher.bind(httptest.NewRequest("PUT", "/p/v1/m1", nil))
+	assert.True(bound14.matches())
+	assert.Nil(bound14.matchPolicy())
 }

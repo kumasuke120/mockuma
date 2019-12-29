@@ -1,0 +1,61 @@
+{
+  "@type": "vars",
+  "@comment": {
+    "en": "defines static resources related variables for /api/login",
+    "cn": "定义了 /api/login 静态资源相关的变量"
+  },
+  "vars": [
+    {
+      "path": "login.js",
+      "type": "text/javascript"
+    },
+    {
+      "path": "login.css",
+      "type": "text/css"
+    },
+    {
+      "path": "bootstrap-solid.svg",
+      "type": "image/svg+xml"
+    },
+    {
+      "path": "favicons/android-chrome-192x192.png",
+      "type": "image/png"
+    },
+    {
+      "path": "favicons/android-chrome-512x512.png",
+      "type": "image/png"
+    },
+    {
+      "path": "favicons/apple-touch-icon.png",
+      "type": "image/png"
+    },
+    {
+      "path": "favicons/browserconfig.xml",
+      "type": "application/xml; charset=utf-8"
+    },
+    {
+      "path": "favicons/favicon-16x16.png",
+      "type": "image/png"
+    },
+    {
+      "path": "favicons/favicon-32x32.png",
+      "type": "image/png"
+    },
+    {
+      "path": "favicons/favicon.ico",
+      "type": "image/vnd.microsoft.icon"
+    },
+    {
+      "path": "favicons/manifest.json",
+      "type": "application/json; charset=utf-8"
+    },
+    {
+      "path": "favicons/mstile-150x150.png",
+      "type": "image/png"
+    },
+    {
+      "path": "favicons/safari-pinned-tab.svg",
+      "type": "image/svg+xml"
+    }
+  ]
+}

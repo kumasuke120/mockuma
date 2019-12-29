@@ -32,6 +32,9 @@ type When struct {
 	ParamRegexps []*NameRegexpPair
 	ParamJSONs   []*NameJSONPair
 
+	PathVars       []*NameValuesPair
+	PathVarRegexps []*NameRegexpPair
+
 	Body       []byte
 	BodyRegexp *regexp.Regexp
 	BodyJSON   *myjson.ExtJSONMatcher

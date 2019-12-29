@@ -1,4 +1,4 @@
-# MocKuma [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Release](https://img.shields.io/github/release/kumasuke120/mockuma/all.svg)](https://github.com/kumasuke120/mockuma/releases/latest) [![Build Status](https://api.travis-ci.org/kumasuke120/mockuma.svg?branch=master)](https://travis-ci.org/kumasuke120/mockuma) [![codecov](https://codecov.io/gh/kumasuke120/mockuma/branch/master/graph/badge.svg)](https://codecov.io/gh/kumasuke120/mockuma)
+# MocKuma [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Release](https://img.shields.io/github/release/kumasuke120/mockuma/all.svg)](https://github.com/kumasuke120/mockuma/releases/latest) [![Build Status](https://api.travis-ci.org/kumasuke120/mockuma.svg?branch=dev)](https://travis-ci.org/kumasuke120/mockuma) [![codecov](https://codecov.io/gh/kumasuke120/mockuma/branch/dev/graph/badge.svg)](https://codecov.io/gh/kumasuke120/mockuma)
 
 [English | [中文](README_CN.md)]
 
@@ -17,7 +17,7 @@ $ go get -u github.com/kumasuke120/mockuma/cmd/mockuma
 ```
 
 You may also click [here](https://github.com/kumasuke120/mockuma/releases) to download an executable file of the latest
-release version, if you don't own the Go development environment or if you wanna do it quickly.
+release version if you don't own the Go development environment or if you wanna do it quickly.
 
 
 ## Quick Start

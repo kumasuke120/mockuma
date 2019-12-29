@@ -4,8 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
+	"strings"
 
 	"github.com/kumasuke120/mockuma/internal/myhttp"
 	"github.com/kumasuke120/mockuma/internal/myjson"
@@ -60,43 +63,46 @@ func NewParser(filename string) *Parser {
 	return &Parser{filename: filename}
 }
 
-func (p *Parser) Parse() (*MockuMappings, error) {
+func (p *Parser) Parse() (r *MockuMappings, e error) {
 	var json interface{}
-	var err error
-	if json, err = p.load(ppRemoveComment, ppRenderTemplate); err != nil {
-		return nil, err
+	if json, e = p.load(true, ppRemoveComment, ppRenderTemplate); e != nil {
+		return
 	}
 
-	var result *MockuMappings
 	switch json.(type) {
 	case myjson.Object: // parses in multi-file mode
 		parser := &mainParser{json: json.(myjson.Object), Parser: *p}
-		result, err = parser.parse()
+		r, e = parser.parse()
 	case myjson.Array: // parses in single-file mode
 		parser := &mappingsParser{json: json, Parser: *p}
 		mappings, _err := parser.parse()
 		if _err == nil {
-			result, err = &MockuMappings{Mappings: mappings}, _err
+			r, e = &MockuMappings{Mappings: mappings}, _err
 		} else {
-			result, err = nil, _err
+			r, e = nil, _err
 		}
 	default:
-		result, err = nil, newParserError(p.filename, nil)
+		r, e = nil, newParserError(p.filename, nil)
 	}
 
-	if result != nil {
-		absFilenames, err := p.allAbs(loadedFilenames)
+	if r != nil {
+		relPaths, err := p.allRelative(loadedFilenames)
 		if err != nil {
 			return nil, err
 		}
-		result.Filenames = absFilenames
+		r.Filenames = relPaths
 	}
 
 	p.reset()
-	return p.sortMappings(result), err
+	r = p.sortMappings(r)
+	return
 }
 
-func (p *Parser) load(preprocessors ...filter) (interface{}, error) {
+func (p *Parser) load(record bool, preprocessors ...filter) (interface{}, error) {
+	if err := checkFilepath(p.filename); err != nil {
+		return nil, &loadError{filename: p.filename, err: err}
+	}
+
 	bytes, err := ioutil.ReadFile(p.filename)
 	if err != nil {
 		return nil, err
@@ -112,18 +118,29 @@ func (p *Parser) load(preprocessors ...filter) (interface{}, error) {
 		return nil, &loadError{filename: p.filename, err: err}
 	}
 
-	recordLoadedFile(p.filename)
+	if record {
+		recordLoadedFile(p.filename)
+	}
 	return v, nil
 }
 
-func (p *Parser) allAbs(filenames []string) ([]string, error) {
+func (p *Parser) allRelative(filenames []string) ([]string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
 	result := make([]string, len(filenames))
 	for i, p := range filenames {
-		absPath, err := filepath.Abs(p)
-		if err != nil {
-			return nil, err
+		rp := p
+		if filepath.IsAbs(p) {
+			rp, err = filepath.Rel(wd, p)
+			if err != nil {
+				return nil, err
+			}
 		}
-		result[i] = absPath
+
+		result[i] = rp
 	}
 	return result, nil
 }
@@ -207,13 +224,23 @@ func (p *mainParser) parse() (*MockuMappings, error) {
 			return nil, newParserError(p.filename, myjson.NewPath(dInclude, tMappings, idx))
 		}
 
-		parser := &mappingsParser{Parser: Parser{filename: string(_filename)}}
-		partOfMappings, err := parser.parse() // parses mappings for each included file
+		f := string(_filename)
+		glob, err := filepath.Glob(f)
 		if err != nil {
-			return nil, err
+			return nil, newParserError(p.filename, myjson.NewPath(dInclude, tMappings, idx))
 		}
 
-		mappings = append(mappings, partOfMappings...)
+		for _, g := range glob {
+			parser := &mappingsParser{Parser: Parser{filename: g}}
+			partOfMappings, err := parser.parse() // parses mappings for each included file
+			if err != nil {
+				return nil, err
+			}
+
+			mappings = append(mappings, partOfMappings...)
+		}
+
+		recordLoadedFile(f)
 	}
 
 	return &MockuMappings{Mappings: mappings}, nil
@@ -227,7 +254,7 @@ type mappingsParser struct {
 
 func (p *mappingsParser) parse() ([]*Mapping, error) {
 	if p.json == nil {
-		json, err := p.load(ppRemoveComment, ppRenderTemplate)
+		json, err := p.load(false, ppRemoveComment, ppRenderTemplate)
 		if err != nil {
 			return nil, err
 		}
@@ -277,7 +304,7 @@ func (p *mappingsParser) parse() ([]*Mapping, error) {
 	return mappings, nil
 }
 
-/// refers to: https://tools.ietf.org/html/rfc7230#section-3.2.6
+// refers to: https://tools.ietf.org/html/rfc7230#section-3.2.6
 var validMethodRegexp = regexp.MustCompile("(?i)^[-!#$%&'*+._`|~\\da-z]+$")
 
 func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
@@ -328,6 +355,8 @@ func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
 	p.jsonPath.RemoveLast()
 	mapping.Policies = policies
 
+	p.renamePathVars(mapping)
+
 	p.jsonPath.RemoveLast()
 	return mapping, nil
 }
@@ -352,13 +381,20 @@ func (p *mappingsParser) parsePolicy(v myjson.Object) (*Policy, error) {
 	}
 
 	p.jsonPath.SetLast(mapPolicyReturns)
-	rawReturns, err := v.GetObject(mapPolicyReturns)
-	if err != nil {
-		return nil, newParserError(p.filename, p.jsonPath)
-	}
-	returns, err := p.parseReturns(rawReturns)
-	if err != nil {
-		return nil, err
+	var returns *Returns
+	if v.Has(mapPolicyReturns) {
+		rawReturns, err := v.GetObject(mapPolicyReturns)
+		if err != nil {
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
+		returns, err = p.parseReturns(rawReturns)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		returns = &Returns{
+			StatusCode: myhttp.StatusOk,
+		}
 	}
 	policy.Returns = returns
 
@@ -406,6 +442,21 @@ func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 		when.Params = parseAsNameValuesPairs(normalParams)
 		when.ParamRegexps = parseAsNameRegexpPairs(regexpParams)
 		when.ParamJSONs = parseAsNameJSONPairs(jsonMHeaders)
+	}
+
+	p.jsonPath.SetLast(pPathVars)
+	if v.Has(pPathVars) {
+		rawPathVars, err := v.GetObject(pPathVars)
+		if err != nil {
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
+
+		normalPathVars, regexpPathVars, jsonMPathVars := divideIntoWhenMatchers(rawPathVars)
+		when.PathVars = parseAsNameValuesPairs(normalPathVars)
+		when.PathVarRegexps = parseAsNameRegexpPairs(regexpPathVars)
+		if len(jsonMPathVars) != 0 {
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
 	}
 
 	p.jsonPath.SetLast(pBody)
@@ -543,6 +594,48 @@ func (p *mappingsParser) parseLatency(v interface{}) (*Interval, error) {
 	return nil, newParserError(p.filename, p.jsonPath)
 }
 
+func (p *mappingsParser) renamePathVars(mapping *Mapping) {
+	newURI, var2Idx := numberPathVars(mapping.URI)
+	mapping.URI = newURI
+
+	for _, p := range mapping.Policies {
+		when := p.When
+		if when != nil {
+			l := len(when.PathVars)
+			if l != 0 {
+				newPVars := make([]*NameValuesPair, l)
+				for i, v := range when.PathVars {
+					if idx, ok := var2Idx[v.Name]; ok {
+						newPVars[i] = &NameValuesPair{
+							Name:   strconv.Itoa(idx),
+							Values: v.Values,
+						}
+					} else {
+						newPVars[i] = v
+					}
+				}
+				when.PathVars = newPVars
+			}
+
+			l = len(when.PathVarRegexps)
+			if l != 0 {
+				newPVarRegexps := make([]*NameRegexpPair, len(when.PathVarRegexps))
+				for i, v := range when.PathVarRegexps {
+					if idx, ok := var2Idx[v.Name]; ok {
+						newPVarRegexps[i] = &NameRegexpPair{
+							Name:   strconv.Itoa(idx),
+							Regexp: v.Regexp,
+						}
+					} else {
+						newPVarRegexps[i] = v
+					}
+				}
+				when.PathVarRegexps = newPVarRegexps
+			}
+		}
+	}
+}
+
 type templateParser struct {
 	json     myjson.Object
 	jsonPath *myjson.Path
@@ -551,7 +644,7 @@ type templateParser struct {
 
 func (p *templateParser) parse() (*template, error) {
 	if p.json == nil {
-		json, err := p.load(ppRemoveComment)
+		json, err := p.load(true, ppRemoveComment)
 		if err != nil {
 			return nil, err
 		}
@@ -597,7 +690,7 @@ type varsParser struct {
 
 func (p *varsParser) parse() ([]*vars, error) {
 	if p.json == nil {
-		json, err := p.load(ppRemoveComment)
+		json, err := p.load(true, ppRemoveComment)
 		if err != nil {
 			return nil, err
 		}
@@ -767,4 +860,45 @@ func parseVars(v myjson.Object) (*vars, error) {
 	}
 	vars.table = table
 	return vars, nil
+}
+
+func checkFilepath(path string) error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	relPath := path
+	if filepath.IsAbs(path) {
+		relPath, err = filepath.Rel(wd, path)
+		if err != nil {
+			return err
+		}
+	}
+
+	if strings.HasPrefix(relPath, "..") { // paths should be under the current working directory
+		return errors.New("included file isn't in the current working directory")
+	}
+	return nil
+}
+
+var pathVarRegexp = regexp.MustCompile("{[^}]*}")
+
+func numberPathVars(uri string) (n string, m map[string]int) {
+	m = make(map[string]int)
+	n = pathVarRegexp.ReplaceAllStringFunc(uri, (func() func(string) string {
+		idx := 0
+		return func(s string) string {
+			var i int
+			var ok bool
+			name := s[1 : len(s)-1]
+			if i, ok = m[name]; !ok {
+				i = idx
+				idx++
+				m[name] = i
+			}
+			return fmt.Sprintf("{%d}", i)
+		}
+	})())
+	return
 }

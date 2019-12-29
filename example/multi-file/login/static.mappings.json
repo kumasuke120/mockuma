@@ -1,0 +1,31 @@
+{
+  "@type": "mappings",
+  "@comment": {
+    "en": "mappings for static resources",
+    "cn": "静态资源的映射"
+  },
+  "mappings": [
+    {
+      "uri": "/login",
+      "method": "GET",
+      "policies": {
+        "returns": {
+          "headers": {
+            "Content-Type": "text/html; charset=utf8"
+          },
+          "body": {
+            "@file": "login/login.html"
+          }
+        }
+      }
+    },
+    {
+      "uri": "/login/{path}",
+      "method": "GET",
+      "policies": {
+        "@template": "login/static-policy.template.json",
+        "@vars": "login/static-policy.vars.json"
+      }
+    }
+  ]
+}

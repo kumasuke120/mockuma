@@ -265,6 +265,10 @@ func (f *loadFileFilter) loadForObject(v myjson.Object) (interface{}, error) {
 		var bytes []byte
 		var ok bool
 		if bytes, ok = f.fileCache[_filename]; !ok {
+			if err := checkFilepath(_filename); err != nil {
+				return nil, errors.New(err.Error() + ": " + _filename)
+			}
+
 			bytes, err = ioutil.ReadFile(_filename)
 			if err != nil {
 				return nil, err

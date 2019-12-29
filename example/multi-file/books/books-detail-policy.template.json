@@ -1,0 +1,27 @@
+{
+  "@type": "template",
+  "template": {
+    "when": {
+      "pathVars": {
+        "id": "@{id}"
+      }
+    },
+    "returns": {
+      "body": {
+        "code": 2000,
+        "message": "Succeed",
+        "data": {
+          "id": "@{id}",
+          "name": "@{name}",
+          "authors": "@{authors}",
+          "publisher": "@{publisher}",
+          "isbn": "@{isbn}",
+          "releaseDate": "@{releaseDate}",
+          "price": "@{price}",
+          "language": "@{language}",
+          "pages": "@{pages}"
+        }
+      }
+    }
+  }
+}

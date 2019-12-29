@@ -1,0 +1,70 @@
+{
+  "@type": "mappings",
+  "@comment": {
+    "en": "mappings which defines api mocks for /api/books/_search",
+    "cn": "定义了 /api/books/_search 的 API Mock 的映射(mappings)"
+  },
+  "mappings": [
+    {
+      "uri": "/api/books/_search",
+      "method": "GET",
+      "policies": {
+        "when": {
+          "params": {
+            "@comment": {
+              "en": "matches the parameters with given name and value(s), ignores the order",
+              "cn": "使用给定的名称和值匹配参数，忽略其顺序"
+            },
+            "filter": {
+              "@comment": {
+                "@json": {
+                  "en": "a json matcher which parses the param as json and matches it via the matcher",
+                  "cn": "Json 匹配器，将当前参数解析为 Json 并比较"
+                }
+              },
+              "@json": {
+                "name": {
+                  "@comment": {
+                    "@regexp": {
+                      "en": "a regular expression matcher matches the param with given regexp",
+                      "cn": "正则表达式匹配器，使用给定正则匹配当前参数"
+                    }
+                  },
+                  "@regexp": "(?i)^.*?Catch Me If You Can.*$"
+                },
+                "$.authors[0]": "Frank W. Abagnale"
+              }
+            },
+            "field": "id"
+          }
+        },
+        "returns": {
+          "@comment": {
+            "latency": {
+              "en": "specifies the time to wait before returning",
+              "cn": "执行返回结果前的等待时间"
+            }
+          },
+          "latency": [
+            100,
+            3000
+          ],
+          "headers": {
+            "Content-Type": "application/json; charset=utf8"
+          },
+          "body": {
+            "@comment": {
+              "en": "body could be json for easy-reading",
+              "cn": "为方便阅读，body 可以写成 Json"
+            },
+            "code": 2000,
+            "message": "Found",
+            "found": {
+              "id": 21
+            }
+          }
+        }
+      }
+    }
+  ]
+}

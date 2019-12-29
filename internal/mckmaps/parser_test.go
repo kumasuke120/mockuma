@@ -98,7 +98,7 @@ func TestParser_Parse(t *testing.T) {
 	require.Nil(e1)
 	expected1 := &MockuMappings{
 		Mappings:  expectedMappings,
-		Filenames: []string{path1},
+		Filenames: []string{fn1},
 	}
 	parser1 := NewParser(path1)
 	actual1, e1 := parser1.Parse()
@@ -107,11 +107,9 @@ func TestParser_Parse(t *testing.T) {
 	}
 
 	fn2 := "parser-multi.json"
-	path2, e2 := filepath.Abs(fn2)
-	require.Nil(e2)
 	expected2 := &MockuMappings{
 		Mappings:  expectedMappings,
-		Filenames: []string{path2, path1},
+		Filenames: []string{fn2, fn1},
 	}
 	parser2 := NewParser(fn2)
 	actual2, e2 := parser2.Parse()
@@ -278,6 +276,75 @@ func TestMappingsParser_parse(t *testing.T) {
 		assert.NotNil(e4)
 		assert.NotEmpty(e4.Error())
 	}
+
+	fb5, e5 := ioutil.ReadFile(filepath.Join("testdata", "mappings-5.json"))
+	require.Nil(e5)
+	j5, e5 := myjson.Unmarshal(fb5)
+	if assert.Nil(e5) {
+		m5 := &mappingsParser{json: j5}
+		p5, e5 := m5.parse()
+		if assert.Nil(e5) {
+			expected5 := []*Mapping{
+				{
+					URI:    "/",
+					Method: myhttp.MethodGet,
+					Policies: []*Policy{
+						{
+							When: &When{
+								BodyRegexp: regexp.MustCompile("^.+$"),
+							},
+							Returns: &Returns{StatusCode: myhttp.StatusOk},
+						},
+						{
+							When: &When{
+								BodyJSON: myjson.NewExtJSONMatcher(myjson.Object{
+									"v": myjson.String("v"),
+								}),
+							},
+							Returns: &Returns{StatusCode: myhttp.StatusOk},
+						},
+					},
+				},
+			}
+			assert.Equal(expected5, p5)
+		}
+	}
+
+	fb6, e6 := ioutil.ReadFile(filepath.Join("testdata", "mappings-6.json"))
+	require.Nil(e6)
+	j6, e6 := myjson.Unmarshal(fb6)
+	if assert.Nil(e6) {
+		m6 := &mappingsParser{json: j6}
+		p6, e6 := m6.parse()
+		if assert.Nil(e6) {
+			expected6 := []*Mapping{
+				{
+					URI:    "/{0}/{1}",
+					Method: myhttp.MethodAny,
+					Policies: []*Policy{
+						{
+							When: &When{
+								PathVars: []*NameValuesPair{
+									{
+										Name:   "0",
+										Values: []string{"1"},
+									},
+								},
+								PathVarRegexps: []*NameRegexpPair{
+									{
+										Name:   "1",
+										Regexp: regexp.MustCompile("\\d+"),
+									},
+								},
+							},
+							Returns: &Returns{StatusCode: myhttp.StatusOk},
+						},
+					},
+				},
+			}
+			assert.Equal(expected6, p6)
+		}
+	}
 }
 
 func TestTemplateParser_parse(t *testing.T) {
@@ -298,6 +365,22 @@ func TestTemplateParser_parse(t *testing.T) {
 			},
 		}
 		assert.Equal(expected1, p1)
+	}
+
+	t2 := &templateParser{Parser: Parser{filename: filepath.Join("testdata", "template-2.json")}}
+	p2, e2 := t2.parse()
+	if assert.Nil(e2) {
+		expected2 := &template{
+			content: myjson.Array{
+				myjson.Object{
+					"v": myjson.String("@{v}"),
+				},
+				myjson.Object{
+					"v-v": myjson.String("@{v}-@{v}"),
+				},
+			},
+		}
+		assert.Equal(expected2, p2)
 	}
 }
 

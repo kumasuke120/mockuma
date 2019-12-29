@@ -12,6 +12,10 @@ type ExtJSONMatcher struct {
 	v interface{}
 }
 
+func NewExtJSONMatcher(v interface{}) *ExtJSONMatcher {
+	return &ExtJSONMatcher{v: v}
+}
+
 func MakeExtJSONMatcher(v interface{}) ExtJSONMatcher {
 	return ExtJSONMatcher{v: v}
 }

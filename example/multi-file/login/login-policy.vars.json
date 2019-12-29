@@ -7,11 +7,11 @@
   "vars": [
     {
       "username": "jane.doe",
-      "authToken": "amFuZS5kb2Vqb25lLmRvZQ=="
+      "authToken": "amFuZS5kb2Uvam9uZS5kb2U="
     },
     {
       "username": "jone.doe",
-      "authToken": "am9uZS5kb2VqYW5lLmRvZQ=="
+      "authToken": "am9uZS5kb2UvamFuZS5kb2U="
     }
   ]
 }

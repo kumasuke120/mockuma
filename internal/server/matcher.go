@@ -13,17 +13,32 @@ import (
 )
 
 type pathMatcher struct {
-	uri2mappings map[string][]*mckmaps.Mapping
+	directPath  map[string][]*mckmaps.Mapping
+	patternPath map[*regexp.Regexp][]*mckmaps.Mapping
 }
 
+var pathVarRegexp = regexp.MustCompile(`{(\d+)}`)
+
 func newPathMatcher(mappings *mckmaps.MockuMappings) *pathMatcher {
-	uri2mappings := make(map[string][]*mckmaps.Mapping)
+	directPath := make(map[string][]*mckmaps.Mapping)
+	patternPath := make(map[*regexp.Regexp][]*mckmaps.Mapping)
 	for _, m := range mappings.Mappings {
-		mappingsOfURI := uri2mappings[m.URI]
-		mappingsOfURI = append(mappingsOfURI, m)
-		uri2mappings[m.URI] = mappingsOfURI
+		if theURI := pathVarRegexp.ReplaceAllString(m.URI, "(?P<v$1>.+?)"); theURI == m.URI {
+			mappingsOfURI := directPath[theURI]
+			mappingsOfURI = append(mappingsOfURI, m)
+			directPath[theURI] = mappingsOfURI
+		} else {
+			regexpURI := regexp.MustCompile("^" + theURI + "$")
+			mappingsOfURI := patternPath[regexpURI]
+			mappingsOfURI = append(mappingsOfURI, m)
+			patternPath[regexpURI] = mappingsOfURI
+		}
 	}
-	return &pathMatcher{uri2mappings: uri2mappings}
+
+	return &pathMatcher{
+		directPath:  directPath,
+		patternPath: patternPath,
+	}
 }
 
 func (m *pathMatcher) bind(r *http.Request) *boundMatcher {
@@ -31,28 +46,52 @@ func (m *pathMatcher) bind(r *http.Request) *boundMatcher {
 }
 
 type boundMatcher struct {
-	m              *pathMatcher
-	r              *http.Request
+	m          *pathMatcher
+	r          *http.Request
+	uri        string
+	uriPattern *regexp.Regexp
+
 	matchedMapping *mckmaps.Mapping
 	is405          bool
 	bodyCache      []byte
 }
 
 func (bm *boundMatcher) matches() bool {
-	uri := getURIWithoutQuery(bm.r.URL)
+	bm.uri = getURIWithoutQuery(bm.r.URL)
 
-	if mappingsOfURI, ok := bm.m.uri2mappings[uri]; ok {
-		for _, mappingOfURI := range mappingsOfURI {
-			if mappingOfURI.Method.Matches(bm.r.Method) {
-				bm.matchedMapping = mappingOfURI
-				return true
-			}
+	// matching for direct path
+	if mappingsOfURI, ok := bm.m.directPath[bm.uri]; ok {
+		matched := bm.anyMethodMatches(mappingsOfURI)
+		if matched != nil {
+			bm.matchedMapping = matched
+			return true
 		}
-
 		bm.is405 = true
 	}
 
+	// matching for pattern path
+	for pattern, mappingsOfURI := range bm.m.patternPath {
+		if pattern.MatchString(bm.uri) {
+			matched := bm.anyMethodMatches(mappingsOfURI)
+			if matched != nil {
+				bm.uriPattern = pattern
+				bm.matchedMapping = matched
+				return true
+			}
+			bm.is405 = true
+		}
+	}
+
 	return false
+}
+
+func (bm *boundMatcher) anyMethodMatches(mappingsOfURI []*mckmaps.Mapping) *mckmaps.Mapping {
+	for _, mappingOfURI := range mappingsOfURI {
+		if mappingOfURI.Method.Matches(bm.r.Method) {
+			return mappingOfURI
+		}
+	}
+	return nil
 }
 
 func (bm *boundMatcher) isMethodNotAllowed() bool {
@@ -80,6 +119,10 @@ func (bm *boundMatcher) matchPolicy() *mckmaps.Policy {
 		when := p.When
 
 		if when != nil {
+			if bm.uriPattern != nil && !bm.pathVarsMatch(when) {
+				continue
+			}
+
 			if !bm.paramsMatch(when) {
 				continue
 			}
@@ -97,6 +140,32 @@ func (bm *boundMatcher) matchPolicy() *mckmaps.Policy {
 		break
 	}
 	return policy
+}
+
+func (bm *boundMatcher) pathVarsMatch(when *mckmaps.When) bool {
+	pathVars := bm.extractPathVars()
+
+	if !valuesMatch(when.PathVars, pathVars) {
+		return false
+	}
+	if !regexpsMatch(when.PathVarRegexps, pathVars) {
+		return false
+	}
+
+	return true
+}
+
+func (bm *boundMatcher) extractPathVars() map[string][]string {
+	mValues := bm.uriPattern.FindStringSubmatch(bm.uri)
+	if len(mValues) == 0 {
+		panic("Shouldn't happen")
+	}
+	mNames := bm.uriPattern.SubexpNames()
+	pathVars := make(map[string][]string, len(mValues))
+	for i := 1; i < len(mValues); i++ {
+		pathVars[mNames[i][1:]] = []string{mValues[i]} // [1:] to remove the prefix v
+	}
+	return pathVars
 }
 
 func (bm *boundMatcher) paramsMatch(when *mckmaps.When) bool {

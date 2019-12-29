@@ -29,7 +29,7 @@
             "Content-Type": "application/xml; charset=utf8"
           },
           "body": {
-            "@file": "static/books-page@{page}.xml"
+            "@file": "books/books-page@{page}.xml"
           }
         }
       },
@@ -56,7 +56,7 @@
                 "cn": "引入的文件路径随着对应变量值的改编而改变"
               }
             },
-            "@file": "static/books-page@{page}.xml"
+            "@file": "books/books-page@{page}.xml"
           }
         }
       },
@@ -79,7 +79,7 @@
             "Content-Type": "application/xml; charset=utf8"
           },
           "body": {
-            "@file": "static/books-page@{page}.xml"
+            "@file": "books/books-page@{page}.xml"
           }
         }
       }

@@ -6,10 +6,10 @@
   },
   "@include": {
     "mappings": [
-      "mappings/whoami.mappings.json",
-      "mappings/hello.mappings.json",
-      "mappings/login.mappings.json",
-      "mappings/books.mappings.json"
+      "whoami/whoami.mappings.json",
+      "hello/hello.mappings.json",
+      "login/*.mappings.json",
+      "books/*.mappings.json"
     ]
   }
 }

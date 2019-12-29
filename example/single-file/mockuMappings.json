@@ -1,6 +1,6 @@
 [
   {
-    "uri": "/api/hello",
+    "uri": "/hello",
     "policies": [
       {
         "when": {

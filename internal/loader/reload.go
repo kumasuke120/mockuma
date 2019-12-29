@@ -2,6 +2,8 @@ package loader
 
 import (
 	"log"
+	"os"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -14,15 +16,19 @@ type fileChangeListener interface {
 	onFileChange(path string)
 }
 
-type fileChangeWatcher struct {
+type wdWatcher struct {
+	wd        string
 	watcher   *fsnotify.Watcher
+	filenames []string
 	listeners []fileChangeListener
 	watching  *int32
 }
 
-func newWatcher(filenames []string) (*fileChangeWatcher, error) {
+func newWatcher(filenames []string) (*wdWatcher, error) {
 	if len(filenames) == 0 {
 		panic("parameter 'filenames' should not be empty")
+	} else if anyAbs(filenames) {
+		panic("parameter 'filenames' shouldn't contains absolute path")
 	}
 
 	fsWatcher, err := fsnotify.NewWatcher()
@@ -30,26 +36,84 @@ func newWatcher(filenames []string) (*fileChangeWatcher, error) {
 		return nil, err
 	}
 
-	// adds filenames to watch
-	for _, f := range filenames {
-		err := fsWatcher.Add(f)
-		if err != nil {
-			return nil, err
-		}
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, err
 	}
 
-	watcher := &fileChangeWatcher{
-		watcher:  fsWatcher,
-		watching: new(int32),
+	watcher := &wdWatcher{
+		wd:        wd,
+		watcher:   fsWatcher,
+		filenames: filenames,
+		watching:  new(int32),
 	}
+
+	// watches the current working directory
+	err = watcher.addWatchRecursively(wd)
+	if err != nil {
+		return nil, err
+	}
+
 	return watcher, nil
 }
 
-func (w *fileChangeWatcher) addListener(listener fileChangeListener) {
+func anyAbs(names []string) bool {
+	for _, n := range names {
+		if filepath.IsAbs(n) {
+			return true
+		}
+	}
+	return false
+}
+
+func (w *wdWatcher) addWatchRecursively(name string) error {
+	if isDir, err := w.isDir(name); err == nil { // only adds if name represents a directory
+		if !isDir {
+			return nil
+		}
+	} else {
+		return err
+	}
+
+	err := w.watcher.Add(name)
+	if err != nil {
+		return err
+	}
+
+	return filepath.Walk(name,
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if path == name {
+				return nil
+			}
+
+			if info.IsDir() {
+				return w.addWatchRecursively(path)
+			}
+			return nil
+		})
+}
+
+func (w *wdWatcher) isDir(name string) (bool, error) {
+	s, err := os.Stat(name)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		} else {
+			return false, err
+		}
+	} else {
+		return s.IsDir(), nil
+	}
+}
+
+func (w *wdWatcher) addListener(listener fileChangeListener) {
 	w.listeners = append(w.listeners, listener)
 }
 
-func (w *fileChangeWatcher) watch() {
+func (w *wdWatcher) watch() {
 	defer func() {
 		if err := w.watcher.Close(); err != nil {
 			log.Println("[loader] fail to close watcher:", err)
@@ -58,33 +122,72 @@ func (w *fileChangeWatcher) watch() {
 
 	atomic.StoreInt32(w.watching, 1)
 	for atomic.LoadInt32(w.watching) == 1 { // w.watching is a flag indicates if keep watching or not
-		select {
-		case event, ok := <-w.watcher.Events:
-			if !ok {
-				return
-			}
-
-			if event.Op&fsnotify.Write == fsnotify.Write {
-				w.notifyAll(event.Name)
-			}
-		case err, ok := <-w.watcher.Errors:
-			if !ok {
-				return
-			}
-			log.Println("[loader] failure encountered when watching files:", err)
-		default:
-			time.Sleep(500 * time.Millisecond)
+		if w.doWatch() {
+			atomic.StoreInt32(w.watching, 0)
+			break
 		}
 	}
 }
 
-func (w *fileChangeWatcher) notifyAll(name string) {
+func (w *wdWatcher) doWatch() (stop bool) {
+	ok := true
+	var event fsnotify.Event
+	var err error
+
+	select {
+	case event, ok = <-w.watcher.Events:
+		if ok {
+			name := event.Name
+			if !filepath.IsAbs(name) { // ensures absolute path
+				if abs, err := filepath.Abs(name); err == nil {
+					name = abs
+				} else {
+					log.Fatalln("[loader] fail to retrieve absolute path:", err)
+				}
+			}
+
+			if event.Op&fsnotify.Create == fsnotify.Create {
+				if err := w.addWatchRecursively(name); err != nil { // adds the newly-created file
+					log.Fatalln("[loader] fail to add new file for automatic reloading:", err)
+				}
+			}
+			if w.isConcernedFile(name) {
+				w.notifyAll(name)
+			}
+		}
+	case err, ok = <-w.watcher.Errors:
+		if ok {
+			log.Println("[loader] failure encountered when watching files:", err)
+		}
+	default:
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	stop = !ok
+	return
+}
+
+func (w *wdWatcher) isConcernedFile(name string) bool {
+	for _, f := range w.filenames {
+		af := filepath.Join(w.wd, f)
+		match, err := filepath.Match(af, name)
+		if err != nil {
+			panic("Shouldn't happen")
+		}
+		if match {
+			return true
+		}
+	}
+	return false
+}
+
+func (w *wdWatcher) notifyAll(name string) {
 	for _, l := range w.listeners {
 		l.onFileChange(name)
 	}
 }
 
-func (w *fileChangeWatcher) cancel() {
+func (w *wdWatcher) cancel() {
 	atomic.StoreInt32(w.watching, 0)
 }
 
@@ -113,7 +216,7 @@ func (l *Loader) EnableAutoReload(callback func(mappings *mckmaps.MockuMappings)
 
 type autoReloadListener struct {
 	l         *Loader
-	w         *fileChangeWatcher
+	w         *wdWatcher
 	callback  func(mappings *mckmaps.MockuMappings)
 	reloadMux sync.Mutex
 }
@@ -124,6 +227,7 @@ func (l *autoReloadListener) onFileChange(path string) {
 	mappings, err := l.l.Load()
 	if err != nil {
 		log.Println("[loader] cannot load mockuMappings after changing:", err)
+		return
 	}
 
 	// there can be only one goroutine reloading at the same time

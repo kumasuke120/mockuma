@@ -1,0 +1,46 @@
+{
+  "@type": "mappings",
+  "@comment": {
+    "en": "mappings which defines api mocks for /api/books",
+    "cn": "定义了 /api/books 的 API Mock 的映射(mappings)"
+  },
+  "mappings": {
+    "uri": "/api/books",
+    "method": "PUT",
+    "policies": {
+      "when": {
+        "headers": {
+          "Content-Type": {
+            "@regexp": "^application/json.*$"
+          }
+        },
+        "body": {
+          "@comment": {
+            "en": "matches the request body with a json matcher",
+            "cn": "使用 Json 匹配器匹配请求体"
+          },
+          "@json": [
+            {
+              "id": 1,
+              "price": 21.99
+            },
+            {
+              "id": 20,
+              "pages": 910
+            }
+          ]
+        }
+      },
+      "returns": {
+        "headers": {
+          "Content-Type": "application/json; charset=utf8"
+        },
+        "body": {
+          "code": 2000,
+          "message": "Updated",
+          "updatedCount": 2
+        }
+      }
+    }
+  }
+}
