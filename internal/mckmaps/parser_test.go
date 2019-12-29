@@ -366,6 +366,22 @@ func TestTemplateParser_parse(t *testing.T) {
 		}
 		assert.Equal(expected1, p1)
 	}
+
+	t2 := &templateParser{Parser: Parser{filename: filepath.Join("testdata", "template-2.json")}}
+	p2, e2 := t2.parse()
+	if assert.Nil(e2) {
+		expected2 := &template{
+			content: myjson.Array{
+				myjson.Object{
+					"v": myjson.String("@{v}"),
+				},
+				myjson.Object{
+					"v-v": myjson.String("@{v}-@{v}"),
+				},
+			},
+		}
+		assert.Equal(expected2, p2)
+	}
 }
 
 func TestVarsParser_parse(t *testing.T) {

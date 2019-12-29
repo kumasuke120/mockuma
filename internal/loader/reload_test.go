@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -82,7 +83,21 @@ func TestWdWatcher(t *testing.T) {
 	w1.addListener(l)
 	go w1.watch()
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			w := atomic.LoadInt32(w1.watching)
+			if w == int32(1) {
+				break
+			}
+			time.Sleep(300 * time.Millisecond)
+		}
+	}()
+
 	time.Sleep(1 * time.Second)
+	wg.Wait()
 	require.Nil(ioutil.WriteFile(n1, expected, 0644))
 
 	time.Sleep(1 * time.Second)
