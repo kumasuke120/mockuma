@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/kumasuke120/mockuma/internal/mckmaps"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,7 +51,8 @@ func TestWdWatcher(t *testing.T) {
 	oldWd, err := os.Getwd()
 	require.Nil(err)
 
-	dir := os.TempDir()
+	dir := filepath.Join(os.TempDir(), fmt.Sprintf("wd-%d", time.Now().UnixNano()))
+	require.Nil(os.Mkdir(dir, 0644))
 	require.Nil(os.Chdir(dir))
 
 	f1, e1 := ioutil.TempFile(dir, "wdWatcher")
@@ -83,6 +85,8 @@ func TestWdWatcher(t *testing.T) {
 	w1.addListener(l)
 	go w1.watch()
 
+	assert.Nil(w1.addWatchRecursively(filepath.Join(dir, "not_exists")))
+
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
@@ -99,8 +103,14 @@ func TestWdWatcher(t *testing.T) {
 	time.Sleep(1 * time.Second)
 	wg.Wait()
 	require.Nil(ioutil.WriteFile(n1, expected, 0644))
+	assert.True(<-l.okChan)
 
-	time.Sleep(1 * time.Second)
+	go func() {
+		w1.watcher.Events <- fsnotify.Event{
+			Name: rn1,
+			Op:   fsnotify.Create,
+		}
+	}()
 	assert.True(<-l.okChan)
 
 	go func() {
@@ -125,6 +135,7 @@ func TestWdWatcher(t *testing.T) {
 
 	require.Nil(os.Chdir(oldWd))
 	require.Nil(os.Remove(n1))
+	require.Nil(os.RemoveAll(dir))
 }
 
 //noinspection GoImportUsedAsName
@@ -135,7 +146,8 @@ func TestLoader_EnableAutoReload(t *testing.T) {
 	oldWd, err := os.Getwd()
 	require.Nil(err)
 
-	dir := os.TempDir()
+	dir := filepath.Join(os.TempDir(), fmt.Sprintf("wd-%d", time.Now().UnixNano()))
+	require.Nil(os.Mkdir(dir, 0644))
 	f1, e1 := ioutil.TempFile(dir, "enableAutoReload")
 	require.Nil(e1)
 	n1 := f1.Name()
@@ -176,4 +188,5 @@ func TestLoader_EnableAutoReload(t *testing.T) {
 
 	require.Nil(os.Chdir(oldWd))
 	require.Nil(os.Remove(n1))
+	require.Nil(os.RemoveAll(dir))
 }

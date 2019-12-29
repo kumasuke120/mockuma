@@ -67,8 +67,8 @@ func anyAbs(names []string) bool {
 }
 
 func (w *wdWatcher) addWatchRecursively(name string) error {
-	if s, err := os.Stat(name); err == nil { // only adds if name represents a directory
-		if !s.IsDir() {
+	if isDir, err := w.isDir(name); err == nil { // only adds if name represents a directory
+		if !isDir {
 			return nil
 		}
 	} else {
@@ -94,6 +94,19 @@ func (w *wdWatcher) addWatchRecursively(name string) error {
 			}
 			return nil
 		})
+}
+
+func (w *wdWatcher) isDir(name string) (bool, error) {
+	s, err := os.Stat(name)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		} else {
+			return false, err
+		}
+	} else {
+		return s.IsDir(), nil
+	}
 }
 
 func (w *wdWatcher) addListener(listener fileChangeListener) {
