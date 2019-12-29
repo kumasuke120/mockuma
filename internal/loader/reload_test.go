@@ -51,8 +51,8 @@ func TestWdWatcher(t *testing.T) {
 	oldWd, err := os.Getwd()
 	require.Nil(err)
 
-	dir := filepath.Join(os.TempDir(), fmt.Sprintf("wd-%d", time.Now().UnixNano()))
-	require.Nil(os.Mkdir(dir, 0644))
+	dir, err := ioutil.TempDir("", "test-wd")
+	require.Nil(err)
 	require.Nil(os.Chdir(dir))
 
 	f1, e1 := ioutil.TempFile(dir, "wdWatcher")
@@ -146,8 +146,8 @@ func TestLoader_EnableAutoReload(t *testing.T) {
 	oldWd, err := os.Getwd()
 	require.Nil(err)
 
-	dir := filepath.Join(os.TempDir(), fmt.Sprintf("wd-%d", time.Now().UnixNano()))
-	require.Nil(os.Mkdir(dir, 0644))
+	dir, err := ioutil.TempDir("", "test-autoReload")
+	require.Nil(err)
 	f1, e1 := ioutil.TempFile(dir, "enableAutoReload")
 	require.Nil(e1)
 	n1 := f1.Name()
