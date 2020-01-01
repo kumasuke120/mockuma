@@ -24,7 +24,7 @@
       "method": "GET",
       "policies": {
         "@template": "login/static-policy.template.json",
-        "@vars": "login/static-policy.vars.json"
+        "@vars": "login/static-policy.vars.csv"
       }
     }
   ]
