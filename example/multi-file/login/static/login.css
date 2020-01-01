@@ -55,3 +55,25 @@ body {
 .toasts .toast {
   min-width: 300px;
 }
+
+.github-icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  position: relative;
+}
+.github-icon::after {
+  content: ""; 
+  background-image: url("/login/github.svg");
+  background-size: 16px 16px;
+  opacity: 0.35;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  position: absolute;
+  z-index: -1;  
+}
+.github-icon:hover::after{
+  opacity: 0.5;
+}
