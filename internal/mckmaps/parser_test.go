@@ -388,11 +388,11 @@ func TestVarsParser_parse(t *testing.T) {
 	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
 
-	t0 := &varsParser{Parser: Parser{filename: filepath.Join("testdata", "vars-0.json")}}
+	t0 := &varsJSONParser{Parser: Parser{filename: filepath.Join("testdata", "vars-0.json")}}
 	_, e0 := t0.parse()
 	assert.NotNil(e0)
 
-	t1 := &varsParser{Parser: Parser{filename: filepath.Join("testdata", "vars-1.json")}}
+	t1 := &varsJSONParser{Parser: Parser{filename: filepath.Join("testdata", "vars-1.json")}}
 	p1, e1 := t1.parse()
 	if assert.Nil(e1) {
 		expected1 := []*vars{
