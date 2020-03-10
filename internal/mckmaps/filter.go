@@ -3,6 +3,7 @@ package mckmaps
 import (
 	"errors"
 	"io/ioutil"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -180,7 +181,7 @@ func (f *templateFilter) getTemplateFromDTemplate(v myjson.Object) (*template, *
 
 func (f *templateFilter) getVarsFromDTemplate(v myjson.Object) (varsSlice []*vars, err error) {
 	if v.Has(tVars) { // if @template directive has a 'vars' attribute
-		varsSlice, err = new(varsParser).parseVars(v)
+		varsSlice, err = new(varsJSONParser).parseVars(v)
 	} else {
 		var filename myjson.String
 		filename, err = v.GetString(dVars)
@@ -191,8 +192,14 @@ func (f *templateFilter) getVarsFromDTemplate(v myjson.Object) (varsSlice []*var
 		var ok bool
 		_filename := string(filename)
 		if varsSlice, ok = f.varsSliceCache[_filename]; !ok {
-			vParser := &varsParser{Parser: Parser{filename: _filename}}
-			varsSlice, err = vParser.parse()
+			ext := filepath.Ext(_filename)
+			if ext == ".csv" {
+				vParser := &varsCSVParser{Parser: Parser{filename: _filename}}
+				varsSlice, err = vParser.parse()
+			} else {
+				vParser := &varsJSONParser{Parser: Parser{filename: _filename}}
+				varsSlice, err = vParser.parse()
+			}
 			f.varsSliceCache[_filename] = varsSlice
 		}
 	}
