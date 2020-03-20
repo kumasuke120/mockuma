@@ -781,7 +781,14 @@ func (p *varsCSVParser) parse() ([]*vars, error) {
 		table := make(map[string]interface{}, len(varNames))
 		for i, c := range line {
 			if i < len(varNames) {
-				table[varNames[i]] = myjson.String(c)
+				var col interface{}
+				json, err := myjson.Unmarshal([]byte(c))
+				if err != nil {
+					col = myjson.String(c) // treats the non-valid json as a pure string
+				} else {
+					col = json
+				}
+				table[varNames[i]] = col
 			}
 		}
 
