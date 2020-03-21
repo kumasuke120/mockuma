@@ -31,11 +31,11 @@
   "l2": [
     {
       "@template": "renderTemplate.template.json",
-      "@vars": "renderTemplate-1.vars.json"
+      "@vars": "renderTemplate-1.vars.csv"
     },
     {
       "@template": "renderTemplate.template.json",
-      "@vars": "renderTemplate-2.vars.json"
+      "@vars": "renderTemplate-2.vars.csv"
     }
   ]
 }
