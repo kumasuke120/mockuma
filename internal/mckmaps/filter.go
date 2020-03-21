@@ -309,15 +309,6 @@ func (f *loadFileFilter) loadForArray(v myjson.Array) (interface{}, error) {
 	return rV, nil
 }
 
-func (f *loadFileFilter) loadForExtJSONMatcher(v myjson.ExtJSONMatcher) (interface{}, error) {
-	_v := v.Unwrap()
-	rV, err := f.load(_v)
-	if err != nil {
-		return nil, err
-	}
-	return myjson.MakeExtJSONMatcher(rV), nil
-}
-
 func (f *loadFileFilter) reset() {
 	f.fileCache = make(map[string][]byte)
 }
