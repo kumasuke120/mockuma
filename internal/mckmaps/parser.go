@@ -1,8 +1,10 @@
 package mckmaps
 
 import (
+	"encoding/csv"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -682,13 +684,13 @@ func (p *templateParser) parse() (*template, error) {
 	return template, nil
 }
 
-type varsParser struct {
+type varsJSONParser struct {
 	json     myjson.Object
 	jsonPath *myjson.Path
 	Parser
 }
 
-func (p *varsParser) parse() ([]*vars, error) {
+func (p *varsJSONParser) parse() ([]*vars, error) {
 	if p.json == nil {
 		json, err := p.load(true, ppRemoveComment)
 		if err != nil {
@@ -722,7 +724,7 @@ func (p *varsParser) parse() ([]*vars, error) {
 	return varsSlice, nil
 }
 
-func (p *varsParser) parseVars(v myjson.Object) ([]*vars, error) {
+func (p *varsJSONParser) parseVars(v myjson.Object) ([]*vars, error) {
 	rawVarsArray := ensureJSONArray(v.Get(tVars))
 	varsSlice := make([]*vars, len(rawVarsArray))
 	for idx, rawVars := range rawVarsArray {
@@ -739,6 +741,69 @@ func (p *varsParser) parseVars(v myjson.Object) ([]*vars, error) {
 		}
 	}
 	return varsSlice, nil
+}
+
+type varsCSVParser struct {
+	rdr *csv.Reader
+	Parser
+}
+
+func (p *varsCSVParser) parse() ([]*vars, error) {
+	if p.rdr == nil {
+		file, err := os.Open(p.filename)
+		if err != nil {
+			return nil, &loadError{filename: p.filename, err: err}
+		}
+		defer func() {
+			_ = file.Close()
+		}()
+		p.rdr = csv.NewReader(file)
+	}
+
+	var result []*vars
+	var varNames []string
+	for {
+		line, err := p.rdr.Read()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return nil, &loadError{filename: p.filename, err: err}
+		}
+
+		if varNames == nil {
+			varNames = line
+			if len(varNames) != 0 {
+				varNames[0] = cleanBom(varNames[0])
+			}
+			continue
+		}
+
+		table := make(map[string]interface{}, len(varNames))
+		for i, c := range line {
+			if i < len(varNames) {
+				var col interface{}
+				json, err := myjson.Unmarshal([]byte(c))
+				if err != nil {
+					col = myjson.String(c) // treats the non-valid json as a pure string
+				} else {
+					col = json
+				}
+				table[varNames[i]] = col
+			}
+		}
+
+		result = append(result, &vars{table: table})
+	}
+	return result, nil
+}
+
+const bom = "\xef\xbb\xbf"
+
+func cleanBom(s string) string {
+	if strings.HasPrefix(s, bom) {
+		return s[3:]
+	}
+	return s
 }
 
 func newParserError(filename string, jsonPath *myjson.Path) *parserError {

@@ -1,0 +1,15 @@
+﻿path,type
+login.js,text/javascript
+login.css,text/css
+bootstrap-solid.svg,image/svg+xml
+github.svg,image/svg+xml
+favicons/android-chrome-192x192.png,image/png
+favicons/android-chrome-512x512.png,image/png
+favicons/apple-touch-icon.png,image/png
+favicons/browserconfig.xml,image/png
+favicons/favicon-16x16.png,image/png
+favicons/favicon-32x32.png,image/png
+favicons/favicon.ico,image/vnd.microsoft.icon
+favicons/manifest.json,application/json; charset=utf-8
+favicons/mstile-150x150.png,image/png
+favicons/safari-pinned-tab.svg,image/svg+xml

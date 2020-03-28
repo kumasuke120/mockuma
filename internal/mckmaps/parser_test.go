@@ -384,15 +384,15 @@ func TestTemplateParser_parse(t *testing.T) {
 	}
 }
 
-func TestVarsParser_parse(t *testing.T) {
+func TestVarsJSONParser_parse(t *testing.T) {
 	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
 
-	t0 := &varsParser{Parser: Parser{filename: filepath.Join("testdata", "vars-0.json")}}
+	t0 := &varsJSONParser{Parser: Parser{filename: filepath.Join("testdata", "vars-0.json")}}
 	_, e0 := t0.parse()
 	assert.NotNil(e0)
 
-	t1 := &varsParser{Parser: Parser{filename: filepath.Join("testdata", "vars-1.json")}}
+	t1 := &varsJSONParser{Parser: Parser{filename: filepath.Join("testdata", "vars-1.json")}}
 	p1, e1 := t1.parse()
 	if assert.Nil(e1) {
 		expected1 := []*vars{
@@ -459,4 +459,38 @@ func TestParser_sortMappings(t *testing.T) {
 	p1 := &Parser{filename: ""}
 	actual1 := p1.sortMappings(testdata1)
 	assert.Equal(expected1, actual1)
+}
+
+func TestVarsCSVParser_parse(t *testing.T) {
+	//noinspection GoImportUsedAsName
+	assert := assert.New(t)
+
+	expected := []*vars{
+		{
+			table: map[string]interface{}{
+				"a": myjson.Number(1),
+				"b": myjson.Boolean(true),
+				"c": myjson.String("one"),
+			},
+		},
+		{
+			table: map[string]interface{}{
+				"a": myjson.Number(0),
+				"b": myjson.Boolean(false),
+				"c": myjson.String("zero"),
+			},
+		},
+	}
+
+	t0 := &varsCSVParser{Parser: Parser{filename: filepath.Join("testdata", "vars-0.csv")}}
+	p0, e0 := t0.parse()
+	if assert.Nil(e0) {
+		assert.Equal(expected, p0)
+	}
+
+	t1 := &varsCSVParser{Parser: Parser{filename: filepath.Join("testdata", "vars-1.csv")}}
+	p1, e1 := t1.parse()
+	if assert.Nil(e1) {
+		assert.Equal(expected, p1)
+	}
 }
