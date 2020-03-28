@@ -3,23 +3,45 @@
   "mappings": [
     {
       "uri": "/",
-      "policies": {
-        "returns": {
-          "@comment": {
-            "en": "redirects to /whoami permanently",
-            "cn": "永久跳转到 /whoami"
+      "policies": [
+        {
+          "when": {
+            "params": {
+              "username": {
+                "@regexp": "^.+$"
+              }
+            }
           },
-          "statusCode": 301,
-          "headers": {
-            "Location": "/whoami"
+          "forwards": {
+            "@comment": {
+              "en": "forwards requests to /whoami",
+              "cn": "转发请求至 /whoami"
+            },
+            "path": "/whoami"
+          }
+        },
+        {
+          "redirects": {
+            "@comment": {
+              "en": "redirects to /whoami",
+              "cn": "跳转至 /whoami"
+            },
+            "path": "/login"
           }
         }
-      }
+      ]
     },
     {
       "uri": "/whoami",
       "method": "GET",
       "policies": {
+        "when": {
+          "params": {
+            "username": {
+              "@regexp": "^.+$"
+            }
+          }
+        },
         "returns": {
           "headers": {
             "Content-Type": "text/html; charset=utf8"

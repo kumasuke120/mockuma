@@ -79,6 +79,33 @@
           }
         }
       ]
+    },
+    {
+      "uri": "/nihao",
+      "policies": {
+        "redirects": {
+          "@comment": {
+            "en": "redirects to /hello?lang=cn temporarily",
+            "cn": "临时跳转至 /hello?lang=cn"
+          },
+          "path": "/hello?lang=cn"
+        }
+      }
+    },
+    {
+      "@comment": {
+        "en": "redirects to /hello permanently using statusCode",
+        "cn": "使用 statusCode 以永久跳转到 /hello"
+      },
+      "uri": "/hi",
+      "policies": {
+        "returns": {
+          "statusCode": 301,
+          "headers": {
+            "Location": "/hello"
+          }
+        }
+      }
     }
   ]
 }
