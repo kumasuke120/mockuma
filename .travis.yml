@@ -1,6 +1,6 @@
 language: go
 
-go: "1.13"
+go: "1.14"
 
 script:
   - go test -tags test -race -coverprofile=coverage.txt -covermode=atomic ./...
