@@ -110,7 +110,7 @@ func getURIWithoutQuery(url0 *url.URL) string {
 func (bm *boundMatcher) matchPolicy() *mckmaps.Policy {
 	err := bm.r.ParseForm()
 	if err != nil {
-		log.Println("[server] fail to parse form:", err)
+		log.Println("[server  ] fail to parse form:", err)
 		return nil
 	}
 
@@ -200,6 +200,7 @@ func (bm *boundMatcher) bodyMatches(when *mckmaps.When) bool {
 	body := bm.bodyCache
 	if body == nil {
 		_body, err := ioutil.ReadAll(bm.r.Body)
+		bm.r.Body = ioutil.NopCloser(bytes.NewReader(_body))
 		if err == nil {
 			bm.bodyCache = _body
 			body = _body

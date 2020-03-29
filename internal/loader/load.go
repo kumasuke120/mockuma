@@ -82,7 +82,7 @@ func chdirBasedOnFilename(filename string) error {
 			return err
 		}
 
-		log.Println("[loader] working directory has been changed to:", dir)
+		log.Println("[loader  ] working directory has been changed to:", dir)
 	}
 
 	return nil
