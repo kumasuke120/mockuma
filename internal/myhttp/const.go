@@ -6,4 +6,4 @@ const (
 	HeaderLocation    = "Location"
 )
 
-const ContentTypeJSON = "application/json; charset=utf8"
+const ContentTypeJSON = "application/json; charset=utf-8"

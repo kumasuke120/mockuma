@@ -152,7 +152,7 @@ func TestMappingsParser_parse(t *testing.T) {
 								Headers: []*NameValuesPair{
 									{
 										Name:   myhttp.HeaderContentType,
-										Values: []string{"application/json; charset=utf8"},
+										Values: []string{"application/json; charset=utf-8"},
 									},
 								},
 								Body: []byte("abc123"),
@@ -230,7 +230,7 @@ func TestMappingsParser_parse(t *testing.T) {
 								Headers: []*NameValuesPair{
 									{
 										Name:   myhttp.HeaderContentType,
-										Values: []string{"application/json; charset=utf8"},
+										Values: []string{"application/json; charset=utf-8"},
 									},
 								},
 								Body: []byte(`{"v":"v"}`),
