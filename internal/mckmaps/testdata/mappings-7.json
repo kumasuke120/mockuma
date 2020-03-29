@@ -1,0 +1,24 @@
+{
+  "@type": "mappings",
+  "mappings": {
+    "uri": "/test-for-redirects",
+    "policies": [
+      {
+        "when": {
+          "params": {
+            "no-latency": true
+          }
+        },
+        "redirects": {
+          "path": "/"
+        }
+      },
+      {
+        "redirects": {
+          "path": "/",
+          "latency": 1000
+        }
+      }
+    ]
+  }
+}

@@ -319,7 +319,7 @@ func TestMappingsParser_parse(t *testing.T) {
 		if assert.Nil(e6) {
 			expected6 := []*Mapping{
 				{
-					URI:    "/{0}/{1}",
+					URI:    "/{0}/{1}/{2}",
 					Method: myhttp.MethodAny,
 					Policies: []*Policy{
 						{
@@ -334,6 +334,30 @@ func TestMappingsParser_parse(t *testing.T) {
 									{
 										Name:   "1",
 										Regexp: regexp.MustCompile("\\d+"),
+									}, {
+										Name:   "2",
+										Regexp: regexp.MustCompile("\\w+"),
+									},
+								},
+							},
+							Returns: &Returns{StatusCode: myhttp.StatusOk},
+						},
+					},
+				},
+				{
+					URI:    "/{0}/{1}/{0}",
+					Method: myhttp.MethodAny,
+					Policies: []*Policy{
+						{
+							When: &When{
+								PathVars: []*NameValuesPair{
+									{
+										Name:   "0",
+										Values: []string{"1"},
+									},
+									{
+										Name:   "1",
+										Values: []string{"2"},
 									},
 								},
 							},
@@ -344,6 +368,68 @@ func TestMappingsParser_parse(t *testing.T) {
 			}
 			assert.Equal(expected6, p6)
 		}
+	}
+
+	fb7, e7 := ioutil.ReadFile(filepath.Join("testdata", "mappings-7.json"))
+	require.Nil(e7)
+	j7, e7 := myjson.Unmarshal(fb7)
+	if assert.Nil(e7) {
+		m7 := &mappingsParser{json: j7}
+		p7, e7 := m7.parse()
+		if assert.Nil(e7) {
+			expected7 := []*Mapping{
+				{
+					URI:    "/test-for-redirects",
+					Method: myhttp.MethodAny,
+					Policies: []*Policy{
+						{
+							When: &When{
+								Params: []*NameValuesPair{
+									{
+										Name:   "no-latency",
+										Values: []string{"true"},
+									},
+								},
+							},
+							Returns: &Returns{
+								StatusCode: myhttp.StatusFound,
+								Headers: []*NameValuesPair{
+									{
+										Name:   myhttp.HeaderLocation,
+										Values: []string{"/"},
+									},
+								},
+							},
+						},
+						{
+							Returns: &Returns{
+								StatusCode: myhttp.StatusFound,
+								Headers: []*NameValuesPair{
+									{
+										Name:   myhttp.HeaderLocation,
+										Values: []string{"/"},
+									},
+								},
+								Latency: &Interval{
+									Min: 1000,
+									Max: 1000,
+								},
+							},
+						},
+					},
+				},
+			}
+			assert.Equal(expected7, p7)
+		}
+	}
+
+	fb8, e8 := ioutil.ReadFile(filepath.Join("testdata", "mappings-8.json"))
+	require.Nil(e8)
+	j8, e8 := myjson.Unmarshal(fb8)
+	if assert.Nil(e7) {
+		m8 := &mappingsParser{json: j8}
+		_, e8 := m8.parse()
+		assert.NotNil(e8)
 	}
 }
 
