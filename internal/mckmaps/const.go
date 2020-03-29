@@ -19,12 +19,16 @@ const (
 )
 
 const (
-	mapURI           = "uri"
-	mapMethod        = "method"
-	mapPolicies      = "policies"
-	mapPolicyWhen    = "when"
-	mapPolicyReturns = "returns"
+	mapURI             = "uri"
+	mapMethod          = "method"
+	mapPolicies        = "policies"
+	mapPolicyWhen      = "when"
+	mapPolicyReturns   = "returns"
+	mapPolicyForwards  = "forwards"
+	mapPolicyRedirects = "redirects"
 )
+
+var mapPolicyCommands = []string{mapPolicyReturns, mapPolicyForwards, mapPolicyRedirects}
 
 const (
 	pStatusCode = "statusCode"
@@ -33,4 +37,5 @@ const (
 	pPathVars   = "pathVars"
 	pBody       = "body"
 	pLatency    = "latency"
+	pPath       = "path"
 )

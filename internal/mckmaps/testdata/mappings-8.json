@@ -1,0 +1,15 @@
+{
+  "@type": "mappings",
+  "mappings": {
+    "uri": "/error",
+    "policies": {
+      "redirects": {
+        "path": "/",
+        "latency": 1000
+      },
+      "returns": {
+        "body": ""
+      }
+    }
+  }
+}

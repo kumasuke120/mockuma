@@ -1,16 +1,32 @@
 {
   "@type": "mappings",
-  "mappings": {
-    "uri": "/{a}/{b}",
-    "policies": {
-      "when": {
-        "pathVars": {
-          "a": 1,
-          "b": {
-            "@regexp": "\\d+"
+  "mappings": [
+    {
+      "uri": "/{a}/{b}/{c}",
+      "policies": {
+        "when": {
+          "pathVars": {
+            "a": 1,
+            "b": {
+              "@regexp": "\\d+"
+            },
+            "c": {
+              "@regexp": "\\w+"
+            }
+          }
+        }
+      }
+    },
+    {
+      "uri": "/{a}/{b}/{a}",
+      "policies": {
+        "when": {
+          "pathVars": {
+            "a": 1,
+            "b": 2
           }
         }
       }
     }
-  }
+  ]
 }
