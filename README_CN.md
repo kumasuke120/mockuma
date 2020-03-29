@@ -7,6 +7,13 @@ MocKuma 是一款 API 接口的 Mock 工具。该工具读取命令化的 Json �
 前、后端开发人员使用本工具可以模拟 RESTful 接口以辅助开发以及单元测试； 
 测试人员也可以使用本工具利用其命令式的映射配置进行参数匹配编写符合测试用例的接口辅助测试。
 
+### 特性
+- 根据请求参数/请求头映射返回
+- 映射改变时，自动重新加载
+- 使用用户定义的模板和变量渲染映射
+- 支持静态文件引用
+- 支持跳转和转发
+
 
 ## 安装
 执行以下命令以在你的环境中安装 MocKuma
@@ -30,7 +37,7 @@ $ go get -u github.com/kumasuke120/mockuma/cmd/mockuma
       {
         "when": { "params": { "lang": "cn" } },
         "returns": {
-          "headers": { "Content-Type": "text/plain; charset=utf8" },
+          "headers": { "Content-Type": "text/plain; charset=utf-8" },
           "body": "你好，世界！"
         }
       },
