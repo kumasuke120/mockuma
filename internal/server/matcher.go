@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
 	"regexp"
 
 	"github.com/kumasuke120/mockuma/internal/mckmaps"
@@ -57,7 +56,7 @@ type boundMatcher struct {
 }
 
 func (bm *boundMatcher) matches() bool {
-	bm.uri = getURIWithoutQuery(bm.r.URL)
+	bm.uri = bm.r.URL.Path
 
 	// matching for direct path
 	if mappingsOfURI, ok := bm.m.directPath[bm.uri]; ok {
@@ -96,15 +95,6 @@ func (bm *boundMatcher) anyMethodMatches(mappingsOfURI []*mckmaps.Mapping) *mckm
 
 func (bm *boundMatcher) isMethodNotAllowed() bool {
 	return bm.is405
-}
-
-func getURIWithoutQuery(url0 *url.URL) string {
-	url1 := &url.URL{}
-	*url1 = *url0
-
-	url1.RawQuery = ""
-	url1.ForceQuery = false
-	return url1.Path
 }
 
 func (bm *boundMatcher) matchPolicy() *mckmaps.Policy {
