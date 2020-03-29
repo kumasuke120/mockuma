@@ -30,6 +30,8 @@ const (
 	StatusBadRequest       = StatusCode(http.StatusBadRequest)
 	StatusMethodNotAllowed = StatusCode(http.StatusMethodNotAllowed)
 	StatusNotFound         = StatusCode(http.StatusNotFound)
+
+	StatusBadGateway = StatusCode(http.StatusBadGateway)
 )
 
 func ToHTTPMethod(method string) HTTPMethod {

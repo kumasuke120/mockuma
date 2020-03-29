@@ -19,8 +19,10 @@ type Mapping struct {
 }
 
 type Policy struct {
-	When    *When
-	Returns *Returns
+	When     *When
+	CmdType  CmdType
+	Returns  *Returns
+	Forwards *Forwards
 }
 
 type When struct {
@@ -40,11 +42,24 @@ type When struct {
 	BodyJSON   *myjson.ExtJSONMatcher
 }
 
+type CmdType string
+
+const (
+	CmdTypeReturns   = CmdType(mapPolicyReturns)
+	CmdTypeForwards  = CmdType(mapPolicyForwards)
+	CmdTypeRedirects = CmdType(mapPolicyRedirects)
+)
+
 type Returns struct {
 	StatusCode myhttp.StatusCode
 	Headers    []*NameValuesPair
 	Body       []byte
 	Latency    *Interval
+}
+
+type Forwards struct {
+	Path    string
+	Latency *Interval
 }
 
 type NameValuesPair struct {

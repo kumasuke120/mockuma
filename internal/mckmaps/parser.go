@@ -388,29 +388,11 @@ func (p *mappingsParser) parsePolicy(v myjson.Object) (*Policy, error) {
 		policy.Returns = &Returns{
 			StatusCode: myhttp.StatusOk,
 		}
+		policy.CmdType = CmdTypeReturns
 	} else if cntCommands == 1 {
-		if v.Has(mapPolicyReturns) {
-			p.jsonPath.SetLast(mapPolicyReturns)
-			rawReturns, err := v.GetObject(mapPolicyReturns)
-			if err != nil {
-				return nil, newParserError(p.filename, p.jsonPath)
-			}
-			returns, err := p.parseReturns(rawReturns)
-			if err != nil {
-				return nil, err
-			}
-			policy.Returns = returns
-		} else if v.Has(mapPolicyRedirects) {
-			p.jsonPath.SetLast(mapPolicyRedirects)
-			rawRedirects, err := v.GetObject(mapPolicyRedirects)
-			if err != nil {
-				return nil, newParserError(p.filename, p.jsonPath)
-			}
-			redirects, err := p.parseRedirects(rawRedirects)
-			if err != nil {
-				return nil, err
-			}
-			policy.Returns = redirects
+		err := p.parseCommand(policy, v)
+		if err != nil {
+			return nil, err
 		}
 	} else {
 		return nil, &parserError{
@@ -423,6 +405,48 @@ func (p *mappingsParser) parsePolicy(v myjson.Object) (*Policy, error) {
 
 	p.jsonPath.RemoveLast()
 	return policy, nil
+}
+
+func (p *mappingsParser) parseCommand(dst *Policy, v myjson.Object) error {
+	if v.Has(mapPolicyReturns) {
+		p.jsonPath.SetLast(mapPolicyReturns)
+		rawReturns, err := v.GetObject(mapPolicyReturns)
+		if err != nil {
+			return newParserError(p.filename, p.jsonPath)
+		}
+		returns, err := p.parseReturns(rawReturns)
+		if err != nil {
+			return err
+		}
+		dst.Returns = returns
+		dst.CmdType = CmdTypeReturns
+	} else if v.Has(mapPolicyRedirects) {
+		p.jsonPath.SetLast(mapPolicyRedirects)
+		rawRedirects, err := v.GetObject(mapPolicyRedirects)
+		if err != nil {
+			return newParserError(p.filename, p.jsonPath)
+		}
+		redirects, err := p.parseRedirects(rawRedirects)
+		if err != nil {
+			return err
+		}
+		dst.Returns = redirects
+		dst.CmdType = CmdTypeRedirects
+	} else {
+		p.jsonPath.SetLast(mapPolicyForwards)
+		rawForwards, err := v.GetObject(mapPolicyForwards)
+		if err != nil {
+			return newParserError(p.filename, p.jsonPath)
+		}
+		forwards, err := p.parseForwards(rawForwards)
+		if err != nil {
+			return err
+		}
+		dst.Forwards = forwards
+		dst.CmdType = CmdTypeForwards
+	}
+
+	return nil
 }
 
 func (p *mappingsParser) countCommands(v myjson.Object, names ...string) int {
@@ -593,7 +617,7 @@ func (p *mappingsParser) parseRedirects(v myjson.Object) (*Returns, error) {
 
 	p.jsonPath.SetLast(pPath)
 	path, err := v.GetString(pPath)
-	if err != nil {
+	if err != nil || len(string(path)) == 0 {
 		return nil, newParserError(p.filename, p.jsonPath)
 	}
 	returns.Headers = []*NameValuesPair{
@@ -615,6 +639,34 @@ func (p *mappingsParser) parseRedirects(v myjson.Object) (*Returns, error) {
 
 	p.jsonPath.RemoveLast()
 	return returns, nil
+}
+
+var validForwardPathRegexp = regexp.MustCompile("^(?:https?://)?.+$")
+
+func (p *mappingsParser) parseForwards(v myjson.Object) (*Forwards, error) {
+	p.jsonPath.Append("")
+
+	forwards := new(Forwards)
+
+	p.jsonPath.SetLast(pPath)
+	path, err := v.GetString(pPath)
+	if err != nil || !validForwardPathRegexp.MatchString(string(path)) {
+		return nil, newParserError(p.filename, p.jsonPath)
+	}
+	forwards.Path = string(path)
+
+	p.jsonPath.SetLast(pLatency)
+	if v.Has(pLatency) {
+		rawLatency := v.Get(pLatency)
+		latency, err := p.parseLatency(rawLatency)
+		if err != nil {
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
+		forwards.Latency = latency
+	}
+
+	p.jsonPath.RemoveLast()
+	return forwards, nil
 }
 
 func (p *mappingsParser) parseJSONToBytes(v interface{}) ([]byte, error) {

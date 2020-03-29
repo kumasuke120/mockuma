@@ -15,10 +15,12 @@ var (
 	pNotFound         = newStatusJSONPolicy(myhttp.StatusNotFound, "Not Found")
 	pNoPolicyMatched  = newStatusJSONPolicy(myhttp.StatusBadRequest, "No policy matched")
 	pMethodNotAllowed = newStatusJSONPolicy(myhttp.StatusMethodNotAllowed, "Method not allowed")
+	pBadGateway       = newStatusJSONPolicy(myhttp.StatusBadGateway, "Method not allowed")
 )
 
 func newStatusJSONPolicy(statusCode myhttp.StatusCode, message string) *mckmaps.Policy {
 	return &mckmaps.Policy{
+		CmdType: mckmaps.CmdTypeReturns,
 		Returns: &mckmaps.Returns{
 			StatusCode: statusCode,
 			Headers: []*mckmaps.NameValuesPair{
@@ -46,8 +48,15 @@ func newMockHandler(mappings *mckmaps.MockuMappings) *mockHandler {
 func (h *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set(myhttp.HeaderServer, HeaderValueServer)
 
+	executor := h.matchNewExecutor(r, w)
+	if err := executor.execute(); err != nil {
+		h.handleExecuteError(err, r, w)
+	}
+}
+
+func (h *mockHandler) matchNewExecutor(r *http.Request, w http.ResponseWriter) *policyExecutor {
 	matcher := h.pathMatcher.bind(r)
-	executor := &policyExecutor{r: r, w: &w}
+	executor := &policyExecutor{h: h, r: r, w: &w}
 
 	if matcher.matches() {
 		policy := matcher.matchPolicy()
@@ -61,14 +70,23 @@ func (h *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else {
 		executor.policy = pNotFound
 	}
+	return executor
+}
 
-	if err := executor.execute(); err != nil {
-		log.Printf("[handler] %s %s: fail to render response: %v\n", r.Method, r.URL, err)
+func (h *mockHandler) handleExecuteError(err error, r *http.Request, w http.ResponseWriter) {
+	switch err.(type) {
+	case *forwardError:
+		log.Printf("[handler ] error    : %7s %s => %v\n", r.Method, r.URL, err)
+		executor := &policyExecutor{h: h, r: r, w: &w, policy: pBadGateway}
+		err = executor.execute()
+	}
+	if err != nil {
+		log.Printf("[handler ] error    : %7s %s => fail to render response: %v\n", r.Method, r.URL, err)
 	}
 }
 
 func (h *mockHandler) listAllMappings() {
 	for uri, methods := range h.mappings.GroupMethodsByURI() {
-		log.Printf("[handler] mapped: %s, methods = %v\n", uri, methods)
+		log.Printf("[handler ] mapped   : %s, methods = %v\n", uri, methods)
 	}
 }
