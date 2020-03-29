@@ -26,7 +26,7 @@
               "en": "set the response header, specifying the content type is xml",
               "cn": "设置返回头，指定内容类型为 XML"
             },
-            "Content-Type": "application/xml; charset=utf8"
+            "Content-Type": "application/xml; charset=utf-8"
           },
           "body": {
             "@file": "books/books-page@{page}.xml"
@@ -47,7 +47,7 @@
         },
         "returns": {
           "headers": {
-            "Content-Type": "application/xml; charset=utf8"
+            "Content-Type": "application/xml; charset=utf-8"
           },
           "body": {
             "@comment": {
@@ -76,7 +76,7 @@
         },
         "returns": {
           "headers": {
-            "Content-Type": "application/xml; charset=utf8"
+            "Content-Type": "application/xml; charset=utf-8"
           },
           "body": {
             "@file": "books/books-page@{page}.xml"

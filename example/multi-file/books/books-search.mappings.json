@@ -50,7 +50,7 @@
             3000
           ],
           "headers": {
-            "Content-Type": "application/json; charset=utf8"
+            "Content-Type": "application/json; charset=utf-8"
           },
           "body": {
             "@comment": {
