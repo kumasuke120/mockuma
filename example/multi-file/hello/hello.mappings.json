@@ -50,7 +50,7 @@
           "returns": {
             "headers": {
               "Server": "HelloMock/1.0",
-              "Content-Type": "application/json; charset=utf8"
+              "Content-Type": "application/json; charset=utf-8"
             },
             "body": "{\"code\": 2000, \"message\": \"Hello, 世界!\"}"
           }
@@ -64,7 +64,7 @@
           "returns": {
             "headers": {
               "Server": "HelloMock/1.0",
-              "Content-Type": "application/json; charset=utf8"
+              "Content-Type": "application/json; charset=utf-8"
             },
             "body": "{\"code\": 2000, \"message\": \"你好，世界！\"}"
           }
@@ -73,7 +73,7 @@
           "returns": {
             "headers": {
               "Server": "HelloMock/1.0",
-              "Content-Type": "application/json; charset=utf8"
+              "Content-Type": "application/json; charset=utf-8"
             },
             "body": "{\"code\": 2000, \"message\": \"Hello, World!\"}"
           }
