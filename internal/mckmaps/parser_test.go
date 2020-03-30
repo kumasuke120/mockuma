@@ -1,6 +1,7 @@
 package mckmaps
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -12,6 +13,25 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+//noinspection GoImportUsedAsName
+func TestError(t *testing.T) {
+	assert := assert.New(t)
+
+	err0 := &loadError{filename: "test.json"}
+	assert.NotNil(err0)
+	assert.Contains(err0.Error(), "test.json")
+
+	err1 := &parserError{
+		jsonPath: myjson.NewPath("testPath"),
+		filename: "test.json",
+		err:      errors.New("test_error"),
+	}
+	assert.NotNil(err1)
+	assert.Contains(err1.Error(), "$.testPath")
+	assert.Contains(err1.Error(), "test.json")
+	assert.Contains(err1.Error(), "test_error")
+}
 
 func TestNewParser(t *testing.T) {
 	p1 := NewParser("123")
@@ -443,6 +463,49 @@ func TestMappingsParser_parse(t *testing.T) {
 		m8 := &mappingsParser{json: j8}
 		_, e8 := m8.parse()
 		assert.NotNil(e8)
+	}
+
+	fb9, e9 := ioutil.ReadFile(filepath.Join("testdata", "mappings-9.json"))
+	require.Nil(e9)
+	j9, e9 := myjson.Unmarshal(fb9)
+	if assert.Nil(e9) {
+		m9 := &mappingsParser{json: j9}
+		p9, e9 := m9.parse()
+		if assert.Nil(e9) {
+			expected9 := []*Mapping{
+				{
+					URI:    "/test-for-forwards",
+					Method: myhttp.MethodAny,
+					Policies: []*Policy{
+						{
+							When: &When{
+								Params: []*NameValuesPair{
+									{
+										Name:   "no-latency",
+										Values: []string{"true"},
+									},
+								},
+							},
+							CmdType: mapPolicyForwards,
+							Forwards: &Forwards{
+								Path: "/",
+							},
+						},
+						{
+							CmdType: mapPolicyForwards,
+							Forwards: &Forwards{
+								Path: "/",
+								Latency: &Interval{
+									Min: 1000,
+									Max: 2000,
+								},
+							},
+						},
+					},
+				},
+			}
+			assert.Equal(expected9, p9)
+		}
 	}
 }
 
