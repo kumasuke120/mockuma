@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -32,11 +33,12 @@ type forwardError struct {
 }
 
 func (e *forwardError) Error() string {
-	return "failed to forward: " + e.err.Error()
+	return "fail to forward: " + e.err.Error()
 }
 
 func (e *policyExecutor) execute() error {
-	switch e.policy.CmdType {
+	cmdType := e.policy.CmdType
+	switch cmdType {
 	case mckmaps.CmdTypeReturns:
 		fallthrough
 	case mckmaps.CmdTypeRedirects:
@@ -45,8 +47,8 @@ func (e *policyExecutor) execute() error {
 		return e.executeForwards()
 	}
 
-	log.Printf("[executor] %-9s: unsupported command type\n", e.policy.CmdType)
-	return nil
+	log.Printf("[executor] %-9s: unsupported command type\n", cmdType)
+	return errors.New("unsupported command type: " + string(cmdType))
 }
 
 func (e *policyExecutor) executeReturns() error {
