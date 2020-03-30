@@ -133,4 +133,36 @@ func TestPolicyExecutor_executor(t *testing.T) {
 	assert.Nil(e5)
 	assert.Equal(http.StatusOK, rr5.Code)
 	assert.Equal("TEST/v1", rr5.Header().Get("Server"))
+
+	rr6 := httptest.NewRecorder()
+	var rw6 http.ResponseWriter = rr6
+	exe6 := &policyExecutor{
+		h: handler,
+		r: httptest.NewRequest("GET", "/c?r1=120", nil),
+		w: &rw6,
+		policy: &mckmaps.Policy{
+			CmdType: mckmaps.CmdTypeForwards,
+			Forwards: &mckmaps.Forwards{
+				Path: "m",
+			},
+		},
+	}
+	e6 := exe6.execute()
+	assert.Nil(e6)
+	assert.Equal(http.StatusOK, rr6.Code)
+
+	rr7 := httptest.NewRecorder()
+	var rw7 http.ResponseWriter = rr7
+	exe7 := &policyExecutor{
+		r: httptest.NewRequest("GET", "/c?r1=120", nil),
+		w: &rw7,
+		policy: &mckmaps.Policy{
+			CmdType: "wow",
+			Forwards: &mckmaps.Forwards{
+				Path: "m",
+			},
+		},
+	}
+	e7 := exe7.execute()
+	assert.NotNil(e7)
 }
