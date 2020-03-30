@@ -36,6 +36,7 @@ func TestParser_Parse(t *testing.T) {
 			Method: myhttp.HTTPMethod("RESET"),
 			Policies: []*Policy{
 				{
+					CmdType: mapPolicyReturns,
 					Returns: &Returns{
 						StatusCode: myhttp.StatusOk,
 						Body:       []byte("m1"),
@@ -56,6 +57,7 @@ func TestParser_Parse(t *testing.T) {
 							},
 						},
 					},
+					CmdType: mapPolicyReturns,
 					Returns: &Returns{
 						StatusCode: myhttp.StatusOk,
 						Body:       []byte("m2:1"),
@@ -70,6 +72,7 @@ func TestParser_Parse(t *testing.T) {
 							},
 						},
 					},
+					CmdType: mapPolicyReturns,
 					Returns: &Returns{
 						StatusCode: myhttp.StatusOk,
 						Body:       []byte("m2:2"),
@@ -84,6 +87,7 @@ func TestParser_Parse(t *testing.T) {
 							},
 						},
 					},
+					CmdType: mapPolicyReturns,
 					Returns: &Returns{
 						StatusCode: myhttp.StatusOk,
 						Body:       []byte("m2:3"),
