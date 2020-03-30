@@ -154,15 +154,32 @@ func TestPolicyExecutor_executor(t *testing.T) {
 	rr7 := httptest.NewRecorder()
 	var rw7 http.ResponseWriter = rr7
 	exe7 := &policyExecutor{
-		r: httptest.NewRequest("GET", "/c?r1=120", nil),
+		r: httptest.NewRequest("GET", "/TestPolicyExecutor_executor", nil),
 		w: &rw7,
 		policy: &mckmaps.Policy{
 			CmdType: "wow",
-			Forwards: &mckmaps.Forwards{
-				Path: "m",
-			},
 		},
 	}
 	e7 := exe7.execute()
 	assert.NotNil(e7)
+	assert.Contains(e7.Error(), "wow")
+
+	rr8 := httptest.NewRecorder()
+	var rw8 http.ResponseWriter = rr8
+	exe8 := &policyExecutor{
+		r: httptest.NewRequest("GET", "/TestPolicyExecutor_executor", nil),
+		w: &rw8,
+		policy: &mckmaps.Policy{
+			CmdType: mckmaps.CmdTypeForwards,
+			Forwards: &mckmaps.Forwards{
+				Latency: &mckmaps.Interval{
+					Min: 0,
+					Max: 0,
+				},
+				Path: "http://localhost:8080",
+			},
+		},
+	}
+	e8 := exe8.execute()
+	assert.NotNil(e8)
 }
