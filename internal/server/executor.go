@@ -56,29 +56,27 @@ func (e *policyExecutor) executeReturns() error {
 		waitBeforeReturns(returns.Latency)
 	}
 
-	e.writeHeaders(returns.Headers)
-	(*e.w).WriteHeader(int(returns.StatusCode)) // statusCode must be written after headers
-	err := e.writeBody(returns.Body)
-	if err != nil {
-		return err
+	err2 := e.writeResponseForReturns(returns)
+	if err2 != nil {
+		return err2
 	}
 
-	e.statusCode = int(returns.StatusCode)
-	if !e.fromForwards {
+	e.statusCode = int(returns.StatusCode) // records statusCode for forwards
+	if !e.fromForwards {                   // forwards prints its log by itself
 		log.Printf("[executor] %-9s: (%d) %7s %s\n", e.policy.CmdType,
 			e.statusCode, e.r.Method, e.r.URL)
 	}
 	return nil
 }
 
-func waitBeforeReturns(latency *mckmaps.Interval) {
-	diff := latency.Max - latency.Min
-	if diff > 0 {
-		d := rand.Int63n(diff) + latency.Min
-		time.Sleep(time.Duration(d * int64(time.Millisecond)))
-	} else if latency.Min > 0 {
-		time.Sleep(time.Duration(latency.Min * int64(time.Millisecond)))
+func (e *policyExecutor) writeResponseForReturns(returns *mckmaps.Returns) error {
+	e.writeHeaders(returns.Headers)
+	(*e.w).WriteHeader(int(returns.StatusCode)) // statusCode must be written after headers
+	err := e.writeBody(returns.Body)
+	if err != nil {
+		return err
 	}
+	return nil
 }
 
 func (e *policyExecutor) writeHeaders(headers []*mckmaps.NameValuesPair) {
@@ -120,19 +118,10 @@ func (e *policyExecutor) executeForwards() error {
 }
 
 func (e *policyExecutor) forwardsRemote(fPath string) error {
-	reqURL := e.r.URL
-
-	_url, err := url.Parse(fPath)
-	if err != nil {
-		return &forwardError{err: err}
-	}
-	_url.RawQuery = reqURL.RawQuery
-
-	newRequest, err := e.newForwardRequest(_url.String())
+	newRequest, err := e.newForwardRemoteRequest(fPath)
 	if err != nil {
 		return err
 	}
-	newRequest.Header.Set(myhttp.HeaderXForwardedFor, e.r.RemoteAddr)
 
 	httpClient := http.Client{}
 	resp, err := httpClient.Do(newRequest)
@@ -145,27 +134,67 @@ func (e *policyExecutor) forwardsRemote(fPath string) error {
 		}
 	}()
 
-	e.copyHeader((*e.w).Header(), resp.Header)
-	(*e.w).Header().Set(myhttp.HeaderXForwardedServer, HeaderValueServer)
-	(*e.w).WriteHeader(resp.StatusCode)
-	_, err = io.Copy(*e.w, resp.Body)
+	err = e.writeResponseForForwardsRemote(resp)
 	if err != nil {
 		return err
 	}
 
-	e.statusCode = resp.StatusCode
+	e.statusCode = resp.StatusCode // records statusCode for forwards
 	log.Printf("[executor] %-9s: (%d) %7s %s => %s\n", e.policy.CmdType,
 		resp.StatusCode, e.r.Method, e.r.URL, newRequest.URL)
 	return nil
 }
 
-func (e *policyExecutor) copyHeader(outHeader http.Header, inHeader http.Header) {
-	for key, values := range inHeader {
-		outHeader[key] = values
+func (e *policyExecutor) newForwardRemoteRequest(fPath string) (*http.Request, error) {
+	reqURL := e.r.URL
+
+	_url, err := url.Parse(fPath)
+	if err != nil {
+		return nil, &forwardError{err: err}
 	}
+	_url.RawQuery = reqURL.RawQuery
+
+	newRequest, err := e.newForwardRequest(_url.String())
+	if err != nil {
+		return nil, err
+	}
+	newRequest.Header.Set(myhttp.HeaderXForwardedFor, e.r.RemoteAddr)
+
+	return newRequest, err
+}
+
+func (e *policyExecutor) writeResponseForForwardsRemote(resp *http.Response) error {
+	for key, values := range resp.Header {
+		(*e.w).Header()[key] = values
+	}
+	(*e.w).Header().Set(myhttp.HeaderXForwardedServer, HeaderValueServer)
+	(*e.w).WriteHeader(resp.StatusCode) // statusCode must be written after headers
+	_, err := io.Copy(*e.w, resp.Body)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (e *policyExecutor) forwardsLocal(fPath string) error {
+	newRequest, err := e.newForwardLocalRequest(fPath)
+	if err != nil {
+		return err
+	}
+
+	fe := e.h.matchNewExecutor(newRequest, *e.w)
+	fe.fromForwards = true
+	err = fe.execute() // executor writes response for forwards
+
+	if err == nil {
+		e.statusCode = fe.statusCode // records statusCode for forwards
+		log.Printf("[executor] %-9s: (%d) %7s %s => %s\n", e.policy.CmdType,
+			fe.statusCode, e.r.Method, e.r.URL, newRequest.URL)
+	}
+	return err
+}
+
+func (e *policyExecutor) newForwardLocalRequest(fPath string) (*http.Request, error) {
 	reqURL := e.r.URL
 
 	if !strings.HasPrefix(fPath, "/") {
@@ -182,19 +211,9 @@ func (e *policyExecutor) forwardsLocal(fPath string) error {
 	}
 	newRequest, err := e.newForwardRequest(requestURI)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	fe := e.h.matchNewExecutor(newRequest, *e.w)
-	fe.fromForwards = true
-	err = fe.execute()
-
-	if err == nil {
-		e.statusCode = fe.statusCode
-		log.Printf("[executor] %-9s: (%d) %7s %s => %s\n", e.policy.CmdType,
-			fe.statusCode, e.r.Method, e.r.URL, newRequest.URL)
-	}
-	return err
+	return newRequest, err
 }
 
 func (e *policyExecutor) newForwardRequest(url string) (*http.Request, error) {
@@ -209,4 +228,14 @@ func (e *policyExecutor) newForwardRequest(url string) (*http.Request, error) {
 	}
 	newRequest.Header = e.r.Header
 	return newRequest, nil
+}
+
+func waitBeforeReturns(latency *mckmaps.Interval) {
+	diff := latency.Max - latency.Min
+	if diff > 0 {
+		d := rand.Int63n(diff) + latency.Min
+		time.Sleep(time.Duration(d * int64(time.Millisecond)))
+	} else if latency.Min > 0 {
+		time.Sleep(time.Duration(latency.Min * int64(time.Millisecond)))
+	}
 }
