@@ -37,6 +37,10 @@ var mappings = &mckmaps.MockuMappings{
 							},
 						},
 					},
+					CmdType: mckmaps.CmdTypeForwards,
+					Forwards: &mckmaps.Forwards{
+						Path: "http://localhost:8080",
+					},
 				},
 				{
 					When: &mckmaps.When{

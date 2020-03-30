@@ -172,10 +172,6 @@ func TestPolicyExecutor_executor(t *testing.T) {
 		policy: &mckmaps.Policy{
 			CmdType: mckmaps.CmdTypeForwards,
 			Forwards: &mckmaps.Forwards{
-				Latency: &mckmaps.Interval{
-					Min: 0,
-					Max: 0,
-				},
 				Path: "http://localhost:8080",
 			},
 		},
