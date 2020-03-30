@@ -40,6 +40,11 @@ func TestMockHandler_ServeHTTP(t *testing.T) {
 	handler.ServeHTTP(rr5, req5)
 	assert.Equal(http.StatusOK, rr5.Code)
 	assert.Equal("TEST/v1", rr5.Header().Get("Server"))
+
+	req6 := httptest.NewRequest("GET", "/m?p1=v1&p2=v1&p2=v2", nil)
+	rr6 := httptest.NewRecorder()
+	handler.ServeHTTP(rr6, req6)
+	assert.Equal(http.StatusBadGateway, rr6.Code)
 }
 
 func TestMockHandler_listAllMappings(t *testing.T) {
