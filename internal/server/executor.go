@@ -146,6 +146,7 @@ func (e *policyExecutor) forwardsRemote(fPath string) error {
 	}()
 
 	e.copyHeader((*e.w).Header(), resp.Header)
+	(*e.w).Header().Set(myhttp.HeaderXForwardedServer, HeaderValueServer)
 	(*e.w).WriteHeader(resp.StatusCode)
 	_, err = io.Copy(*e.w, resp.Body)
 	if err != nil {
