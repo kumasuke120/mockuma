@@ -14,8 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//noinspection GoImportUsedAsName
 func TestError(t *testing.T) {
+	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
 
 	err0 := &loadError{filename: "test.json"}
