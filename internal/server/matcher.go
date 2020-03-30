@@ -22,7 +22,7 @@ func newPathMatcher(mappings *mckmaps.MockuMappings) *pathMatcher {
 	directPath := make(map[string][]*mckmaps.Mapping)
 	patternPath := make(map[*regexp.Regexp][]*mckmaps.Mapping)
 	for _, m := range mappings.Mappings {
-		if theURI := pathVarRegexp.ReplaceAllString(m.URI, "(?P<v$1>.+?)"); theURI == m.URI {
+		if theURI := pathVarRegexp.ReplaceAllString(m.URI, "(?P<v$1>.*?)"); theURI == m.URI {
 			mappingsOfURI := directPath[theURI]
 			mappingsOfURI = append(mappingsOfURI, m)
 			directPath[theURI] = mappingsOfURI
