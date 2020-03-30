@@ -1,0 +1,13 @@
+{
+  "@type": "template",
+  "template": {
+    "when": {
+      "pathVars": {
+        "path": "@{path}"
+      }
+    },
+    "forwards": {
+      "path": "https://github.com/kumasuke120/mockuma@{path}"
+    }
+  }
+}
