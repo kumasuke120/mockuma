@@ -65,7 +65,7 @@ func (e *policyExecutor) executeReturns() error {
 
 	e.statusCode = int(returns.StatusCode) // records statusCode for forwards
 	if !e.fromForwards {                   // forwards prints its log by itself
-		log.Printf("[executor] %-9s: (%d) %7s %s\n", e.policy.CmdType,
+		log.Printf("[executor] %-9s: (%d) %s %s\n", e.policy.CmdType,
 			e.statusCode, e.r.Method, e.r.URL)
 	}
 	return nil
@@ -142,7 +142,7 @@ func (e *policyExecutor) forwardsRemote(fPath string) error {
 	}
 
 	e.statusCode = resp.StatusCode // records statusCode for forwards
-	log.Printf("[executor] %-9s: (%d) %7s %s => %s\n", e.policy.CmdType,
+	log.Printf("[executor] %-9s: (%d) %s %s => %s\n", e.policy.CmdType,
 		resp.StatusCode, e.r.Method, e.r.URL, newRequest.URL)
 	return nil
 }
@@ -190,7 +190,7 @@ func (e *policyExecutor) forwardsLocal(fPath string) error {
 
 	if err == nil {
 		e.statusCode = fe.statusCode // records statusCode for forwards
-		log.Printf("[executor] %-9s: (%d) %7s %s => %s\n", e.policy.CmdType,
+		log.Printf("[executor] %-9s: (%d) %s %s => %s\n", e.policy.CmdType,
 			fe.statusCode, e.r.Method, e.r.URL, newRequest.URL)
 	}
 	return err

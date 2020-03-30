@@ -75,7 +75,7 @@ func (h *mockHandler) matchNewExecutor(r *http.Request, w http.ResponseWriter) *
 }
 
 func (h *mockHandler) handleExecuteError(w http.ResponseWriter, r *http.Request, err error) {
-	log.Printf("[handler ] error    : %7s %s => %v\n", r.Method, r.URL, err)
+	log.Printf("[handler ] error    : %s %s => %v\n", r.Method, r.URL, err)
 
 	switch err.(type) {
 	case *forwardError:
@@ -87,7 +87,7 @@ func (h *mockHandler) handleExecuteError(w http.ResponseWriter, r *http.Request,
 	}
 
 	if err != nil {
-		log.Printf("[handler ] error    : %7s %s => fail to render response: %v\n", r.Method, r.URL, err)
+		log.Printf("[handler ] error    : %s %s => fail to render response: %v\n", r.Method, r.URL, err)
 	}
 }
 
