@@ -12,10 +12,11 @@ import (
 
 // default policies
 var (
-	pNotFound         = newStatusJSONPolicy(myhttp.StatusNotFound, "Not Found")
-	pNoPolicyMatched  = newStatusJSONPolicy(myhttp.StatusBadRequest, "No policy matched")
-	pMethodNotAllowed = newStatusJSONPolicy(myhttp.StatusMethodNotAllowed, "Method not allowed")
-	pBadGateway       = newStatusJSONPolicy(myhttp.StatusBadGateway, "Method not allowed")
+	pNotFound            = newStatusJSONPolicy(myhttp.StatusNotFound, "Not Found")
+	pNoPolicyMatched     = newStatusJSONPolicy(myhttp.StatusBadRequest, "No policy matched")
+	pMethodNotAllowed    = newStatusJSONPolicy(myhttp.StatusMethodNotAllowed, "Method Not Allowed")
+	pInternalServerError = newStatusJSONPolicy(myhttp.StatusInternalServerError, "Internal Server Error")
+	pBadGateway          = newStatusJSONPolicy(myhttp.StatusBadGateway, "Bad Gateway")
 )
 
 func newStatusJSONPolicy(statusCode myhttp.StatusCode, message string) *mckmaps.Policy {
@@ -74,12 +75,17 @@ func (h *mockHandler) matchNewExecutor(r *http.Request, w http.ResponseWriter) *
 }
 
 func (h *mockHandler) handleExecuteError(err error, r *http.Request, w http.ResponseWriter) {
+	log.Printf("[handler ] error    : %7s %s => %v\n", r.Method, r.URL, err)
+
 	switch err.(type) {
 	case *forwardError:
-		log.Printf("[handler ] error    : %7s %s => %v\n", r.Method, r.URL, err)
 		executor := &policyExecutor{h: h, r: r, w: &w, policy: pBadGateway}
 		err = executor.execute()
+	default:
+		executor := &policyExecutor{h: h, r: r, w: &w, policy: pInternalServerError}
+		err = executor.execute()
 	}
+
 	if err != nil {
 		log.Printf("[handler ] error    : %7s %s => fail to render response: %v\n", r.Method, r.URL, err)
 	}
