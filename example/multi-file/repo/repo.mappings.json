@@ -11,8 +11,10 @@
     },
     {
       "uri": "/manifest.json",
-      "forwards": {
-        "path": "https://github.com/manifest.json"
+      "policies": {
+        "forwards": {
+          "path": "https://github.com/manifest.json"
+        }
       }
     },
     {
@@ -50,6 +52,15 @@
           },
           {
             "path": "file-list/master/example"
+          },
+          {
+            "path": "contributors_size"
+          },
+          {
+            "path": "graphs/contributors"
+          },
+          {
+            "path": "graphs/contributors-data"
           }
         ]
       }

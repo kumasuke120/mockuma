@@ -7,7 +7,7 @@
       }
     },
     "forwards": {
-      "path": "https://github.com/kumasuke120/mockuma@{path}"
+      "path": "https://github.com/kumasuke120/mockuma/@{path}"
     }
   }
 }
