@@ -10,6 +10,12 @@
       }
     },
     {
+      "uri": "/manifest.json",
+      "forwards": {
+        "path": "https://github.com/manifest.json"
+      }
+    },
+    {
       "uri": "/kumasuke120/mockuma/{path}",
       "method": "GET",
       "policies": {
