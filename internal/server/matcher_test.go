@@ -47,6 +47,11 @@ var mappings = &mckmaps.MockuMappings{
 							},
 						},
 					},
+					CmdType: mckmaps.CmdTypeReturns,
+					Returns: &mckmaps.Returns{
+						StatusCode: myhttp.StatusOk,
+						Body:       []byte(""),
+					},
 				},
 				{
 					When: &mckmaps.When{
