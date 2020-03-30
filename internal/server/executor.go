@@ -56,9 +56,9 @@ func (e *policyExecutor) executeReturns() error {
 		waitBeforeReturns(returns.Latency)
 	}
 
-	err2 := e.writeResponseForReturns(returns)
-	if err2 != nil {
-		return err2
+	err := e.writeResponseForReturns(returns)
+	if err != nil {
+		return err
 	}
 
 	e.statusCode = int(returns.StatusCode) // records statusCode for forwards
