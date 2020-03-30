@@ -147,6 +147,7 @@ func TestMappingsParser_parse(t *testing.T) {
 					Method: myhttp.MethodAny,
 					Policies: []*Policy{
 						{
+							CmdType: mapPolicyReturns,
 							Returns: &Returns{
 								StatusCode: myhttp.StatusOk,
 								Headers: []*NameValuesPair{
@@ -225,6 +226,7 @@ func TestMappingsParser_parse(t *testing.T) {
 								},
 								Body: []byte("123"),
 							},
+							CmdType: mapPolicyReturns,
 							Returns: &Returns{
 								StatusCode: myhttp.StatusCode(201),
 								Headers: []*NameValuesPair{
@@ -241,6 +243,7 @@ func TestMappingsParser_parse(t *testing.T) {
 							},
 						},
 						{
+							CmdType: mapPolicyReturns,
 							Returns: &Returns{
 								StatusCode: myhttp.StatusOk,
 								Body:       []byte(""),
@@ -293,6 +296,7 @@ func TestMappingsParser_parse(t *testing.T) {
 							When: &When{
 								BodyRegexp: regexp.MustCompile("^.+$"),
 							},
+							CmdType: mapPolicyReturns,
 							Returns: &Returns{StatusCode: myhttp.StatusOk},
 						},
 						{
@@ -301,6 +305,7 @@ func TestMappingsParser_parse(t *testing.T) {
 									"v": myjson.String("v"),
 								}),
 							},
+							CmdType: mapPolicyReturns,
 							Returns: &Returns{StatusCode: myhttp.StatusOk},
 						},
 					},
@@ -340,6 +345,7 @@ func TestMappingsParser_parse(t *testing.T) {
 									},
 								},
 							},
+							CmdType: mapPolicyReturns,
 							Returns: &Returns{StatusCode: myhttp.StatusOk},
 						},
 					},
@@ -361,6 +367,7 @@ func TestMappingsParser_parse(t *testing.T) {
 									},
 								},
 							},
+							CmdType: mapPolicyReturns,
 							Returns: &Returns{StatusCode: myhttp.StatusOk},
 						},
 					},
@@ -391,6 +398,7 @@ func TestMappingsParser_parse(t *testing.T) {
 									},
 								},
 							},
+							CmdType: mapPolicyRedirects,
 							Returns: &Returns{
 								StatusCode: myhttp.StatusFound,
 								Headers: []*NameValuesPair{
@@ -402,6 +410,7 @@ func TestMappingsParser_parse(t *testing.T) {
 							},
 						},
 						{
+							CmdType: mapPolicyRedirects,
 							Returns: &Returns{
 								StatusCode: myhttp.StatusFound,
 								Headers: []*NameValuesPair{
