@@ -166,7 +166,7 @@ func TestNewPathMatcher(t *testing.T) {
 	}
 	assert.Equal(t, expectedDirectPath, matcher.directPath)
 	expectedPatternPath := map[*regexp.Regexp][]*mckmaps.Mapping{
-		regexp.MustCompile("^/p/(?P<v0>.+?)/m(?P<v1>.+?)$"): {
+		regexp.MustCompile("^/p/(?P<v0>.*?)/m(?P<v1>.*?)$"): {
 			mappings.Mappings[3],
 		},
 	}
