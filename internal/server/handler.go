@@ -51,7 +51,7 @@ func (h *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	executor := h.matchNewExecutor(r, w)
 	if err := executor.execute(); err != nil {
-		h.handleExecuteError(err, r, w)
+		h.handleExecuteError(w, r, err)
 	}
 }
 
@@ -74,7 +74,7 @@ func (h *mockHandler) matchNewExecutor(r *http.Request, w http.ResponseWriter) *
 	return executor
 }
 
-func (h *mockHandler) handleExecuteError(err error, r *http.Request, w http.ResponseWriter) {
+func (h *mockHandler) handleExecuteError(w http.ResponseWriter, r *http.Request, err error) {
 	log.Printf("[handler ] error    : %7s %s => %v\n", r.Method, r.URL, err)
 
 	switch err.(type) {
