@@ -61,7 +61,7 @@ func TestMockHandler_handleExecuteError(t *testing.T) {
 
 	req2 := httptest.NewRequest("GET", "/", nil)
 	rr2 := httptest.NewRecorder()
-	handler.handleExecuteError(rr2, req2, &forwardError{err: errors.New("test")})
+	handler.handleExecuteError(rr2, req2, errors.New("test"))
 	assert.Equal(http.StatusInternalServerError, rr2.Code)
 }
 
