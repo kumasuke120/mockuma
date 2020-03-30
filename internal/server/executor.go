@@ -172,7 +172,13 @@ func (e *policyExecutor) forwardsLocal(fPath string) error {
 		fPath = path.Join(uri, "../"+fPath)
 	}
 
-	requestURI := fmt.Sprintf("%s?%s", fPath, reqURL.RawQuery)
+	rawQuery := reqURL.RawQuery
+	var requestURI string
+	if len(rawQuery) == 0 {
+		requestURI = fPath
+	} else {
+		requestURI = fmt.Sprintf("%s?%s", fPath, rawQuery)
+	}
 	newRequest, err := e.newForwardRequest(requestURI)
 	if err != nil {
 		return err
