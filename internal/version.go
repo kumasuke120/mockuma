@@ -4,10 +4,9 @@ import "fmt"
 
 const (
 	AppName       = "MocKuma"
-	VersionNumber = "1.1.6"
+	VersionNumber = "1.1.7"
 	author        = "kumasuke120<bearcomingx@gmail.com>"
 	github        = "https://github.com/kumasuke120/mockuma"
-	gitee         = "https://gitee.com/kumasuke/mockuma"
 )
 
 func PrintVersion() {
@@ -19,5 +18,4 @@ func PrintVersion() {
 	fmt.Printf("Version\t: %s\n", VersionNumber)
 	fmt.Printf("Author\t: %s\n", author)
 	fmt.Printf("GitHub\t: %s\n", github)
-	fmt.Printf("Gitee\t: %s\n", gitee)
 }
