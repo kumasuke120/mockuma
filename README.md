@@ -9,6 +9,13 @@ Front/back end developers may use this tool to mock RESTful APIs, helping develo
 Tester may also use this tool with its command-like mapping configuration, writing mock APIs to match the parameters
 and testing it.
 
+### Features
+- maps responses based on requests's parameters/headers
+- reloads automatically mappings when changed
+- renders multiple mappings with user-defined templates and variables 
+- supports references static files
+- supports redirects and forwards
+
 
 ## Installation
 Executes the following command to install in your environment:
@@ -33,7 +40,7 @@ release version if you don't own the Go development environment or if you wanna 
       {
         "when": { "params": { "lang": "cn" } },
         "returns": {
-          "headers": { "Content-Type": "text/plain; charset=utf8" },
+          "headers": { "Content-Type": "text/plain; charset=utf-8" },
           "body": "你好，世界！"
         }
       },

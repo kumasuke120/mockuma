@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -40,6 +41,28 @@ func TestMockHandler_ServeHTTP(t *testing.T) {
 	handler.ServeHTTP(rr5, req5)
 	assert.Equal(http.StatusOK, rr5.Code)
 	assert.Equal("TEST/v1", rr5.Header().Get("Server"))
+
+	req6 := httptest.NewRequest("GET", "/m?p1=v1&p2=v1&p2=v2", nil)
+	rr6 := httptest.NewRecorder()
+	handler.ServeHTTP(rr6, req6)
+	assert.Equal(http.StatusBadGateway, rr6.Code)
+}
+
+func TestMockHandler_handleExecuteError(t *testing.T) {
+	//noinspection GoImportUsedAsName
+	assert := assert.New(t)
+
+	handler := newMockHandler(mappings)
+
+	req1 := httptest.NewRequest("GET", "/", nil)
+	rr1 := httptest.NewRecorder()
+	handler.handleExecuteError(rr1, req1, &forwardError{err: errors.New("test")})
+	assert.Equal(http.StatusBadGateway, rr1.Code)
+
+	req2 := httptest.NewRequest("GET", "/", nil)
+	rr2 := httptest.NewRecorder()
+	handler.handleExecuteError(rr2, req2, errors.New("test"))
+	assert.Equal(http.StatusInternalServerError, rr2.Code)
 }
 
 func TestMockHandler_listAllMappings(t *testing.T) {

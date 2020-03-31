@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -382,26 +383,80 @@ func (p *mappingsParser) parsePolicy(v myjson.Object) (*Policy, error) {
 		policy.When = when
 	}
 
-	p.jsonPath.SetLast(mapPolicyReturns)
-	var returns *Returns
-	if v.Has(mapPolicyReturns) {
-		rawReturns, err := v.GetObject(mapPolicyReturns)
-		if err != nil {
-			return nil, newParserError(p.filename, p.jsonPath)
+	cntCommands := p.countCommands(v, mapPolicyCommands...)
+	if cntCommands == 0 {
+		policy.Returns = &Returns{
+			StatusCode: myhttp.StatusOk,
 		}
-		returns, err = p.parseReturns(rawReturns)
+		policy.CmdType = CmdTypeReturns
+	} else if cntCommands == 1 {
+		err := p.parseCommand(policy, v)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		returns = &Returns{
-			StatusCode: myhttp.StatusOk,
+		return nil, &parserError{
+			filename: p.filename,
+			jsonPath: p.jsonPath,
+			err: errors.New(fmt.Sprintf("commands%v can only be used one at a time",
+				mapPolicyCommands)),
 		}
 	}
-	policy.Returns = returns
 
 	p.jsonPath.RemoveLast()
 	return policy, nil
+}
+
+func (p *mappingsParser) parseCommand(dst *Policy, v myjson.Object) error {
+	if v.Has(mapPolicyReturns) {
+		p.jsonPath.SetLast(mapPolicyReturns)
+		rawReturns, err := v.GetObject(mapPolicyReturns)
+		if err != nil {
+			return newParserError(p.filename, p.jsonPath)
+		}
+		returns, err := p.parseReturns(rawReturns)
+		if err != nil {
+			return err
+		}
+		dst.Returns = returns
+		dst.CmdType = CmdTypeReturns
+	} else if v.Has(mapPolicyRedirects) {
+		p.jsonPath.SetLast(mapPolicyRedirects)
+		rawRedirects, err := v.GetObject(mapPolicyRedirects)
+		if err != nil {
+			return newParserError(p.filename, p.jsonPath)
+		}
+		redirects, err := p.parseRedirects(rawRedirects)
+		if err != nil {
+			return err
+		}
+		dst.Returns = redirects
+		dst.CmdType = CmdTypeRedirects
+	} else {
+		p.jsonPath.SetLast(mapPolicyForwards)
+		rawForwards, err := v.GetObject(mapPolicyForwards)
+		if err != nil {
+			return newParserError(p.filename, p.jsonPath)
+		}
+		forwards, err := p.parseForwards(rawForwards)
+		if err != nil {
+			return err
+		}
+		dst.Forwards = forwards
+		dst.CmdType = CmdTypeForwards
+	}
+
+	return nil
+}
+
+func (p *mappingsParser) countCommands(v myjson.Object, names ...string) int {
+	cnt := 0
+	for _, name := range names {
+		if v.Has(name) {
+			cnt++
+		}
+	}
+	return cnt
 }
 
 func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
@@ -555,6 +610,65 @@ func (p *mappingsParser) parseReturnsBody(v interface{}) ([]byte, error) {
 	return nil, newParserError(p.filename, p.jsonPath)
 }
 
+func (p *mappingsParser) parseRedirects(v myjson.Object) (*Returns, error) {
+	p.jsonPath.Append("")
+
+	returns := &Returns{StatusCode: myhttp.StatusFound}
+
+	p.jsonPath.SetLast(pPath)
+	path, err := v.GetString(pPath)
+	if err != nil || len(string(path)) == 0 {
+		return nil, newParserError(p.filename, p.jsonPath)
+	}
+	returns.Headers = []*NameValuesPair{
+		{
+			Name:   myhttp.HeaderLocation,
+			Values: []string{string(path)},
+		},
+	}
+
+	p.jsonPath.SetLast(pLatency)
+	if v.Has(pLatency) {
+		rawLatency := v.Get(pLatency)
+		latency, err := p.parseLatency(rawLatency)
+		if err != nil {
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
+		returns.Latency = latency
+	}
+
+	p.jsonPath.RemoveLast()
+	return returns, nil
+}
+
+var validForwardPathRegexp = regexp.MustCompile("^(?:https?://)?.+$")
+
+func (p *mappingsParser) parseForwards(v myjson.Object) (*Forwards, error) {
+	p.jsonPath.Append("")
+
+	forwards := new(Forwards)
+
+	p.jsonPath.SetLast(pPath)
+	path, err := v.GetString(pPath)
+	if err != nil || !validForwardPathRegexp.MatchString(string(path)) {
+		return nil, newParserError(p.filename, p.jsonPath)
+	}
+	forwards.Path = string(path)
+
+	p.jsonPath.SetLast(pLatency)
+	if v.Has(pLatency) {
+		rawLatency := v.Get(pLatency)
+		latency, err := p.parseLatency(rawLatency)
+		if err != nil {
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
+		forwards.Latency = latency
+	}
+
+	p.jsonPath.RemoveLast()
+	return forwards, nil
+}
+
 func (p *mappingsParser) parseJSONToBytes(v interface{}) ([]byte, error) {
 	bytes, err := myjson.Marshal(v)
 	if err != nil {
@@ -600,42 +714,86 @@ func (p *mappingsParser) renamePathVars(mapping *Mapping) {
 	newURI, var2Idx := numberPathVars(mapping.URI)
 	mapping.URI = newURI
 
-	for _, p := range mapping.Policies {
-		when := p.When
+	for _, pol := range mapping.Policies {
+		when := pol.When
 		if when != nil {
 			l := len(when.PathVars)
 			if l != 0 {
-				newPVars := make([]*NameValuesPair, l)
-				for i, v := range when.PathVars {
-					if idx, ok := var2Idx[v.Name]; ok {
-						newPVars[i] = &NameValuesPair{
-							Name:   strconv.Itoa(idx),
-							Values: v.Values,
-						}
-					} else {
-						newPVars[i] = v
-					}
-				}
+				newPVars := p.numberForPathVars(l, when, var2Idx)
+				p.sortPathVars(newPVars)
 				when.PathVars = newPVars
 			}
 
 			l = len(when.PathVarRegexps)
 			if l != 0 {
-				newPVarRegexps := make([]*NameRegexpPair, len(when.PathVarRegexps))
-				for i, v := range when.PathVarRegexps {
-					if idx, ok := var2Idx[v.Name]; ok {
-						newPVarRegexps[i] = &NameRegexpPair{
-							Name:   strconv.Itoa(idx),
-							Regexp: v.Regexp,
-						}
-					} else {
-						newPVarRegexps[i] = v
-					}
-				}
+				newPVarRegexps := p.numberForPathVarRegexps(when, var2Idx)
+				p.sortPathVarRegexps(newPVarRegexps)
 				when.PathVarRegexps = newPVarRegexps
 			}
 		}
 	}
+}
+
+func (p *mappingsParser) numberForPathVars(l int, when *When, var2Idx map[string]int) []*NameValuesPair {
+	newPVars := make([]*NameValuesPair, l)
+	for i, v := range when.PathVars {
+		if idx, ok := var2Idx[v.Name]; ok {
+			newPVars[i] = &NameValuesPair{
+				Name:   strconv.Itoa(idx),
+				Values: v.Values,
+			}
+		} else {
+			newPVars[i] = v
+		}
+	}
+	return newPVars
+}
+
+func (p *mappingsParser) numberForPathVarRegexps(when *When, var2Idx map[string]int) []*NameRegexpPair {
+	newPVarRegexps := make([]*NameRegexpPair, len(when.PathVarRegexps))
+	for i, v := range when.PathVarRegexps {
+		if idx, ok := var2Idx[v.Name]; ok {
+			newPVarRegexps[i] = &NameRegexpPair{
+				Name:   strconv.Itoa(idx),
+				Regexp: v.Regexp,
+			}
+		} else {
+			newPVarRegexps[i] = v
+		}
+	}
+	return newPVarRegexps
+}
+
+func (p *mappingsParser) sortPathVars(newPVars []*NameValuesPair) {
+	sort.Slice(newPVars, func(i, j int) bool {
+		var err error
+		var a, b int
+		a, err = strconv.Atoi(newPVars[i].Name)
+		if err != nil {
+			a = 0
+		}
+		b, err = strconv.Atoi(newPVars[j].Name)
+		if err != nil {
+			b = 0
+		}
+		return a < b
+	})
+}
+
+func (p *mappingsParser) sortPathVarRegexps(newPVars []*NameRegexpPair) {
+	sort.Slice(newPVars, func(i, j int) bool {
+		var err error
+		var a, b int
+		a, err = strconv.Atoi(newPVars[i].Name)
+		if err != nil {
+			a = 0
+		}
+		b, err = strconv.Atoi(newPVars[j].Name)
+		if err != nil {
+			b = 0
+		}
+		return a < b
+	})
 }
 
 type templateParser struct {

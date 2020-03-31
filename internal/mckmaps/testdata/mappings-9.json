@@ -1,0 +1,27 @@
+{
+  "@type": "mappings",
+  "mappings": {
+    "uri": "/test-for-forwards",
+    "policies": [
+      {
+        "when": {
+          "params": {
+            "no-latency": true
+          }
+        },
+        "forwards": {
+          "path": "/"
+        }
+      },
+      {
+        "forwards": {
+          "path": "/",
+          "latency": [
+            1000,
+            2000
+          ]
+        }
+      }
+    ]
+  }
+}

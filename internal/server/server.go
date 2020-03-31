@@ -40,10 +40,10 @@ func (s *MockServer) ListenAndServe(mappings *mckmaps.MockuMappings) {
 	go func() {
 		defer wg.Done()
 
-		log.Println("[server] listening on " + strconv.Itoa(s.port) + "...")
+		log.Println("[server  ] listening on " + strconv.Itoa(s.port) + "...")
 		if err := server.ListenAndServe(); err != nil {
 			if err != http.ErrServerClosed {
-				log.Fatalln("[server] fail to start:", err)
+				log.Fatalln("[server  ] fail to start:", err)
 			}
 		}
 	}()
@@ -58,7 +58,7 @@ func (s *MockServer) SetMappings(mappings *mckmaps.MockuMappings) {
 	}
 
 	if ok := s.shutdown(); ok {
-		log.Println("[server] restarting with the new mockuMappings...")
+		log.Println("[server  ] restarting with the new mockuMappings...")
 		go s.ListenAndServe(mappings)
 	}
 }
@@ -69,7 +69,7 @@ func (s *MockServer) shutdown() bool {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err := server.Shutdown(ctx); err != nil {
-			log.Fatalln("[server] cannot shutdown server to restart with new mappings:", err)
+			log.Fatalln("[server  ] cannot shutdown server to restart with new mappings:", err)
 		}
 
 		return true

@@ -1,6 +1,7 @@
 package mckmaps
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -12,6 +13,25 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestError(t *testing.T) {
+	//noinspection GoImportUsedAsName
+	assert := assert.New(t)
+
+	err0 := &loadError{filename: "test.json"}
+	assert.NotNil(err0)
+	assert.Contains(err0.Error(), "test.json")
+
+	err1 := &parserError{
+		jsonPath: myjson.NewPath("testPath"),
+		filename: "test.json",
+		err:      errors.New("test_error"),
+	}
+	assert.NotNil(err1)
+	assert.Contains(err1.Error(), "$.testPath")
+	assert.Contains(err1.Error(), "test.json")
+	assert.Contains(err1.Error(), "test_error")
+}
 
 func TestNewParser(t *testing.T) {
 	p1 := NewParser("123")
@@ -36,6 +56,7 @@ func TestParser_Parse(t *testing.T) {
 			Method: myhttp.HTTPMethod("RESET"),
 			Policies: []*Policy{
 				{
+					CmdType: mapPolicyReturns,
 					Returns: &Returns{
 						StatusCode: myhttp.StatusOk,
 						Body:       []byte("m1"),
@@ -56,6 +77,7 @@ func TestParser_Parse(t *testing.T) {
 							},
 						},
 					},
+					CmdType: mapPolicyReturns,
 					Returns: &Returns{
 						StatusCode: myhttp.StatusOk,
 						Body:       []byte("m2:1"),
@@ -70,6 +92,7 @@ func TestParser_Parse(t *testing.T) {
 							},
 						},
 					},
+					CmdType: mapPolicyReturns,
 					Returns: &Returns{
 						StatusCode: myhttp.StatusOk,
 						Body:       []byte("m2:2"),
@@ -84,6 +107,7 @@ func TestParser_Parse(t *testing.T) {
 							},
 						},
 					},
+					CmdType: mapPolicyReturns,
 					Returns: &Returns{
 						StatusCode: myhttp.StatusOk,
 						Body:       []byte("m2:3"),
@@ -147,12 +171,13 @@ func TestMappingsParser_parse(t *testing.T) {
 					Method: myhttp.MethodAny,
 					Policies: []*Policy{
 						{
+							CmdType: mapPolicyReturns,
 							Returns: &Returns{
 								StatusCode: myhttp.StatusOk,
 								Headers: []*NameValuesPair{
 									{
 										Name:   myhttp.HeaderContentType,
-										Values: []string{"application/json; charset=utf8"},
+										Values: []string{"application/json; charset=utf-8"},
 									},
 								},
 								Body: []byte("abc123"),
@@ -225,12 +250,13 @@ func TestMappingsParser_parse(t *testing.T) {
 								},
 								Body: []byte("123"),
 							},
+							CmdType: mapPolicyReturns,
 							Returns: &Returns{
 								StatusCode: myhttp.StatusCode(201),
 								Headers: []*NameValuesPair{
 									{
 										Name:   myhttp.HeaderContentType,
-										Values: []string{"application/json; charset=utf8"},
+										Values: []string{"application/json; charset=utf-8"},
 									},
 								},
 								Body: []byte(`{"v":"v"}`),
@@ -241,6 +267,7 @@ func TestMappingsParser_parse(t *testing.T) {
 							},
 						},
 						{
+							CmdType: mapPolicyReturns,
 							Returns: &Returns{
 								StatusCode: myhttp.StatusOk,
 								Body:       []byte(""),
@@ -293,6 +320,7 @@ func TestMappingsParser_parse(t *testing.T) {
 							When: &When{
 								BodyRegexp: regexp.MustCompile("^.+$"),
 							},
+							CmdType: mapPolicyReturns,
 							Returns: &Returns{StatusCode: myhttp.StatusOk},
 						},
 						{
@@ -301,6 +329,7 @@ func TestMappingsParser_parse(t *testing.T) {
 									"v": myjson.String("v"),
 								}),
 							},
+							CmdType: mapPolicyReturns,
 							Returns: &Returns{StatusCode: myhttp.StatusOk},
 						},
 					},
@@ -319,7 +348,7 @@ func TestMappingsParser_parse(t *testing.T) {
 		if assert.Nil(e6) {
 			expected6 := []*Mapping{
 				{
-					URI:    "/{0}/{1}",
+					URI:    "/{0}/{1}/{2}",
 					Method: myhttp.MethodAny,
 					Policies: []*Policy{
 						{
@@ -334,15 +363,148 @@ func TestMappingsParser_parse(t *testing.T) {
 									{
 										Name:   "1",
 										Regexp: regexp.MustCompile("\\d+"),
+									}, {
+										Name:   "2",
+										Regexp: regexp.MustCompile("\\w+"),
 									},
 								},
 							},
+							CmdType: mapPolicyReturns,
+							Returns: &Returns{StatusCode: myhttp.StatusOk},
+						},
+					},
+				},
+				{
+					URI:    "/{0}/{1}/{0}",
+					Method: myhttp.MethodAny,
+					Policies: []*Policy{
+						{
+							When: &When{
+								PathVars: []*NameValuesPair{
+									{
+										Name:   "0",
+										Values: []string{"1"},
+									},
+									{
+										Name:   "1",
+										Values: []string{"2"},
+									},
+								},
+							},
+							CmdType: mapPolicyReturns,
 							Returns: &Returns{StatusCode: myhttp.StatusOk},
 						},
 					},
 				},
 			}
 			assert.Equal(expected6, p6)
+		}
+	}
+
+	fb7, e7 := ioutil.ReadFile(filepath.Join("testdata", "mappings-7.json"))
+	require.Nil(e7)
+	j7, e7 := myjson.Unmarshal(fb7)
+	if assert.Nil(e7) {
+		m7 := &mappingsParser{json: j7}
+		p7, e7 := m7.parse()
+		if assert.Nil(e7) {
+			expected7 := []*Mapping{
+				{
+					URI:    "/test-for-redirects",
+					Method: myhttp.MethodAny,
+					Policies: []*Policy{
+						{
+							When: &When{
+								Params: []*NameValuesPair{
+									{
+										Name:   "no-latency",
+										Values: []string{"true"},
+									},
+								},
+							},
+							CmdType: mapPolicyRedirects,
+							Returns: &Returns{
+								StatusCode: myhttp.StatusFound,
+								Headers: []*NameValuesPair{
+									{
+										Name:   myhttp.HeaderLocation,
+										Values: []string{"/"},
+									},
+								},
+							},
+						},
+						{
+							CmdType: mapPolicyRedirects,
+							Returns: &Returns{
+								StatusCode: myhttp.StatusFound,
+								Headers: []*NameValuesPair{
+									{
+										Name:   myhttp.HeaderLocation,
+										Values: []string{"/"},
+									},
+								},
+								Latency: &Interval{
+									Min: 1000,
+									Max: 1000,
+								},
+							},
+						},
+					},
+				},
+			}
+			assert.Equal(expected7, p7)
+		}
+	}
+
+	fb8, e8 := ioutil.ReadFile(filepath.Join("testdata", "mappings-8.json"))
+	require.Nil(e8)
+	j8, e8 := myjson.Unmarshal(fb8)
+	if assert.Nil(e7) {
+		m8 := &mappingsParser{json: j8}
+		_, e8 := m8.parse()
+		assert.NotNil(e8)
+	}
+
+	fb9, e9 := ioutil.ReadFile(filepath.Join("testdata", "mappings-9.json"))
+	require.Nil(e9)
+	j9, e9 := myjson.Unmarshal(fb9)
+	if assert.Nil(e9) {
+		m9 := &mappingsParser{json: j9}
+		p9, e9 := m9.parse()
+		if assert.Nil(e9) {
+			expected9 := []*Mapping{
+				{
+					URI:    "/test-for-forwards",
+					Method: myhttp.MethodAny,
+					Policies: []*Policy{
+						{
+							When: &When{
+								Params: []*NameValuesPair{
+									{
+										Name:   "no-latency",
+										Values: []string{"true"},
+									},
+								},
+							},
+							CmdType: mapPolicyForwards,
+							Forwards: &Forwards{
+								Path: "/",
+							},
+						},
+						{
+							CmdType: mapPolicyForwards,
+							Forwards: &Forwards{
+								Path: "/",
+								Latency: &Interval{
+									Min: 1000,
+									Max: 2000,
+								},
+							},
+						},
+					},
+				},
+			}
+			assert.Equal(expected9, p9)
 		}
 	}
 }

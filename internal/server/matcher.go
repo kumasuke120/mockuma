@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
 	"regexp"
 
 	"github.com/kumasuke120/mockuma/internal/mckmaps"
@@ -23,7 +22,7 @@ func newPathMatcher(mappings *mckmaps.MockuMappings) *pathMatcher {
 	directPath := make(map[string][]*mckmaps.Mapping)
 	patternPath := make(map[*regexp.Regexp][]*mckmaps.Mapping)
 	for _, m := range mappings.Mappings {
-		if theURI := pathVarRegexp.ReplaceAllString(m.URI, "(?P<v$1>.+?)"); theURI == m.URI {
+		if theURI := pathVarRegexp.ReplaceAllString(m.URI, "(?P<v$1>.*?)"); theURI == m.URI {
 			mappingsOfURI := directPath[theURI]
 			mappingsOfURI = append(mappingsOfURI, m)
 			directPath[theURI] = mappingsOfURI
@@ -57,7 +56,7 @@ type boundMatcher struct {
 }
 
 func (bm *boundMatcher) matches() bool {
-	bm.uri = getURIWithoutQuery(bm.r.URL)
+	bm.uri = bm.r.URL.Path
 
 	// matching for direct path
 	if mappingsOfURI, ok := bm.m.directPath[bm.uri]; ok {
@@ -98,19 +97,10 @@ func (bm *boundMatcher) isMethodNotAllowed() bool {
 	return bm.is405
 }
 
-func getURIWithoutQuery(url0 *url.URL) string {
-	url1 := &url.URL{}
-	*url1 = *url0
-
-	url1.RawQuery = ""
-	url1.ForceQuery = false
-	return url1.Path
-}
-
 func (bm *boundMatcher) matchPolicy() *mckmaps.Policy {
 	err := bm.r.ParseForm()
 	if err != nil {
-		log.Println("[server] fail to parse form:", err)
+		log.Println("[server  ] fail to parse form:", err)
 		return nil
 	}
 
@@ -200,6 +190,7 @@ func (bm *boundMatcher) bodyMatches(when *mckmaps.When) bool {
 	body := bm.bodyCache
 	if body == nil {
 		_body, err := ioutil.ReadAll(bm.r.Body)
+		bm.r.Body = ioutil.NopCloser(bytes.NewReader(_body))
 		if err == nil {
 			bm.bodyCache = _body
 			body = _body

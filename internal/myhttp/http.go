@@ -23,10 +23,16 @@ const (
 type StatusCode int
 
 const (
-	StatusOk               = StatusCode(http.StatusOK)
+	StatusOk = StatusCode(http.StatusOK)
+
+	StatusFound = StatusCode(http.StatusFound)
+
 	StatusBadRequest       = StatusCode(http.StatusBadRequest)
 	StatusMethodNotAllowed = StatusCode(http.StatusMethodNotAllowed)
 	StatusNotFound         = StatusCode(http.StatusNotFound)
+
+	StatusInternalServerError = StatusCode(http.StatusInternalServerError)
+	StatusBadGateway          = StatusCode(http.StatusBadGateway)
 )
 
 func ToHTTPMethod(method string) HTTPMethod {

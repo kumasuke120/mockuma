@@ -37,6 +37,10 @@ var mappings = &mckmaps.MockuMappings{
 							},
 						},
 					},
+					CmdType: mckmaps.CmdTypeForwards,
+					Forwards: &mckmaps.Forwards{
+						Path: "http://localhost:8080",
+					},
 				},
 				{
 					When: &mckmaps.When{
@@ -46,6 +50,11 @@ var mappings = &mckmaps.MockuMappings{
 								Regexp: regexp.MustCompile("^\\d{3}$"),
 							},
 						},
+					},
+					CmdType: mckmaps.CmdTypeReturns,
+					Returns: &mckmaps.Returns{
+						StatusCode: myhttp.StatusOk,
+						Body:       []byte(""),
 					},
 				},
 				{
@@ -107,6 +116,7 @@ var mappings = &mckmaps.MockuMappings{
 					When: &mckmaps.When{
 						BodyRegexp: regexp.MustCompile("^\\d{3}$"),
 					},
+					CmdType: mckmaps.CmdTypeReturns,
 					Returns: &mckmaps.Returns{
 						StatusCode: myhttp.StatusOk,
 						Headers: []*mckmaps.NameValuesPair{
@@ -165,7 +175,7 @@ func TestNewPathMatcher(t *testing.T) {
 	}
 	assert.Equal(t, expectedDirectPath, matcher.directPath)
 	expectedPatternPath := map[*regexp.Regexp][]*mckmaps.Mapping{
-		regexp.MustCompile("^/p/(?P<v0>.+?)/m(?P<v1>.+?)$"): {
+		regexp.MustCompile("^/p/(?P<v0>.*?)/m(?P<v1>.*?)$"): {
 			mappings.Mappings[3],
 		},
 	}

@@ -11,7 +11,7 @@
       "policies": {
         "returns": {
           "headers": {
-            "Content-Type": "text/html; charset=utf8"
+            "Content-Type": "text/html; charset=utf-8"
           },
           "body": {
             "@file": "login/login.html"

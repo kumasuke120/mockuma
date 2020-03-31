@@ -9,7 +9,8 @@
       "whoami/whoami.mappings.json",
       "hello/hello.mappings.json",
       "login/*.mappings.json",
-      "books/*.mappings.json"
+      "books/*.mappings.json",
+      "repo/*.mappings.json"
     ]
   }
 }

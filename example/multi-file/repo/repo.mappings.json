@@ -1,0 +1,72 @@
+{
+  "@type": "mappings",
+  "mappings": [
+    {
+      "uri": "/kumasuke120/mockuma",
+      "policies": {
+        "forwards": {
+          "path": "/kumasuke120/mockuma/"
+        }
+      }
+    },
+    {
+      "uri": "/manifest.json",
+      "policies": {
+        "forwards": {
+          "path": "https://github.com/manifest.json"
+        }
+      }
+    },
+    {
+      "uri": "/kumasuke120/mockuma/{path}",
+      "method": "GET",
+      "policies": {
+        "@template": "repo/repo-policy.template.json",
+        "vars": [
+          {
+            "path": ""
+          },
+          {
+            "path": "commits/master"
+          },
+          {
+            "path": "branches"
+          },
+          {
+            "path": "releases"
+          },
+          {
+            "path": "refs/master"
+          },
+          {
+            "path": "refs/master/example"
+          },
+          {
+            "path": "blob/master/LICENSE"
+          },
+          {
+            "path": "contributors/master/LICENSE"
+          },
+          {
+            "path": "blob/master/example"
+          },
+          {
+            "path": "file-list/master"
+          },
+          {
+            "path": "file-list/master/example"
+          },
+          {
+            "path": "contributors_size"
+          },
+          {
+            "path": "graphs/contributors"
+          },
+          {
+            "path": "graphs/contributors-data"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -36,7 +36,7 @@ func main() {
 
 		s := server.NewMockServer(*port)
 		if err := ld.EnableAutoReload(s.SetMappings); err != nil {
-			log.Fatalln("[main] fail to enable automatic reloading:", err)
+			log.Fatalln("[main    ] fail to enable automatic reloading:", err)
 		}
 		go s.ListenAndServe(mappings)
 
@@ -47,10 +47,10 @@ func main() {
 func loadMappings(ld *loader.Loader) *mckmaps.MockuMappings {
 	mappings, err := ld.Load()
 	if err != nil {
-		log.Fatalln("[main] cannot load mockuMappings:", err)
+		log.Fatalln("[main    ] cannot load mockuMappings:", err)
 	}
 	if mappings.IsEmpty() {
-		log.Fatalln("[main] the given mockuMappings is empty")
+		log.Fatalln("[main    ] the given mockuMappings is empty")
 	}
 	return mappings
 }

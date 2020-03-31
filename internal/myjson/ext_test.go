@@ -7,6 +7,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewExtJSONMatcher(t *testing.T) {
+	jm := NewExtJSONMatcher(Object{
+		"v": String("v"),
+	})
+	assert.NotNil(t, jm)
+	assert.Equal(t, jm.v, Object{
+		"v": String("v"),
+	})
+}
+
+func TestExtJSONMatcher_Unwrap(t *testing.T) {
+	jm := NewExtJSONMatcher(Object{
+		"v": String("v"),
+	})
+	assert.NotNil(t, jm)
+	assert.Equal(t, jm.v, jm.Unwrap())
+}
+
 func TestExtJSONMatcher_Matches(t *testing.T) {
 	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
