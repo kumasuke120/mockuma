@@ -40,8 +40,8 @@ func (p *varsJSONParser) parse() ([]*vars, error) {
 	}
 
 	p.jsonPath = myjson.NewPath("")
-	p.jsonPath.SetLast(dType)
-	_type, err := p.json.GetString(dType)
+	p.jsonPath.SetLast(aType)
+	_type, err := p.json.GetString(aType)
 	if err != nil || string(_type) != tVars {
 		return nil, newParserError(p.filename, p.jsonPath)
 	}

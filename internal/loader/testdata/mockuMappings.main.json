@@ -1,6 +1,6 @@
 {
-  "@type": "main",
-  "@include": {
+  "type": "main",
+  "include": {
     "mappings": [
       "mappings-1.json"
     ]

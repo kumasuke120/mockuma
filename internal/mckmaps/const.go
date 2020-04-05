@@ -1,5 +1,6 @@
 package mckmaps
 
+// types
 const (
 	tMain     = "main"
 	tMappings = "mappings"
@@ -7,9 +8,8 @@ const (
 	tVars     = "vars"
 )
 
+// directives
 const (
-	dType     = "@type"
-	dInclude  = "@include"
 	dFile     = "@file"
 	dComment  = "@comment"
 	dTemplate = "@template"
@@ -18,18 +18,27 @@ const (
 	dJSON     = "@json"
 )
 
+// attributes
 const (
-	mapURI             = "uri"
-	mapMethod          = "method"
-	mapPolicies        = "policies"
+	aType    = "type"
+	aInclude = "include"
+
+	aMapURI      = "uri"
+	aMapMethod   = "method"
+	aMapPolicies = "policies"
+)
+
+const (
 	mapPolicyWhen      = "when"
 	mapPolicyReturns   = "returns"
 	mapPolicyForwards  = "forwards"
 	mapPolicyRedirects = "redirects"
 )
 
+// commands of mappings policies
 var mapPolicyCommands = []string{mapPolicyReturns, mapPolicyForwards, mapPolicyRedirects}
 
+// attributes for mappings policies
 const (
 	pStatusCode = "statusCode"
 	pHeaders    = "headers"
