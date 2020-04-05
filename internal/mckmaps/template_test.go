@@ -15,12 +15,12 @@ func TestTemplateParser_parse(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	fp0 := filepath.Join("testdata", "template-0.json")
+	fp0 := filepath.Join("testdata", "template", "template-0.json")
 	t0 := &templateParser{Parser: Parser{filename: fp0}}
 	_, e0 := t0.parse()
 	assert.NotNil(e0)
 
-	fp1 := filepath.Join("testdata", "template-1.json")
+	fp1 := filepath.Join("testdata", "template", "template-1.json")
 	t1 := &templateParser{Parser: Parser{filename: fp1}}
 	p1, e1 := t1.parse()
 	if assert.Nil(e1) {
@@ -34,7 +34,7 @@ func TestTemplateParser_parse(t *testing.T) {
 		assert.Equal(expected1, p1)
 	}
 
-	fp2 := filepath.Join("testdata", "template-2.json")
+	fp2 := filepath.Join("testdata", "template", "template-2.json")
 	t2 := &templateParser{Parser: Parser{filename: fp2}}
 	p2, e2 := t2.parse()
 	if assert.Nil(e2) {
@@ -54,7 +54,7 @@ func TestTemplateParser_parse(t *testing.T) {
 
 	require.Nil(myos.InitWd())
 	oldWd := myos.GetWd()
-	require.Nil(myos.Chdir(filepath.Join(oldWd, "testdata")))
+	require.Nil(myos.Chdir(filepath.Join(oldWd, "testdata", "template")))
 
 	fp3 := "template-3.json"
 	t3 := &templateParser{Parser: Parser{filename: fp3}}

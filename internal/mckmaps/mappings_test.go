@@ -48,7 +48,7 @@ func TestMappingsParser_parse(t *testing.T) {
 										Values: []string{"application/json; charset=utf-8"},
 									},
 								},
-								Body: []byte("abc123"),
+								Body: []byte(`["a","b","c"]`),
 								Latency: &Interval{
 									Min: 100,
 									Max: 3000,
