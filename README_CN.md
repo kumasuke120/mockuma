@@ -62,7 +62,7 @@ $ mockuma
 虽然 MocKuma 可以直接执行，但是它也提供了一些命令行参数供配置使用，以下是所有支持的命令行参数：
 
 1. `-mapfile`: `MockuMappings` 映射配置文件路径，支持相对路径和绝对路径。
-默认情况下，将会依次寻找当前目录下名为 `mockuMappings.json`，`mockuMappings.main.json` 的配置文件并读取加载。
+默认情况下，将会依次寻找当前目录下名为 `mockuMappings.json`、`mockuMappings.main.json`、`main.json` 的配置文件并读取加载。
 特别的，MocKuma 的工作目录将会被设为该配置文件所在目录；
 2. `-p`: MocKuma 监听端口号，默认值为 `3214`；
 3. `--version`: 查看当前 MocKuma 的版本信息。

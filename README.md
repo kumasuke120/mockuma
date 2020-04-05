@@ -65,8 +65,8 @@ $ mockuma
 Although you could run MocKuma directly like the example above, MocKuma provides a series of command line arguments:
 
 1. `-mapfile=<filename>`: the path to the MockuMappings mapping configuration file, supports both relative and absolute path. 
-Under the default circumstance, MocKuma will find a configuration file called `mockuMappings.json` or `mockuMappings.main.json` 
-in the current working directory, reading and loading the file.
+Under the default circumstance, MocKuma will find a configuration file called `mockuMappings.json`, 
+`mockuMappings.main.json` or `main.json` in the current working directory, reading and loading the file.
 Specifically, the working directory of MocKuma will be set to the directory in which the mapfile resides if you specify it manually;
 2. `-p=<port_number>`: the port number on which the MocKuma listens, the default value is 3214;
 3. `--version`: views the version information of MocKuma.
