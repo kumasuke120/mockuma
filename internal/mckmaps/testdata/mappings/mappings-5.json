@@ -27,6 +27,9 @@
       {
         "when": {
           "body": true
+        },
+        "returns": {
+          "body": null
         }
       }
     ]

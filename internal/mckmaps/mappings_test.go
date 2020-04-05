@@ -257,7 +257,7 @@ func TestMappingsParser_parse(t *testing.T) {
 					},
 				},
 				{
-					URI:    "/{0}/{1}/{0}",
+					URI:    "/{0}/{1}/{0}/{2}",
 					Method: myhttp.MethodAny,
 					Policies: []*Policy{
 						{
@@ -270,6 +270,9 @@ func TestMappingsParser_parse(t *testing.T) {
 									{
 										Name:   "1",
 										Values: []string{"2"},
+									}, {
+										Name:   "2",
+										Values: []string{""},
 									},
 								},
 							},
