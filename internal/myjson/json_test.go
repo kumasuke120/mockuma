@@ -78,5 +78,4 @@ func TestArray_Set(t *testing.T) {
 func TestNumber_String(t *testing.T) {
 	assert.Equal(t, "1000000000", Number(1000000000).String())
 	assert.Equal(t, "10.123456", Number(10.123456).String())
-	assert.Equal(t, "10.12", Number(10.12).String())
 }

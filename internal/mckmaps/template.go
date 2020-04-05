@@ -2,300 +2,213 @@ package mckmaps
 
 import (
 	"errors"
-	"fmt"
-	"regexp"
-	"strings"
+	"path/filepath"
 
 	"github.com/kumasuke120/mockuma/internal/myjson"
-	"github.com/kumasuke120/mockuma/internal/typeutil"
 )
 
-type renderError struct {
-	filename string
-	jsonPath *myjson.Path
-}
-
-func (e *renderError) Error() string {
-	result := ""
-	if e.jsonPath == nil {
-		result += "cannot render template"
-	} else {
-		result += fmt.Sprintf("cannot render the template on json-path \"%v\"", e.jsonPath)
-	}
-
-	if e.filename != "" {
-		result += fmt.Sprintf(" in the file '%s'", e.filename)
-	}
-
-	return result
-}
-
-type renderContext struct {
-	filename string
-}
-
 type template struct {
-	content interface{}
+	content  interface{}
+	filename string
 }
 
-type vars struct {
-	table map[string]interface{}
+type templateParser struct {
+	json     myjson.Object
+	jsonPath *myjson.Path
+	Parser
 }
 
-func (t *template) render(ctx *renderContext, varsSlice []*vars) (myjson.Array, error) {
-	if len(varsSlice) == 0 {
-		return myjson.Array{}, nil
-	}
-
-	result := make(myjson.Array, len(varsSlice))
-	for idx, _var := range varsSlice {
-		v, err := render(ctx, nil, t.content, _var)
+func (p *templateParser) parse() (*template, error) {
+	if p.json == nil {
+		json, err := p.load(true, ppRemoveComment)
 		if err != nil {
 			return nil, err
 		}
-		result[idx] = v
+
+		switch json.(type) {
+		case myjson.Object:
+			p.json = json.(myjson.Object)
+		default:
+			return nil, newParserError(p.filename, p.jsonPath)
+		}
 	}
-	return result, nil
+
+	p.jsonPath = myjson.NewPath("")
+	p.jsonPath.SetLast(dType)
+	_type, err := p.json.GetString(dType)
+	if err != nil || string(_type) != tTemplate {
+		return nil, newParserError(p.filename, p.jsonPath)
+	}
+
+	template := new(template)
+
+	p.jsonPath.SetLast(tTemplate)
+	v := p.json.Get(tTemplate)
+	switch v.(type) {
+	case myjson.Object:
+		template.content = v
+	case myjson.Array:
+		template.content = v
+	case myjson.String:
+		template.content = v
+	default:
+		return nil, newParserError(p.filename, p.jsonPath)
+	}
+	template.filename = p.filename
+
+	return template, nil
 }
 
-func render(ctx *renderContext, jsonPath *myjson.Path, v interface{}, varsSlice *vars) (interface{}, error) {
-	if jsonPath == nil {
-		jsonPath = myjson.NewPath()
-	}
+// renders @template directives with given vars
+type templateFilter struct {
+	templateCache  map[string]*template
+	varsSliceCache map[string][]*vars
+}
 
-	var result interface{}
+type fromTemplate struct {
+	rV myjson.Array
+}
+
+func (ft fromTemplate) forObject() interface{} {
+	if len(ft.rV) == 0 {
+		return nil
+	} else if len(ft.rV) == 1 {
+		return ft.rV[0]
+	} else {
+		return ft.rV
+	}
+}
+
+func (ft fromTemplate) forArray() []interface{} {
+	return ft.rV
+}
+
+func (f *templateFilter) doFilter(v interface{}, chain *filterChain) error {
+	rV, err := f.render(v)
+	if err != nil {
+		return err
+	}
+	return chain.doFilter(rV)
+}
+
+func (f *templateFilter) render(v interface{}) (interface{}, error) {
+	var rV interface{}
 	var err error
 	switch v.(type) {
 	case myjson.Object:
-		result, err = renderObject(ctx, jsonPath, v.(myjson.Object), varsSlice)
+		rV, err = f.renderObject(v.(myjson.Object))
 	case myjson.Array:
-		result, err = renderArray(ctx, jsonPath, v.(myjson.Array), varsSlice)
-	case myjson.String:
-		result, err = renderString(ctx, jsonPath, v.(myjson.String), varsSlice)
+		rV, err = f.renderArray(v.(myjson.Array))
 	default:
-		result, err = v, nil
+		rV, err = v, nil
 	}
-
-	return result, err
+	return rV, err
 }
 
-func renderObject(ctx *renderContext, jsonPath *myjson.Path,
-	v myjson.Object, vars *vars) (myjson.Object, error) {
-	jsonPath.Append("")
-
-	result := make(myjson.Object)
-	for name, value := range v {
-		jsonPath.SetLast(name)
-
-		rName, err := renderPlainString(ctx, jsonPath, name, vars)
+func (f *templateFilter) renderObject(v myjson.Object) (interface{}, error) {
+	if v.Has(dTemplate) { // if v is a @template directive
+		template, err := f.getTemplateFromDTemplate(v)
 		if err != nil {
 			return nil, err
 		}
-		rValue, err := render(ctx, jsonPath, value, vars)
+		varsSlice, err := f.getVarsFromDTemplate(v)
 		if err != nil {
 			return nil, err
 		}
-		result[rName] = rValue
-	}
 
-	jsonPath.RemoveLast()
-	return result, nil
-}
-
-func renderArray(ctx *renderContext, jsonPath *myjson.Path,
-	v myjson.Array, vars *vars) (myjson.Array, error) {
-	jsonPath.Append(0)
-
-	result := make(myjson.Array, len(v))
-	for idx, value := range v {
-		jsonPath.SetLast(idx)
-
-		rValue, err := render(ctx, jsonPath, value, vars)
+		rV, err := template.renderAll(varsSlice)
 		if err != nil {
 			return nil, err
 		}
-		result[idx] = rValue
-	}
-
-	jsonPath.RemoveLast()
-	return result, nil
-}
-
-// states for rendering string
-const (
-	rsReady = iota
-	rsMaybePlaceholder
-	rsInPlaceholder
-	rsMaybePlaceHolderFormat
-	rsInPlaceHolderFormat
-)
-
-// tokens for rendering string
-const (
-	placeholderPrefix          = '@'
-	placeholderLeft            = '{'
-	placeholderRight           = '}'
-	placeholderFormatSeparator = ':'
-)
-
-func renderPlainString(ctx *renderContext, jsonPath *myjson.Path,
-	v string, vars *vars) (string, error) {
-	r, err := renderString(ctx, jsonPath, myjson.String(v), vars)
-	if err != nil {
-		return "", err
+		return fromTemplate{rV: rV}, nil
 	} else {
-		switch r.(type) {
-		case myjson.String:
-			return string(r.(myjson.String)), nil
+		result := make(myjson.Object, len(v))
+		for name, value := range v {
+			rValue, err := f.render(value)
+			if err != nil {
+				return nil, err
+			}
+
+			switch rValue.(type) {
+			case fromTemplate:
+				rValue = rValue.(fromTemplate).forObject()
+			}
+
+			result[name] = rValue
+		}
+		return result, nil
+	}
+}
+
+func (f *templateFilter) renderArray(v myjson.Array) (myjson.Array, error) {
+	var result myjson.Array
+	for _, value := range v {
+		rValue, err := f.render(value)
+		if err != nil {
+			return nil, err
+		}
+
+		switch rValue.(type) {
+		case fromTemplate:
+			for _, _rValue := range rValue.(fromTemplate).forArray() {
+				result = append(result, _rValue)
+			}
 		default:
-			return typeutil.ToString(r), nil
+			result = append(result, rValue)
 		}
 	}
+	return result, nil
 }
 
-func renderString(ctx *renderContext, jsonPath *myjson.Path,
-	v myjson.String, vars *vars) (interface{}, error) {
-	s := rsReady
-
-	runes := []rune(v)
-
-	var fromBegin, toEnd bool
-
-	var builder strings.Builder
-	var nameBuilder strings.Builder
-	var formatBuilder strings.Builder
-
-	for i := 0; i < len(runes); i++ {
-		r := runes[i]
-		doWrite := true
-		doWriteName := false
-		doWriteFormat := false
-
-		switch s {
-		case rsReady:
-			if r == placeholderPrefix {
-				s = rsMaybePlaceholder
-				if i == 0 {
-					fromBegin = true
-				} else {
-					fromBegin = false
-				}
-				doWrite = false
-			}
-		case rsMaybePlaceholder:
-			if r == placeholderLeft {
-				s = rsInPlaceholder
-				doWrite = false
-			} else {
-				s = rsReady
-				if r != placeholderPrefix { // replaces "@@" to "@"
-					builder.WriteString(string(placeholderPrefix))
-				}
-				if fromBegin {
-					fromBegin = false
-				}
-			}
-		case rsInPlaceholder:
-			doWrite = false
-			if r == placeholderRight {
-				s = rsReady
-				if fromBegin && i == len(runes)-1 {
-					toEnd = true
-				} else {
-					varName := nameBuilder.String()
-					varFormat := formatBuilder.String()
-					if varName == "" {
-						return "", &renderError{filename: ctx.filename, jsonPath: jsonPath}
-					}
-
-					v, err := renderTextString(vars, varName, varFormat)
-					if err != nil {
-						return nil, &renderError{filename: ctx.filename, jsonPath: jsonPath}
-					}
-					builder.WriteString(v)
-					nameBuilder.Reset()
-					formatBuilder.Reset()
-				}
-			} else if r == placeholderFormatSeparator {
-				s = rsMaybePlaceHolderFormat
-			} else {
-				doWriteName = true
-			}
-		case rsMaybePlaceHolderFormat:
-			doWrite = false
-			if r == placeholderRight { // same as empty format, state rolls back
-				s = rsInPlaceholder
-			} else {
-				s = rsInPlaceHolderFormat
-			}
-			i -= 1 // goes back for other state to process
-		case rsInPlaceHolderFormat:
-			doWrite = false
-			if r == placeholderRight { // end of placeholder
-				s = rsInPlaceholder
-				i -= 1
-			} else {
-				doWriteFormat = true
-			}
-		}
-
-		if doWrite {
-			builder.WriteRune(r)
-		}
-		if doWriteName {
-			nameBuilder.WriteRune(r)
-		}
-		if doWriteFormat {
-			formatBuilder.WriteRune(r)
-		}
+func (f *templateFilter) getTemplateFromDTemplate(v myjson.Object) (*template, error) {
+	filename, err := v.GetString(dTemplate)
+	if err != nil {
+		return nil, errors.New("cannot read the name of template file")
 	}
 
-	if s != rsReady { // placeholder is not complete
-		return nil, &renderError{filename: ctx.filename, jsonPath: jsonPath}
-	}
-
-	if fromBegin && toEnd { // if the whole string is a placeholder
-		varName := nameBuilder.String()
-		if varName == "" {
-			return nil, &renderError{filename: ctx.filename, jsonPath: jsonPath}
+	var template *template
+	var ok bool
+	_filename := string(filename)
+	if template, ok = f.templateCache[_filename]; !ok {
+		tParser := &templateParser{Parser: Parser{filename: _filename}}
+		template, err = tParser.parse()
+		if err != nil {
+			return nil, err
 		}
-
-		varV := vars.table[varName]
-		return varV, nil
+		f.templateCache[_filename] = template
 	}
-
-	return myjson.String(builder.String()), nil
+	return template, nil
 }
 
-var validVarFormat = regexp.MustCompile("^%([-+@0 ])?(\\d+)?\\.?(\\d+)?[tdeEfgsqxX]$")
+func (f *templateFilter) getVarsFromDTemplate(v myjson.Object) (varsSlice []*vars, err error) {
+	if v.Has(tVars) { // if @template directive has a 'vars' attribute
+		varsSlice, err = new(varsJSONParser).parseVars(v)
+	} else {
+		var filename myjson.String
+		filename, err = v.GetString(dVars)
+		if err != nil {
+			err = errors.New("cannot read filename from " + dVars)
+			return
+		}
 
-func renderTextString(vars *vars, varName string, varFormat string) (string, error) {
-	varV := vars.table[varName]
-
-	if varFormat != "" && !validVarFormat.MatchString(varFormat) {
-		return "", errors.New("invalid format for var")
+		var ok bool
+		_filename := string(filename)
+		if varsSlice, ok = f.varsSliceCache[_filename]; !ok {
+			ext := filepath.Ext(_filename)
+			if ext == ".csv" {
+				vParser := &varsCSVParser{Parser: Parser{filename: _filename}}
+				varsSlice, err = vParser.parse()
+			} else {
+				vParser := &varsJSONParser{Parser: Parser{filename: _filename}}
+				varsSlice, err = vParser.parse()
+			}
+			f.varsSliceCache[_filename] = varsSlice
+		}
 	}
+	return
+}
 
-	switch varV.(type) {
-	case myjson.String:
-		if varFormat == "" {
-			varFormat = "%s"
-		}
-		return fmt.Sprintf(varFormat, string(varV.(myjson.String))), nil
-	case myjson.Number:
-		if varFormat == "" {
-			return fmt.Sprintf("%v", varV), nil
-		} else if varFormat[len(varFormat)-1] == 'd' {
-			return fmt.Sprintf(varFormat, int(float64(varV.(myjson.Number)))), nil
-		} else {
-			return fmt.Sprintf(varFormat, float64(varV.(myjson.Number))), nil
-		}
-	case myjson.Boolean:
-		if varFormat == "" {
-			varFormat = "%v"
-		}
-		return fmt.Sprintf(varFormat, bool(varV.(myjson.Boolean))), nil
-	default:
-		return "", errors.New("invalid json type for template rendering")
-	}
+func (f *templateFilter) reset() { // clears caches
+	f.templateCache = make(map[string]*template)
+	f.varsSliceCache = make(map[string][]*vars)
 }
