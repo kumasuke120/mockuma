@@ -7,9 +7,30 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/kumasuke120/mockuma/internal/myhttp"
 	"github.com/kumasuke120/mockuma/internal/myjson"
 	"github.com/kumasuke120/mockuma/internal/myos"
+	"github.com/kumasuke120/mockuma/internal/types"
 )
+
+type MockuMappings struct {
+	Mappings  []*Mapping
+	Filenames []string
+}
+
+func (m *MockuMappings) IsEmpty() bool {
+	return len(m.Mappings) == 0 && len(m.Filenames) == 0
+}
+
+func (m *MockuMappings) GroupMethodsByURI() map[string][]myhttp.HTTPMethod {
+	result := make(map[string][]myhttp.HTTPMethod)
+	for _, m := range m.Mappings {
+		mappingsOfURI := result[m.URI]
+		mappingsOfURI = append(mappingsOfURI, m.Method)
+		result[m.URI] = mappingsOfURI
+	}
+	return result
+}
 
 var loadedFilenames []string
 
@@ -58,6 +79,15 @@ func (e *parserError) Error() string {
 	return result
 }
 
+// preprocessors singletons
+var (
+	ppRemoveComment  = &dCommentProcessor{}
+	ppRenderTemplate = makeDTemplateProcessor()
+	ppLoadFile       = makeDFileProcessor()
+	ppParseRegexp    = makeDRegexpProcessor()
+	ppToJSONMatcher  = &dJSONProcessor{}
+)
+
 type Parser struct {
 	filename string
 }
@@ -101,7 +131,7 @@ func (p *Parser) Parse() (r *MockuMappings, e error) {
 	return
 }
 
-func (p *Parser) load(record bool, preprocessors ...filter) (interface{}, error) {
+func (p *Parser) load(record bool, preprocessors ...types.Filter) (interface{}, error) {
 	if err := checkFilepath(p.filename); err != nil {
 		return nil, &loadError{filename: p.filename, err: err}
 	}
@@ -116,7 +146,7 @@ func (p *Parser) load(record bool, preprocessors ...filter) (interface{}, error)
 		return nil, newParserError(p.filename, nil)
 	}
 
-	v, err := doFiltersOnV(json, preprocessors...) // runs given preprocessors
+	v, err := types.DoFiltersOnV(json, preprocessors...) // runs given preprocessors
 	if err != nil {
 		return nil, &loadError{filename: p.filename, err: err}
 	}

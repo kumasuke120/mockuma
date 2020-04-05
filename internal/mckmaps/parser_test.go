@@ -12,6 +12,39 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var mappings = &MockuMappings{Mappings: []*Mapping{
+	{
+		URI:      "/a1",
+		Method:   myhttp.MethodPut,
+		Policies: nil,
+	},
+	{
+		URI:      "/a2",
+		Method:   myhttp.MethodPost,
+		Policies: nil,
+	},
+	{
+		URI:      "/a1",
+		Method:   myhttp.MethodGet,
+		Policies: nil,
+	},
+}}
+
+func TestMockuMappings_GroupMethodsByURI(t *testing.T) {
+	expected := map[string][]myhttp.HTTPMethod{
+		"/a1": {myhttp.MethodPut, myhttp.MethodGet},
+		"/a2": {myhttp.MethodPost},
+	}
+	actual := mappings.GroupMethodsByURI()
+
+	assert.Equal(t, expected, actual)
+}
+
+func TestMockuMappings_IsEmpty(t *testing.T) {
+	assert.False(t, mappings.IsEmpty())
+	assert.True(t, new(MockuMappings).IsEmpty())
+}
+
 func TestError(t *testing.T) {
 	//noinspection GoImportUsedAsName
 	assert := assert.New(t)

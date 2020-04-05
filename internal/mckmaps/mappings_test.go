@@ -17,7 +17,7 @@ func TestMappingsParser_parse(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	fb0, e0 := ioutil.ReadFile(filepath.Join("testdata", "mappings-0.json"))
+	fb0, e0 := ioutil.ReadFile(filepath.Join("testdata", "mappings", "mappings-0.json"))
 	require.Nil(e0)
 	j0, e0 := myjson.Unmarshal(fb0)
 	if assert.Nil(e0) {
@@ -26,7 +26,7 @@ func TestMappingsParser_parse(t *testing.T) {
 		assert.NotNil(e0)
 	}
 
-	fb1, e1 := ioutil.ReadFile(filepath.Join("testdata", "mappings-1.json"))
+	fb1, e1 := ioutil.ReadFile(filepath.Join("testdata", "mappings", "mappings-1.json"))
 	require.Nil(e1)
 	j1, e1 := myjson.Unmarshal(fb1)
 	if assert.Nil(e1) {
@@ -62,7 +62,7 @@ func TestMappingsParser_parse(t *testing.T) {
 		}
 	}
 
-	fb2, e2 := ioutil.ReadFile(filepath.Join("testdata", "mappings-2.json"))
+	fb2, e2 := ioutil.ReadFile(filepath.Join("testdata", "mappings", "mappings-2.json"))
 	require.Nil(e2)
 	j2, e2 := myjson.Unmarshal(fb2)
 	if assert.Nil(e2) {
@@ -152,7 +152,7 @@ func TestMappingsParser_parse(t *testing.T) {
 		}
 	}
 
-	fb3, e3 := ioutil.ReadFile(filepath.Join("testdata", "mappings-3.json"))
+	fb3, e3 := ioutil.ReadFile(filepath.Join("testdata", "mappings", "mappings-3.json"))
 	require.Nil(e3)
 	j3, e3 := myjson.Unmarshal(fb3)
 	if assert.Nil(e3) {
@@ -162,7 +162,7 @@ func TestMappingsParser_parse(t *testing.T) {
 		assert.NotEmpty(e3.Error())
 	}
 
-	fb4, e4 := ioutil.ReadFile(filepath.Join("testdata", "mappings-4.json"))
+	fb4, e4 := ioutil.ReadFile(filepath.Join("testdata", "mappings", "mappings-4.json"))
 	require.Nil(e4)
 	j4, e4 := myjson.Unmarshal(fb4)
 	if assert.Nil(e4) {
@@ -172,7 +172,7 @@ func TestMappingsParser_parse(t *testing.T) {
 		assert.NotEmpty(e4.Error())
 	}
 
-	fb5, e5 := ioutil.ReadFile(filepath.Join("testdata", "mappings-5.json"))
+	fb5, e5 := ioutil.ReadFile(filepath.Join("testdata", "mappings", "mappings-5.json"))
 	require.Nil(e5)
 	j5, e5 := myjson.Unmarshal(fb5)
 	if assert.Nil(e5) {
@@ -207,7 +207,7 @@ func TestMappingsParser_parse(t *testing.T) {
 		}
 	}
 
-	fb6, e6 := ioutil.ReadFile(filepath.Join("testdata", "mappings-6.json"))
+	fb6, e6 := ioutil.ReadFile(filepath.Join("testdata", "mappings", "mappings-6.json"))
 	require.Nil(e6)
 	j6, e6 := myjson.Unmarshal(fb6)
 	if assert.Nil(e6) {
@@ -269,7 +269,7 @@ func TestMappingsParser_parse(t *testing.T) {
 		}
 	}
 
-	fb7, e7 := ioutil.ReadFile(filepath.Join("testdata", "mappings-7.json"))
+	fb7, e7 := ioutil.ReadFile(filepath.Join("testdata", "mappings", "mappings-7.json"))
 	require.Nil(e7)
 	j7, e7 := myjson.Unmarshal(fb7)
 	if assert.Nil(e7) {
@@ -278,7 +278,7 @@ func TestMappingsParser_parse(t *testing.T) {
 		if assert.Nil(e7) {
 			expected7 := []*Mapping{
 				{
-					URI:    "/test-for-redirects",
+					URI:    "/%E8%B7%B3%E8%BD%AC%E6%B5%8B%E8%AF%95",
 					Method: myhttp.MethodAny,
 					Policies: []*Policy{
 						{
@@ -324,7 +324,7 @@ func TestMappingsParser_parse(t *testing.T) {
 		}
 	}
 
-	fb8, e8 := ioutil.ReadFile(filepath.Join("testdata", "mappings-8.json"))
+	fb8, e8 := ioutil.ReadFile(filepath.Join("testdata", "mappings", "mappings-8.json"))
 	require.Nil(e8)
 	j8, e8 := myjson.Unmarshal(fb8)
 	if assert.Nil(e7) {
@@ -333,7 +333,7 @@ func TestMappingsParser_parse(t *testing.T) {
 		assert.NotNil(e8)
 	}
 
-	fb9, e9 := ioutil.ReadFile(filepath.Join("testdata", "mappings-9.json"))
+	fb9, e9 := ioutil.ReadFile(filepath.Join("testdata", "mappings", "mappings-9.json"))
 	require.Nil(e9)
 	j9, e9 := myjson.Unmarshal(fb9)
 	if assert.Nil(e9) {
@@ -374,5 +374,14 @@ func TestMappingsParser_parse(t *testing.T) {
 			}
 			assert.Equal(expected9, p9)
 		}
+	}
+
+	fb10, e10 := ioutil.ReadFile(filepath.Join("testdata", "mappings", "mappings-10.json"))
+	require.Nil(e10)
+	j10, e10 := myjson.Unmarshal(fb10)
+	if assert.Nil(e9) {
+		m10 := &mappingsParser{json: j10}
+		_, e10 := m10.parse()
+		assert.NotNil(e10)
 	}
 }

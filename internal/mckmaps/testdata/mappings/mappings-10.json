@@ -1,0 +1,13 @@
+{
+  "type": "mappings",
+  "mappings": [
+    {
+      "uri": "test",
+      "policies": {
+        "returns": {
+          "body": "hello world"
+        }
+      }
+    }
+  ]
+}
