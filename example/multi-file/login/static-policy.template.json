@@ -1,5 +1,5 @@
 {
-  "@type": "template",
+  "type": "template",
   "@comment": {
     "en": "policies of static resources for uri: /login/**",
     "cn": "静态资源策略：/login/**"
