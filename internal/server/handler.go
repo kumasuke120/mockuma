@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 
 	"github.com/kumasuke120/mockuma/internal"
 	"github.com/kumasuke120/mockuma/internal/mckmaps"
@@ -92,7 +93,16 @@ func (h *mockHandler) handleExecuteError(w http.ResponseWriter, r *http.Request,
 }
 
 func (h *mockHandler) listAllMappings() {
-	for uri, methods := range h.mappings.GroupMethodsByURI() {
+	uri2Methods := h.mappings.GroupMethodsByURI()
+
+	var uris []string
+	for uri := range uri2Methods {
+		uris = append(uris, uri)
+	}
+	sort.Strings(uris)
+
+	for _, uri := range uris {
+		methods := uri2Methods[uri]
 		log.Printf("[handler ] mapped   : %s, methods = %v\n", uri, methods)
 	}
 }
