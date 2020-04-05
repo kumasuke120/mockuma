@@ -21,7 +21,12 @@ type String string
 type Boolean bool
 
 func (n Number) String() string {
-	return fmt.Sprintf("%v", float64(n))
+	val := float64(n)
+	if val == float64(int(val)) { // if val is an integer
+		return strconv.Itoa(int(val))
+	} else {
+		return fmt.Sprintf("%v", val)
+	}
 }
 
 func (s String) String() string {
