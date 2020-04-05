@@ -29,6 +29,7 @@ func TestLoader_Load(t *testing.T) {
 	assert.NotNil(file2)
 
 	require.Nil(myos.Chdir(oldWd))
+	require.Nil(myos.Chdir(oldWd))
 
 	l3 := New(filepath.Join("testdata", "template.zip"))
 	assert.Empty(l3.tempDirs)
