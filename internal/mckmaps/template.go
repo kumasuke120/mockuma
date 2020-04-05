@@ -3,6 +3,7 @@ package mckmaps
 import (
 	"errors"
 	"path/filepath"
+	"strings"
 
 	"github.com/kumasuke120/mockuma/internal/myjson"
 )
@@ -18,9 +19,21 @@ type templateParser struct {
 	Parser
 }
 
+var parsingTemplates []string
+
 func (p *templateParser) parse() (*template, error) {
-	if p.json == nil {
-		json, err := p.load(true, ppRemoveComment)
+	needLoading := p.json == nil
+
+	if needLoading { // adds the current file
+		parsingTemplates = append(parsingTemplates, p.filename)
+		err := p.checkCyclicReference()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if needLoading {
+		json, err := p.load(true, ppRemoveComment, ppRenderTemplate)
 		if err != nil {
 			return nil, err
 		}
@@ -56,7 +69,30 @@ func (p *templateParser) parse() (*template, error) {
 	}
 	template.filename = p.filename
 
+	if needLoading { // removes the current file with checking
+		if parsingTemplates[len(parsingTemplates)-1] == p.filename {
+			parsingTemplates = parsingTemplates[:len(parsingTemplates)-1]
+		} else {
+			panic("Shouldn't happen")
+		}
+	}
 	return template, nil
+}
+
+func (p *templateParser) checkCyclicReference() error {
+	found := make(map[string]bool)
+	for _, t := range parsingTemplates {
+		if _, ok := found[t]; ok {
+			return &loadError{
+				filename: p.filename,
+				err: errors.New("found a cyclic template application : " +
+					strings.Join(parsingTemplates, " -> ")),
+			}
+		} else {
+			found[t] = true
+		}
+	}
+	return nil
 }
 
 // renders @template directives with given vars

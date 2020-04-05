@@ -5,12 +5,15 @@ import (
 	"testing"
 
 	"github.com/kumasuke120/mockuma/internal/myjson"
+	"github.com/kumasuke120/mockuma/internal/myos"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
+//noinspection GoImportUsedAsName
 func TestTemplateParser_parse(t *testing.T) {
-	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
+	require := require.New(t)
 
 	fp0 := filepath.Join("testdata", "template-0.json")
 	t0 := &templateParser{Parser: Parser{filename: fp0}}
@@ -48,4 +51,34 @@ func TestTemplateParser_parse(t *testing.T) {
 		}
 		assert.Equal(expected2, p2)
 	}
+
+	require.Nil(myos.InitWd())
+	oldWd := myos.GetWd()
+	require.Nil(myos.Chdir(filepath.Join(oldWd, "testdata")))
+
+	fp3 := "template-3.json"
+	t3 := &templateParser{Parser: Parser{filename: fp3}}
+	p3, e3 := t3.parse()
+	if assert.Nil(e3) {
+		expected3 := &template{
+			content: myjson.Array{
+				myjson.Object{
+					"v": myjson.String("@{v}"),
+				},
+				myjson.Object{
+					"v-v": myjson.String("@{v}-@{v}"),
+				},
+			},
+			filename: fp3,
+		}
+		assert.Equal(expected3, p3)
+	}
+
+	fp4 := "template-cyclic-a.json"
+	t4 := &templateParser{Parser: Parser{filename: fp4}}
+	_, e4 := t4.parse()
+	assert.NotNil(e4)
+	assert.Contains(e4.Error(), "cyclic")
+
+	require.Nil(myos.Chdir(oldWd))
 }

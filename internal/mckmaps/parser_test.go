@@ -16,19 +16,21 @@ func TestError(t *testing.T) {
 	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
 
-	err0 := &loadError{filename: "test.json"}
+	err0 := &loadError{filename: "test.json", err: errors.New("\n\n")}
 	assert.NotNil(err0)
 	assert.Contains(err0.Error(), "test.json")
+	assert.Contains(err0.Error(), "\n\t\n\t")
 
 	err1 := &parserError{
 		jsonPath: myjson.NewPath("testPath"),
 		filename: "test.json",
-		err:      errors.New("test_error"),
+		err:      errors.New("test_error\n"),
 	}
 	assert.NotNil(err1)
 	assert.Contains(err1.Error(), "$.testPath")
 	assert.Contains(err1.Error(), "test.json")
 	assert.Contains(err1.Error(), "test_error")
+	assert.Contains(err1.Error(), "test_error\n\t")
 }
 
 func TestNewParser(t *testing.T) {

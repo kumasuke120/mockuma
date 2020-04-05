@@ -1,0 +1,9 @@
+{
+  "type": "template",
+  "template": {
+    "@template": "template-2.json",
+    "vars": {
+      "v": "@{v}"
+    }
+  }
+}
