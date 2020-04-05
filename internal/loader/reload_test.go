@@ -154,7 +154,7 @@ func TestLoader_EnableAutoReload(t *testing.T) {
 	n1 := f1.Name()
 	fmt.Println(n1)
 
-	_, e1 = f1.Write([]byte(`{"@type":"main","@include":{"mappings":[]}}`))
+	_, e1 = f1.Write([]byte(`{"type":"main","include":{"mappings":[]}}`))
 	require.Nil(e1)
 	require.Nil(f1.Close())
 
@@ -174,7 +174,7 @@ func TestLoader_EnableAutoReload(t *testing.T) {
 	assert.Nil(e1)
 
 	time.Sleep(1 * time.Second)
-	require.Nil(ioutil.WriteFile(n1, []byte(`{"@type": "main","@include": {"mappings": []}}`), 0644))
+	require.Nil(ioutil.WriteFile(n1, []byte(`{"type": "main","include": {"mappings": []}}`), 0644))
 	assert.True(<-okChan)
 
 	time.Sleep(1 * time.Second)

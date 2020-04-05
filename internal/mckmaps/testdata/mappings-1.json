@@ -1,5 +1,5 @@
 {
-  "@type": "mappings",
+  "type": "mappings",
   "mappings": [
     {
       "uri": "/",

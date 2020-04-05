@@ -196,32 +196,32 @@ type mainParser struct {
 }
 
 func (p *mainParser) parse() (*MockuMappings, error) {
-	_type, err := p.json.GetString(dType)
+	_type, err := p.json.GetString(aType)
 	if err != nil || string(_type) != tMain {
-		return nil, newParserError(p.filename, myjson.NewPath(dType))
+		return nil, newParserError(p.filename, myjson.NewPath(aType))
 	}
 
-	include, err := p.json.GetObject(dInclude)
+	include, err := p.json.GetObject(aInclude)
 	if err != nil {
-		return nil, newParserError(p.filename, myjson.NewPath(dInclude))
+		return nil, newParserError(p.filename, myjson.NewPath(aInclude))
 	}
 
 	filenamesOfMappings, err := include.GetArray(tMappings)
 	if err != nil {
-		return nil, newParserError(p.filename, myjson.NewPath(dInclude, tMappings))
+		return nil, newParserError(p.filename, myjson.NewPath(aInclude, tMappings))
 	}
 
 	var mappings []*Mapping
 	for idx, filename := range filenamesOfMappings {
 		_filename, err := myjson.ToString(filename)
 		if err != nil {
-			return nil, newParserError(p.filename, myjson.NewPath(dInclude, tMappings, idx))
+			return nil, newParserError(p.filename, myjson.NewPath(aInclude, tMappings, idx))
 		}
 
 		f := string(_filename)
 		glob, err := filepath.Glob(f)
 		if err != nil {
-			return nil, newParserError(p.filename, myjson.NewPath(dInclude, tMappings, idx))
+			return nil, newParserError(p.filename, myjson.NewPath(aInclude, tMappings, idx))
 		}
 
 		for _, g := range glob {

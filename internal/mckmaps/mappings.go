@@ -41,8 +41,8 @@ func (p *mappingsParser) parse() ([]*Mapping, error) {
 		p.jsonPath = myjson.NewPath("")
 		jsonObject := p.json.(myjson.Object)
 
-		p.jsonPath.SetLast(dType)
-		_type, err := jsonObject.GetString(dType)
+		p.jsonPath.SetLast(aType)
+		_type, err := jsonObject.GetString(aType)
 		if err != nil || string(_type) != tMappings {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
@@ -83,16 +83,16 @@ func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
 
 	mapping := new(Mapping)
 
-	p.jsonPath.SetLast(mapURI)
-	uri, err := v.GetString(mapURI)
+	p.jsonPath.SetLast(aMapURI)
+	uri, err := v.GetString(aMapURI)
 	if err != nil {
 		return nil, newParserError(p.filename, p.jsonPath)
 	}
 	mapping.URI = string(uri)
 
-	p.jsonPath.SetLast(mapMethod)
-	if v.Has(mapMethod) {
-		method, err := v.GetString(mapMethod)
+	p.jsonPath.SetLast(aMapMethod)
+	if v.Has(aMapMethod) {
+		method, err := v.GetString(aMapMethod)
 		if err != nil {
 			return nil, newParserError(p.filename, p.jsonPath)
 		}
@@ -106,10 +106,10 @@ func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
 		mapping.Method = myhttp.MethodAny
 	}
 
-	p.jsonPath.SetLast(mapPolicies)
+	p.jsonPath.SetLast(aMapPolicies)
 	p.jsonPath.Append(0)
 	var policies []*Policy
-	for idx, rp := range ensureJSONArray(v.Get(mapPolicies)) {
+	for idx, rp := range ensureJSONArray(v.Get(aMapPolicies)) {
 		p.jsonPath.SetLast(idx)
 
 		switch rp.(type) {
