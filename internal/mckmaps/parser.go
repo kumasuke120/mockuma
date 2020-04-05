@@ -256,6 +256,7 @@ type mappingsParser struct {
 
 func (p *mappingsParser) parse() ([]*Mapping, error) {
 	if p.json == nil {
+		// file has been recorded in mainParser
 		json, err := p.load(false, ppRemoveComment, ppRenderTemplate)
 		if err != nil {
 			return nil, err

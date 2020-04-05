@@ -187,7 +187,8 @@ func (f *templateFilter) getVarsFromDTemplate(v myjson.Object) (varsSlice []*var
 		var filename myjson.String
 		filename, err = v.GetString(dVars)
 		if err != nil {
-			return nil, errors.New("cannot read filename from " + dVars)
+			err = errors.New("cannot read filename from " + dVars)
+			return
 		}
 
 		var ok bool
