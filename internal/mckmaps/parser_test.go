@@ -80,7 +80,7 @@ func TestParser_Parse(t *testing.T) {
 
 	require.Nil(myos.InitWd())
 	oldWd := myos.GetWd()
-	require.Nil(myos.Chdir(filepath.Join(oldWd, "testdata")))
+	require.Nil(myos.Chdir(filepath.Join(oldWd, "testdata", "parser")))
 
 	expectedMappings := []*Mapping{
 		{

@@ -17,12 +17,12 @@ func TestCommentFilter(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	fb0, err := ioutil.ReadFile(filepath.Join("testdata", "removeComment-0.json"))
+	fb0, err := ioutil.ReadFile(filepath.Join("testdata", "preprocessor", "removeComment-0.json"))
 	require.Nil(err)
 	j0, err := myjson.Unmarshal(fb0)
 	require.Nil(err)
 
-	fbe, err := ioutil.ReadFile(filepath.Join("testdata", "removeComment-expected.json"))
+	fbe, err := ioutil.ReadFile(filepath.Join("testdata", "preprocessor", "removeComment-expected.json"))
 	require.Nil(err)
 	je, err := myjson.Unmarshal(fbe)
 	require.Nil(err)
@@ -40,17 +40,17 @@ func TestLoadFileFilter(t *testing.T) {
 	require.Nil(myos.InitWd())
 	oldWd := myos.GetWd()
 
-	fb0, err := ioutil.ReadFile(filepath.Join("testdata", "loadFile-0.json"))
+	fb0, err := ioutil.ReadFile(filepath.Join("testdata", "preprocessor", "loadFile-0.json"))
 	require.Nil(err)
 	j0, err := myjson.Unmarshal(fb0)
 	require.Nil(err)
 
-	fbe, err := ioutil.ReadFile(filepath.Join("testdata", "loadFile-expected.json"))
+	fbe, err := ioutil.ReadFile(filepath.Join("testdata", "preprocessor", "loadFile-expected.json"))
 	require.Nil(err)
 	je, err := myjson.Unmarshal(fbe)
 	require.Nil(err)
 
-	err = myos.Chdir(filepath.Join(oldWd, "testdata"))
+	err = myos.Chdir(filepath.Join(oldWd, "testdata", "preprocessor"))
 	require.Nil(err)
 
 	ja, err := types.DoFiltersOnV(j0, makeDFileProcessor())
@@ -66,7 +66,7 @@ func TestParseRegexp(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	fb0, err := ioutil.ReadFile(filepath.Join("testdata", "parseRegexp.json"))
+	fb0, err := ioutil.ReadFile(filepath.Join("testdata", "preprocessor", "parseRegexp.json"))
 	require.Nil(err)
 	j0, err := myjson.Unmarshal(fb0)
 	require.Nil(err)
@@ -94,17 +94,17 @@ func TestRenderTemplate(t *testing.T) {
 	require.Nil(myos.InitWd())
 	oldWd := myos.GetWd()
 
-	fb0, err := ioutil.ReadFile(filepath.Join("testdata", "renderTemplate.json"))
+	fb0, err := ioutil.ReadFile(filepath.Join("testdata", "preprocessor", "renderTemplate.json"))
 	require.Nil(err)
 	j0, err := myjson.Unmarshal(fb0)
 	require.Nil(err)
 
-	fbe, err := ioutil.ReadFile(filepath.Join("testdata", "renderTemplate-expected.json"))
+	fbe, err := ioutil.ReadFile(filepath.Join("testdata", "preprocessor", "renderTemplate-expected.json"))
 	require.Nil(err)
 	je, err := myjson.Unmarshal(fbe)
 	require.Nil(err)
 
-	err = myos.Chdir(filepath.Join(oldWd, "testdata"))
+	err = myos.Chdir(filepath.Join(oldWd, "testdata", "preprocessor"))
 	require.Nil(err)
 
 	ja, err := types.DoFiltersOnV(j0, makeDTemplateProcessor())
@@ -120,7 +120,7 @@ func TestToJSONMatcher(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	fb0, err := ioutil.ReadFile(filepath.Join("testdata", "toJSONMatcher.json"))
+	fb0, err := ioutil.ReadFile(filepath.Join("testdata", "preprocessor", "toJSONMatcher.json"))
 	require.Nil(err)
 	j0, err := myjson.Unmarshal(fb0)
 	require.Nil(err)
