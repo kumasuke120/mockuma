@@ -3,14 +3,86 @@ package mckmaps
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/kumasuke120/mockuma/internal/myhttp"
 	"github.com/kumasuke120/mockuma/internal/myjson"
-	"github.com/kumasuke120/mockuma/internal/typeutil"
+	"github.com/kumasuke120/mockuma/internal/types"
 )
+
+type Mapping struct {
+	URI      string
+	Method   myhttp.HTTPMethod
+	Policies []*Policy
+}
+
+type Policy struct {
+	When     *When
+	CmdType  CmdType
+	Returns  *Returns
+	Forwards *Forwards
+}
+
+type When struct {
+	Headers       []*NameValuesPair
+	HeaderRegexps []*NameRegexpPair
+	HeaderJSONs   []*NameJSONPair
+
+	Params       []*NameValuesPair
+	ParamRegexps []*NameRegexpPair
+	ParamJSONs   []*NameJSONPair
+
+	PathVars       []*NameValuesPair
+	PathVarRegexps []*NameRegexpPair
+
+	Body       []byte
+	BodyRegexp *regexp.Regexp
+	BodyJSON   *myjson.ExtJSONMatcher
+}
+
+type CmdType string
+
+const (
+	CmdTypeReturns   = CmdType(mapPolicyReturns)
+	CmdTypeForwards  = CmdType(mapPolicyForwards)
+	CmdTypeRedirects = CmdType(mapPolicyRedirects)
+)
+
+type Returns struct {
+	StatusCode myhttp.StatusCode
+	Headers    []*NameValuesPair
+	Body       []byte
+	Latency    *Interval
+}
+
+type Forwards struct {
+	Path    string
+	Latency *Interval
+}
+
+type NameValuesPair struct {
+	Name   string
+	Values []string
+}
+
+type NameRegexpPair struct {
+	Name   string
+	Regexp *regexp.Regexp
+}
+
+type NameJSONPair struct {
+	Name string
+	JSON myjson.ExtJSONMatcher
+}
+
+type Interval struct {
+	Min int64
+	Max int64
+}
 
 var (
 	// refers to: https://tools.ietf.org/html/rfc7230#section-3.2.6
@@ -88,7 +160,11 @@ func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
 	if err != nil {
 		return nil, newParserError(p.filename, p.jsonPath)
 	}
-	mapping.URI = string(uri)
+	_uri, err := encodeURI(string(uri))
+	if err != nil {
+		return nil, &parserError{filename: p.filename, jsonPath: p.jsonPath, err: err}
+	}
+	mapping.URI = _uri
 
 	p.jsonPath.SetLast(aMapMethod)
 	if v.Has(aMapMethod) {
@@ -130,6 +206,40 @@ func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
 
 	p.jsonPath.RemoveLast()
 	return mapping, nil
+}
+
+func encodeURI(uri string) (string, error) {
+	if strings.HasPrefix(uri, "/") {
+		indices := pathVarRegexp.FindAllStringIndex(uri, -1)
+		if indices == nil {
+			return doEncodeURI(uri), nil
+		} else {
+			var builder strings.Builder
+			for i, loc := range indices {
+				var startPos int
+				if i == 0 {
+					startPos = 0
+				} else {
+					startPos = indices[i-1][1]
+				}
+				builder.WriteString(doEncodeURI(uri[startPos:loc[0]]))
+
+				builder.WriteString(uri[loc[0]:loc[1]])
+
+				if i == len(indices)-1 {
+					builder.WriteString(doEncodeURI(uri[loc[1]:]))
+				}
+			}
+			return builder.String(), nil
+		}
+	} else {
+		return "", errors.New("uri must start with '/'")
+	}
+}
+
+func doEncodeURI(uri string) string {
+	encoded := &url.URL{Path: uri}
+	return encoded.String()
 }
 
 func (p *mappingsParser) parsePolicy(v myjson.Object) (*Policy, error) {
@@ -230,7 +340,7 @@ func (p *mappingsParser) countCommands(v myjson.Object, names ...string) int {
 func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 	p.jsonPath.Append("")
 
-	_v, err := doFiltersOnV(v, ppToJSONMatcher, ppParseRegexp, ppLoadFile)
+	_v, err := types.DoFiltersOnV(v, ppToJSONMatcher, ppParseRegexp, ppLoadFile)
 	if err != nil {
 		return nil, &loadError{filename: p.filename, err: err}
 	}
@@ -307,7 +417,7 @@ func (p *mappingsParser) parseWhenBody(v interface{}) ([]byte, myjson.ExtRegexp,
 		_v := v.(myjson.ExtJSONMatcher)
 		return nil, nil, &_v
 	default:
-		return []byte(typeutil.ToString(v.(myjson.Number))), nil, nil
+		return []byte(types.ToString(v.(myjson.Number))), nil, nil
 	}
 }
 
@@ -367,7 +477,7 @@ func (p *mappingsParser) parseJSONToBytes(v interface{}) ([]byte, error) {
 }
 
 func (p *mappingsParser) parseReturnsBody(v interface{}) ([]byte, error) {
-	v, err := doFiltersOnV(v, ppLoadFile)
+	v, err := types.DoFiltersOnV(v, ppLoadFile)
 	if err != nil {
 		return nil, &loadError{filename: p.filename, err: err}
 	}

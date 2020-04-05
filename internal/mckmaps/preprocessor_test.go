@@ -7,6 +7,7 @@ import (
 
 	"github.com/kumasuke120/mockuma/internal/myjson"
 	"github.com/kumasuke120/mockuma/internal/myos"
+	"github.com/kumasuke120/mockuma/internal/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +27,7 @@ func TestCommentFilter(t *testing.T) {
 	je, err := myjson.Unmarshal(fbe)
 	require.Nil(err)
 
-	ja, err := doFiltersOnV(j0, &commentFilter{})
+	ja, err := types.DoFiltersOnV(j0, &dCommentProcessor{})
 	assert.Nil(err)
 	assert.Equal(je, ja)
 }
@@ -52,7 +53,7 @@ func TestLoadFileFilter(t *testing.T) {
 	err = myos.Chdir(filepath.Join(oldWd, "testdata"))
 	require.Nil(err)
 
-	ja, err := doFiltersOnV(j0, makeLoadFileFilter())
+	ja, err := types.DoFiltersOnV(j0, makeDFileProcessor())
 	if assert.Nil(err) {
 		assert.Equal(je, ja)
 	}
@@ -70,7 +71,7 @@ func TestParseRegexp(t *testing.T) {
 	j0, err := myjson.Unmarshal(fb0)
 	require.Nil(err)
 
-	ja0, e0 := doFiltersOnV(j0, &jsonMatcherFilter{}, makeParseRegexpFilter())
+	ja0, e0 := types.DoFiltersOnV(j0, &dJSONProcessor{}, makeDRegexpProcessor())
 	if assert.Nil(e0) && assert.IsType(myjson.Array{}, ja0) {
 		_ja0 := ja0.(myjson.Array)
 		assert.IsType(myjson.ExtRegexp(nil), _ja0[0])
@@ -106,7 +107,7 @@ func TestRenderTemplate(t *testing.T) {
 	err = myos.Chdir(filepath.Join(oldWd, "testdata"))
 	require.Nil(err)
 
-	ja, err := doFiltersOnV(j0, makeTemplateFilter())
+	ja, err := types.DoFiltersOnV(j0, makeDTemplateProcessor())
 	if assert.Nil(err) {
 		assert.Equal(je, ja)
 	}
@@ -148,7 +149,7 @@ func TestToJSONMatcher(t *testing.T) {
 		"$c": myjson.String("3"),
 	})
 
-	ja, err := doFiltersOnV(j0, &jsonMatcherFilter{})
+	ja, err := types.DoFiltersOnV(j0, &dJSONProcessor{})
 	if assert.Nil(err) {
 		assert.Equal(expected, ja)
 	}

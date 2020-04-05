@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/kumasuke120/mockuma/internal/typeutil"
+	"github.com/kumasuke120/mockuma/internal/types"
 )
 
 type valueError struct {
@@ -75,7 +75,7 @@ func toString(v interface{}, name string) (String, error) {
 	case String:
 		return v.(String), nil
 	default:
-		return String(typeutil.ToString(v)), nil
+		return String(types.ToString(v)), nil
 	}
 }
 

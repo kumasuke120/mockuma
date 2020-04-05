@@ -3,7 +3,7 @@ package myjson
 import (
 	"regexp"
 
-	"github.com/kumasuke120/mockuma/internal/typeutil"
+	"github.com/kumasuke120/mockuma/internal/types"
 )
 
 type ExtRegexp *regexp.Regexp
@@ -91,9 +91,9 @@ func (m ExtJSONMatcher) numberMatches(mv Number, v interface{}) bool {
 	_mv := float64(mv)
 	switch v.(type) {
 	case Number:
-		return typeutil.Float64AlmostEquals(_mv, float64(v.(Number)))
+		return types.Float64AlmostEquals(_mv, float64(v.(Number)))
 	case String:
-		return typeutil.ToString(_mv) == string(v.(String))
+		return types.ToString(_mv) == string(v.(String))
 	default:
 		return false
 	}
@@ -105,9 +105,9 @@ func (m ExtJSONMatcher) stringMatches(mv String, v interface{}) bool {
 	case String:
 		return _mv == string(v.(String))
 	case Number:
-		return _mv == typeutil.ToString(float64(v.(Number)))
+		return _mv == types.ToString(float64(v.(Number)))
 	case Boolean:
-		return _mv == typeutil.ToString(bool(v.(Boolean)))
+		return _mv == types.ToString(bool(v.(Boolean)))
 	default:
 		return false
 	}
@@ -119,7 +119,7 @@ func (m ExtJSONMatcher) booleanMatches(mv Boolean, v interface{}) bool {
 	case Boolean:
 		return _mv == bool(v.(Boolean))
 	case String:
-		return typeutil.ToString(_mv) == string(v.(String))
+		return types.ToString(_mv) == string(v.(String))
 	default:
 		return false
 	}
@@ -131,9 +131,9 @@ func (m ExtJSONMatcher) regexpMatches(mv ExtRegexp, v interface{}) bool {
 	case String:
 		return _mv.MatchString(string(v.(String)))
 	case Number:
-		return _mv.MatchString(typeutil.ToString(v))
+		return _mv.MatchString(types.ToString(v))
 	case Boolean:
-		return _mv.MatchString(typeutil.ToString(v))
+		return _mv.MatchString(types.ToString(v))
 	case ExtRegexp:
 		var _v *regexp.Regexp = v.(ExtRegexp)
 		return _mv.String() == _v.String()
