@@ -175,6 +175,7 @@ func (f *templateFilter) getTemplateFromDTemplate(v myjson.Object) (*template, *
 		if err != nil {
 			return nil, nil, err
 		}
+		f.templateCache[_filename] = template
 	}
 	return template, &renderContext{filename: _filename}, nil
 }
