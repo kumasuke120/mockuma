@@ -1,5 +1,5 @@
 {
-  "@type": "vars",
+  "type": "vars",
   "@comment": {
     "en": "defines variables for /api/login",
     "cn": "定义了 /api/login 相关的变量"

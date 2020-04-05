@@ -1,5 +1,5 @@
 {
-  "@type": "vars",
+  "type": "vars",
   "@comment": {
     "en": "defines variables for /api/books/{id}",
     "cn": "定义了 /api/books/{id} 相关的变量"

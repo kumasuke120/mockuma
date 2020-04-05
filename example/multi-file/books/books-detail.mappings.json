@@ -1,5 +1,5 @@
 {
-  "@type": "mappings",
+  "type": "mappings",
   "@comment": {
     "en": "mappings which defines api mocks for /api/books/{id}",
     "cn": "定义了 /api/books/{id} 的 API Mock 的映射(mappings)"

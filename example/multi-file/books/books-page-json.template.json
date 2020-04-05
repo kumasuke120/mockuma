@@ -1,5 +1,5 @@
 {
-  "@type": "template",
+  "type": "template",
   "template": {
     "@comment": {
       "en": "defines a template which shows the books list for page x",

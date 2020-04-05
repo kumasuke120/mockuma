@@ -1,5 +1,5 @@
 {
-  "@type": "template",
+  "type": "template",
   "template": {
     "@comment": "show books list for page x",
     "uri": "/api/books",

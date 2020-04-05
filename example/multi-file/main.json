@@ -1,10 +1,10 @@
 {
-  "@type": "main",
+  "type": "main",
   "@comment": {
     "en": "there can only be one main file",
     "cn": "仅可以有一个主入口文件"
   },
-  "@include": {
+  "include": {
     "mappings": [
       "whoami/whoami.mappings.json",
       "hello/hello.mappings.json",

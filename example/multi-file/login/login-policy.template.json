@@ -1,5 +1,5 @@
 {
-  "@type": "template",
+  "type": "template",
   "template": {
     "when": {
       "params": {
