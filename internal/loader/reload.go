@@ -13,11 +13,13 @@ import (
 	"github.com/kumasuke120/mockuma/internal/myos"
 )
 
+const watchInterval = 50 * time.Millisecond
+
 type fileChangeListener interface {
 	onFileChange(path string)
 }
 
-type wdWatcher struct {
+type fileWatcher struct {
 	wd        string
 	watcher   *fsnotify.Watcher
 	filenames []string
@@ -25,21 +27,24 @@ type wdWatcher struct {
 	watching  *int32
 }
 
-func newWatcher(filenames []string) (*wdWatcher, error) {
+func newWdWatcher(filenames []string) (*fileWatcher, error) {
 	if len(filenames) == 0 {
 		panic("parameter 'filenames' should not be empty")
 	} else if anyAbs(filenames) {
 		panic("parameter 'filenames' shouldn't contains absolute path")
 	}
 
+	wd := myos.GetWd()
+	return newWatcher(filenames, wd)
+}
+
+func newWatcher(filenames []string, wd string) (*fileWatcher, error) {
 	fsWatcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
 	}
 
-	wd := myos.GetWd()
-
-	watcher := &wdWatcher{
+	watcher := &fileWatcher{
 		wd:        wd,
 		watcher:   fsWatcher,
 		filenames: filenames,
@@ -64,7 +69,7 @@ func anyAbs(names []string) bool {
 	return false
 }
 
-func (w *wdWatcher) addWatchRecursively(name string) error {
+func (w *fileWatcher) addWatchRecursively(name string) error {
 	if isDir, err := w.isDir(name); err == nil { // only adds if name represents a directory
 		if !isDir {
 			return nil
@@ -94,7 +99,7 @@ func (w *wdWatcher) addWatchRecursively(name string) error {
 		})
 }
 
-func (w *wdWatcher) isDir(name string) (bool, error) {
+func (w *fileWatcher) isDir(name string) (bool, error) {
 	s, err := os.Stat(name)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -107,11 +112,11 @@ func (w *wdWatcher) isDir(name string) (bool, error) {
 	}
 }
 
-func (w *wdWatcher) addListener(listener fileChangeListener) {
+func (w *fileWatcher) addListener(listener fileChangeListener) {
 	w.listeners = append(w.listeners, listener)
 }
 
-func (w *wdWatcher) watch() {
+func (w *fileWatcher) watch() {
 	defer func() {
 		if err := w.watcher.Close(); err != nil {
 			log.Println("[loader  ] fail to close watcher:", err)
@@ -127,7 +132,7 @@ func (w *wdWatcher) watch() {
 	}
 }
 
-func (w *wdWatcher) doWatch() (stop bool) {
+func (w *fileWatcher) doWatch() (stop bool) {
 	ok := true
 	var event fsnotify.Event
 	var err error
@@ -158,16 +163,19 @@ func (w *wdWatcher) doWatch() (stop bool) {
 			log.Println("[loader  ] failure encountered when watching files:", err)
 		}
 	default:
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(watchInterval)
 	}
 
 	stop = !ok
 	return
 }
 
-func (w *wdWatcher) isConcernedFile(name string) bool {
+func (w *fileWatcher) isConcernedFile(name string) bool {
 	for _, f := range w.filenames {
-		af := filepath.Join(w.wd, f)
+		af := f
+		if !filepath.IsAbs(f) {
+			af = filepath.Join(w.wd, f)
+		}
 		match, err := filepath.Match(af, name)
 		if err != nil {
 			panic("Shouldn't happen")
@@ -179,14 +187,15 @@ func (w *wdWatcher) isConcernedFile(name string) bool {
 	return false
 }
 
-func (w *wdWatcher) notifyAll(name string) {
+func (w *fileWatcher) notifyAll(name string) {
 	for _, l := range w.listeners {
 		l.onFileChange(name)
 	}
 }
 
-func (w *wdWatcher) cancel() {
+func (w *fileWatcher) cancel() {
 	atomic.StoreInt32(w.watching, 0)
+	time.Sleep(watchInterval)
 }
 
 func (l *Loader) EnableAutoReload(callback func(mappings *mckmaps.MockuMappings)) error {
@@ -197,30 +206,38 @@ func (l *Loader) EnableAutoReload(callback func(mappings *mckmaps.MockuMappings)
 		panic("mockuMappings has not been loaded")
 	}
 
-	watcher, err := newWatcher(l.loaded.Filenames)
+	var err error
+
+	if l.zipMode {
+		wd := filepath.Dir(l.filename)
+		l.watcher, err = newWatcher([]string{l.filename}, wd)
+	} else {
+		l.watcher, err = newWdWatcher(l.loaded.Filenames)
+	}
 	if err != nil {
 		return err
 	}
+
 	listener := &autoReloadListener{
 		l:        l,
-		w:        watcher,
+		w:        l.watcher,
 		callback: callback,
 	}
-	watcher.addListener(listener)
-	go watcher.watch()
+	l.watcher.addListener(listener)
+	go l.watcher.watch()
 
 	return nil
 }
 
 type autoReloadListener struct {
 	l         *Loader
-	w         *wdWatcher
+	w         *fileWatcher
 	callback  func(mappings *mckmaps.MockuMappings)
 	reloadMux sync.Mutex
 }
 
 func (l *autoReloadListener) onFileChange(path string) {
-	log.Println("[loader  ] change detected:", path)
+	log.Println("[loader  ] changed  :", path)
 
 	mappings, err := l.l.Load()
 	if err != nil {

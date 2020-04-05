@@ -6,7 +6,6 @@ import (
 	"flag"
 	"log"
 	"math/rand"
-	"runtime"
 	"time"
 
 	"github.com/kumasuke120/mockuma/internal"
@@ -14,6 +13,7 @@ import (
 	"github.com/kumasuke120/mockuma/internal/mckmaps"
 	"github.com/kumasuke120/mockuma/internal/myos"
 	"github.com/kumasuke120/mockuma/internal/server"
+	"github.com/ztrue/shutdown"
 )
 
 var port = flag.Int("p", 3214,
@@ -42,13 +42,19 @@ func main() {
 		ld := loader.New(*mapfile)
 		mappings := loadMappings(ld)
 
+		shutdown.Add(func() { // adds a shutdown hook
+			if err := ld.Clean(); err != nil {
+				log.Println("[main    ] cannot clean temporary directories: " + err.Error())
+			}
+		})
+
 		s := server.NewMockServer(*port)
 		if err := ld.EnableAutoReload(s.SetMappings); err != nil {
 			log.Fatalln("[main    ] fail to enable automatic reloading:", err)
 		}
 		go s.ListenAndServe(mappings)
 
-		runtime.Goexit()
+		shutdown.Listen()
 	}
 }
 
