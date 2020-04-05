@@ -10,6 +10,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/kumasuke120/mockuma/internal/mckmaps"
+	"github.com/kumasuke120/mockuma/internal/myos"
 )
 
 type fileChangeListener interface {
@@ -36,10 +37,7 @@ func newWatcher(filenames []string) (*wdWatcher, error) {
 		return nil, err
 	}
 
-	wd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
+	wd := myos.GetWd()
 
 	watcher := &wdWatcher{
 		wd:        wd,

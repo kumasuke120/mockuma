@@ -1,21 +1,16 @@
 package myjson
 
 import (
-	"io/ioutil"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-//noinspection GoImportUsedAsName
 func TestMarshal(t *testing.T) {
+	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
-	require := require.New(t)
 
-	fb1, e1 := ioutil.ReadFile(filepath.Join("testdata", "json1-slim.json"))
-	require.Nil(e1)
+	fb1 := []byte(`{"arr":[1,"a",null],"bool":false,"null":null,"num":1.23,"str":"hello"}`)
 	j1 := Object(map[string]interface{}{
 		"str":  String("hello"),
 		"num":  Number(1.23),

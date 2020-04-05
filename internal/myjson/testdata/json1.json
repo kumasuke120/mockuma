@@ -2,6 +2,10 @@
   "str": "hello",
   "num": 1.23,
   "bool": false,
-  "arr": [1, "a", null],
+  "arr": [
+    1,
+    "a",
+    null
+  ],
   "null": null
 }
