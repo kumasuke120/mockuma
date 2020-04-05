@@ -1,0 +1,14 @@
+{
+  "type": "template",
+  "template": {
+    "b": {
+      "value": "@{b}"
+    },
+    "a": {
+      "@template": "template-cyclic-a.json",
+      "vars": {
+        "value": "@{a}"
+      }
+    }
+  }
+}

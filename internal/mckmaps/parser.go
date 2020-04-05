@@ -22,8 +22,15 @@ type loadError struct {
 	err      error
 }
 
+func indentErrorMsg(err error) string {
+	errMsg := err.Error()
+	errMsg = strings.ReplaceAll(errMsg, "\n", "\n\t")
+	return errMsg
+}
+
 func (e *loadError) Error() string {
-	return fmt.Sprintf("cannot load the file '%s': %s", e.filename, e.err)
+	return fmt.Sprintf("cannot load the file '%s': \n\t%s",
+		e.filename, indentErrorMsg(e.err))
 }
 
 type parserError struct {
@@ -45,7 +52,7 @@ func (e *parserError) Error() string {
 	}
 
 	if e.err != nil {
-		result += ": " + e.err.Error()
+		result += ": \n\t" + indentErrorMsg(e.err)
 	}
 
 	return result
