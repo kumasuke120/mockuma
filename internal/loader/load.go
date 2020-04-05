@@ -18,12 +18,17 @@ var defaultMapfile = []string{
 
 type Loader struct {
 	mux      sync.Mutex
+	oldWd    string
 	filename string
+	watcher  *fileWatcher
 	loaded   *mckmaps.MockuMappings
+	zipMode  bool
+	tempDirs []string
 }
 
 func New(filename string) *Loader {
-	return &Loader{filename: filename}
+	wd := myos.GetWd()
+	return &Loader{filename: filename, zipMode: false, oldWd: wd}
 }
 
 func (l *Loader) Load() (*mckmaps.MockuMappings, error) {
@@ -31,6 +36,12 @@ func (l *Loader) Load() (*mckmaps.MockuMappings, error) {
 	defer l.mux.Unlock()
 
 	if l.filename == "" {
+		return l.loadDefault()
+	} else if filepath.Ext(l.filename) == ".zip" {
+		err := l.beforeLoadZip()
+		if err != nil {
+			return nil, err
+		}
 		return l.loadDefault()
 	}
 
@@ -45,6 +56,29 @@ func (l *Loader) loadDefault() (m *mckmaps.MockuMappings, e error) {
 		}
 	}
 	return
+}
+
+func (l *Loader) beforeLoadZip() error {
+	l.zipMode = true
+
+	err := l.Clean()
+	if err != nil {
+		log.Println("[loader  ] cannot clean temporary directories: " + err.Error())
+	}
+
+	dir, err := unzip(l.filename)
+	if err != nil {
+		return err
+	}
+	l.tempDirs = append(l.tempDirs, dir)
+	log.Println("[loader  ] specified mapfile has been extracted to: " + dir)
+
+	err = chdirBasedOnDir(dir)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (l *Loader) loadFromFile(filename string, chdir bool) (*mckmaps.MockuMappings, error) {
@@ -63,15 +97,45 @@ func (l *Loader) loadFromFile(filename string, chdir bool) (*mckmaps.MockuMappin
 	parser := mckmaps.NewParser(filename)
 	var mappings *mckmaps.MockuMappings
 	mappings, err = parser.Parse()
-	if err == nil { // saves filename if succeeded
-		l.filename = filename
+	if err == nil { // saves loaded mappings if succeeded
 		l.loaded = mappings
 	}
 	return mappings, err
 }
 
+func (l *Loader) Clean() error {
+	if len(l.tempDirs) == 0 {
+		return nil
+	}
+
+	// releases the directory and watcher for removing
+	if l.watcher != nil {
+		l.watcher.cancel()
+
+		err := myos.Chdir(l.oldWd)
+		if err != nil {
+			return err
+		}
+	}
+
+	// deletes all temporary directories
+	for _, dir := range l.tempDirs {
+		err := os.RemoveAll(dir)
+		if err != nil {
+			return err
+		}
+	}
+	l.tempDirs = nil
+
+	return nil
+}
+
 func chdirBasedOnFilename(filename string) error {
 	dir := filepath.Dir(filename)
+	return chdirBasedOnDir(dir)
+}
+
+func chdirBasedOnDir(dir string) error {
 	wd := myos.GetWd()
 
 	if wd != dir {

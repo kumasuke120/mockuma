@@ -29,4 +29,18 @@ func TestLoader_Load(t *testing.T) {
 	assert.NotNil(file2)
 
 	require.Nil(myos.Chdir(oldWd))
+
+	l3 := New(filepath.Join("testdata", "template.zip"))
+	assert.Empty(l3.tempDirs)
+	_, err3 := l3.Load()
+	if assert.NotNil(err3) {
+		assert.Contains(err3.Error(), "cyclic")
+	}
+	assert.Len(l3.tempDirs, 1)
+	require.Nil(myos.Chdir(oldWd))
+	err3 = l3.Clean()
+	if assert.Nil(err3) {
+		assert.Empty(l3.tempDirs)
+	}
+
 }
