@@ -18,12 +18,13 @@
       }
     },
     {
-      "uri": "/{a}/{b}/{a}",
+      "uri": "/{a}/{b}/{a}/{c}",
       "policies": {
         "when": {
           "pathVars": {
             "a": 1,
-            "b": 2
+            "b": 2,
+            "c": null
           }
         }
       }
