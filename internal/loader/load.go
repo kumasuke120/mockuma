@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/kumasuke120/mockuma/internal/mckmaps"
+	"github.com/kumasuke120/mockuma/internal/myos"
 )
 
 var defaultMapfile = []string{
@@ -71,13 +72,10 @@ func (l *Loader) loadFromFile(filename string, chdir bool) (*mckmaps.MockuMappin
 
 func chdirBasedOnFilename(filename string) error {
 	dir := filepath.Dir(filename)
-	wd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
+	wd := myos.GetWd()
 
 	if wd != dir {
-		err = os.Chdir(dir)
+		err := myos.Chdir(dir)
 		if err != nil {
 			return err
 		}

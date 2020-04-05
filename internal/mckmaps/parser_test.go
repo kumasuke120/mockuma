@@ -3,13 +3,13 @@ package mckmaps
 import (
 	"errors"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"regexp"
 	"testing"
 
 	"github.com/kumasuke120/mockuma/internal/myhttp"
 	"github.com/kumasuke120/mockuma/internal/myjson"
+	"github.com/kumasuke120/mockuma/internal/myos"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -45,10 +45,9 @@ func TestParser_Parse(t *testing.T) {
 
 	loadedFilenames = nil
 
-	oldWd, err := os.Getwd()
-	require.Nil(err)
-
-	require.Nil(os.Chdir("testdata"))
+	require.Nil(myos.InitWd())
+	oldWd := myos.GetWd()
+	require.Nil(myos.Chdir(filepath.Join(oldWd, "testdata")))
 
 	expectedMappings := []*Mapping{
 		{
@@ -141,7 +140,7 @@ func TestParser_Parse(t *testing.T) {
 		assert.Equal(expected2, actual2)
 	}
 
-	require.Nil(os.Chdir(oldWd))
+	require.Nil(myos.Chdir(oldWd))
 }
 
 //noinspection GoImportUsedAsName

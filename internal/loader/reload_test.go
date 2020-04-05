@@ -14,6 +14,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/kumasuke120/mockuma/internal/mckmaps"
+	"github.com/kumasuke120/mockuma/internal/myos"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -48,12 +49,12 @@ func TestWdWatcher(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	oldWd, err := os.Getwd()
-	require.Nil(err)
+	require.Nil(myos.InitWd())
+	oldWd := myos.GetWd()
 
 	dir, err := ioutil.TempDir("", "test-wd")
 	require.Nil(err)
-	require.Nil(os.Chdir(dir))
+	require.Nil(myos.Chdir(dir))
 
 	f1, e1 := ioutil.TempFile(dir, "wdWatcher")
 	require.Nil(e1)
@@ -133,7 +134,7 @@ func TestWdWatcher(t *testing.T) {
 	time.Sleep(1 * time.Second)
 	assert.Equal(int32(0), atomic.LoadInt32(w2.watching))
 
-	require.Nil(os.Chdir(oldWd))
+	require.Nil(myos.Chdir(oldWd))
 	require.Nil(os.Remove(n1))
 	require.Nil(os.RemoveAll(dir))
 }
@@ -143,8 +144,8 @@ func TestLoader_EnableAutoReload(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	oldWd, err := os.Getwd()
-	require.Nil(err)
+	require.Nil(myos.InitWd())
+	oldWd := myos.GetWd()
 
 	dir, err := ioutil.TempDir("", "test-autoReload")
 	require.Nil(err)
@@ -186,7 +187,7 @@ func TestLoader_EnableAutoReload(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	require.Nil(os.Chdir(oldWd))
+	require.Nil(myos.Chdir(oldWd))
 	require.Nil(os.Remove(n1))
 	require.Nil(os.RemoveAll(dir))
 }

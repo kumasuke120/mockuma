@@ -12,6 +12,7 @@ import (
 	"github.com/kumasuke120/mockuma/internal"
 	"github.com/kumasuke120/mockuma/internal/loader"
 	"github.com/kumasuke120/mockuma/internal/mckmaps"
+	"github.com/kumasuke120/mockuma/internal/myos"
 	"github.com/kumasuke120/mockuma/internal/server"
 )
 
@@ -22,7 +23,14 @@ var mapfile = flag.String("mapfile", "",
 var showVersion = flag.Bool("version", false, "shows the version information for MocKuma")
 
 func init() {
+	// set random seed
 	rand.Seed(time.Now().UnixNano())
+
+	// initialize current working directory
+	err := myos.InitWd()
+	if err != nil {
+		log.Fatalln("[main    ] cannot get current working directory")
+	}
 }
 
 func main() {

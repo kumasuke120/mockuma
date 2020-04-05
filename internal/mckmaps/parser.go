@@ -15,6 +15,7 @@ import (
 
 	"github.com/kumasuke120/mockuma/internal/myhttp"
 	"github.com/kumasuke120/mockuma/internal/myjson"
+	"github.com/kumasuke120/mockuma/internal/myos"
 	"github.com/kumasuke120/mockuma/internal/typeutil"
 )
 
@@ -127,25 +128,23 @@ func (p *Parser) load(record bool, preprocessors ...filter) (interface{}, error)
 	return v, nil
 }
 
-func (p *Parser) allRelative(filenames []string) ([]string, error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
+func (p *Parser) allRelative(filenames []string) (ret []string, err error) {
+	wd := myos.GetWd()
 
-	result := make([]string, len(filenames))
+	ret = make([]string, len(filenames))
 	for i, p := range filenames {
 		rp := p
 		if filepath.IsAbs(p) {
 			rp, err = filepath.Rel(wd, p)
 			if err != nil {
-				return nil, err
+				ret = nil
+				return
 			}
 		}
 
-		result[i] = rp
+		ret[i] = rp
 	}
-	return result, nil
+	return
 }
 
 func (p *Parser) reset() {
@@ -1085,24 +1084,21 @@ func parseVars(v myjson.Object) (*vars, error) {
 	return vars, nil
 }
 
-func checkFilepath(path string) error {
-	wd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
+func checkFilepath(path string) (err error) {
+	wd := myos.GetWd()
 
 	relPath := path
 	if filepath.IsAbs(path) {
 		relPath, err = filepath.Rel(wd, path)
 		if err != nil {
-			return err
+			return
 		}
 	}
 
 	if strings.HasPrefix(relPath, "..") { // paths should be under the current working directory
 		return errors.New("included file isn't in the current working directory")
 	}
-	return nil
+	return
 }
 
 var pathVarRegexp = regexp.MustCompile("{[^}]*}")

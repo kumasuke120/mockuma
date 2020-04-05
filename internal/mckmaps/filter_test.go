@@ -2,11 +2,11 @@ package mckmaps
 
 import (
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/kumasuke120/mockuma/internal/myjson"
+	"github.com/kumasuke120/mockuma/internal/myos"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -36,8 +36,8 @@ func TestLoadFileFilter(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	oldWd, err := os.Getwd()
-	require.Nil(err)
+	require.Nil(myos.InitWd())
+	oldWd := myos.GetWd()
 
 	fb0, err := ioutil.ReadFile(filepath.Join("testdata", "loadFile-0.json"))
 	require.Nil(err)
@@ -49,7 +49,7 @@ func TestLoadFileFilter(t *testing.T) {
 	je, err := myjson.Unmarshal(fbe)
 	require.Nil(err)
 
-	err = os.Chdir(filepath.Join(oldWd, "testdata"))
+	err = myos.Chdir(filepath.Join(oldWd, "testdata"))
 	require.Nil(err)
 
 	ja, err := doFiltersOnV(j0, makeLoadFileFilter())
@@ -57,8 +57,7 @@ func TestLoadFileFilter(t *testing.T) {
 		assert.Equal(je, ja)
 	}
 
-	err = os.Chdir(oldWd)
-	require.Nil(err)
+	require.Nil(myos.Chdir(oldWd))
 }
 
 //noinspection GoImportUsedAsName
@@ -91,8 +90,8 @@ func TestRenderTemplate(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	oldWd, err := os.Getwd()
-	require.Nil(err)
+	require.Nil(myos.InitWd())
+	oldWd := myos.GetWd()
 
 	fb0, err := ioutil.ReadFile(filepath.Join("testdata", "renderTemplate.json"))
 	require.Nil(err)
@@ -104,7 +103,7 @@ func TestRenderTemplate(t *testing.T) {
 	je, err := myjson.Unmarshal(fbe)
 	require.Nil(err)
 
-	err = os.Chdir(filepath.Join(oldWd, "testdata"))
+	err = myos.Chdir(filepath.Join(oldWd, "testdata"))
 	require.Nil(err)
 
 	ja, err := doFiltersOnV(j0, makeTemplateFilter())
@@ -112,8 +111,7 @@ func TestRenderTemplate(t *testing.T) {
 		assert.Equal(je, ja)
 	}
 
-	err = os.Chdir(oldWd)
-	require.Nil(err)
+	require.Nil(myos.Chdir(oldWd))
 }
 
 //noinspection GoImportUsedAsName
