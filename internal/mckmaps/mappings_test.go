@@ -200,6 +200,20 @@ func TestMappingsParser_parse(t *testing.T) {
 							CmdType: mapPolicyReturns,
 							Returns: &Returns{StatusCode: myhttp.StatusOk},
 						},
+						{
+							When: &When{
+								Body: []byte("123"),
+							},
+							CmdType: mapPolicyReturns,
+							Returns: &Returns{StatusCode: myhttp.StatusOk},
+						},
+						{
+							When: &When{
+								Body: []byte("true"),
+							},
+							CmdType: mapPolicyReturns,
+							Returns: &Returns{StatusCode: myhttp.StatusOk},
+						},
 					},
 				},
 			}

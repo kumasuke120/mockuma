@@ -417,7 +417,7 @@ func (p *mappingsParser) parseWhenBody(v interface{}) ([]byte, myjson.ExtRegexp,
 		_v := v.(myjson.ExtJSONMatcher)
 		return nil, nil, &_v
 	default:
-		return []byte(types.ToString(v.(myjson.Number))), nil, nil
+		return []byte(types.ToString(v)), nil, nil
 	}
 }
 
