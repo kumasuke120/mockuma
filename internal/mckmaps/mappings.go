@@ -86,9 +86,9 @@ type Interval struct {
 
 var (
 	// refers to: https://tools.ietf.org/html/rfc7230#section-3.2.6
-	methodRegexp      = regexp.MustCompile("(?i)^[-!#$%&'*+._`|~\\da-z]+$")
-	forwardPathRegexp = regexp.MustCompile("^(?:https?://)?.+$")
-	pathVarRegexp     = regexp.MustCompile("{[^}]*}")
+	methodRegexp  = regexp.MustCompile("(?i)^[-!#$%&'*+._`|~\\da-z]+$")
+	pathRegexp    = regexp.MustCompile("^(?:https?://)?.+$")
+	pathVarRegexp = regexp.MustCompile("{[^}]*}")
 )
 
 type mappingsParser struct {
@@ -131,7 +131,7 @@ func (p *mappingsParser) parse() ([]*Mapping, error) {
 
 	p.jsonPath.Append(0)
 	var mappings []*Mapping
-	for idx, rm := range rawMappings {
+	for idx, rm := range rawMappings { // parses each mapping
 		p.jsonPath.SetLast(idx)
 
 		switch rm.(type) {
@@ -160,7 +160,7 @@ func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
 	if err != nil {
 		return nil, newParserError(p.filename, p.jsonPath)
 	}
-	_uri, err := encodeURI(string(uri))
+	_uri, err := encodeURI(string(uri)) // encodes non-ascii characters
 	if err != nil {
 		return nil, &parserError{filename: p.filename, jsonPath: p.jsonPath, err: err}
 	}
@@ -185,7 +185,7 @@ func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
 	p.jsonPath.SetLast(aMapPolicies)
 	p.jsonPath.Append(0)
 	var policies []*Policy
-	for idx, rp := range ensureJSONArray(v.Get(aMapPolicies)) {
+	for idx, rp := range ensureJSONArray(v.Get(aMapPolicies)) { // parses each policy
 		p.jsonPath.SetLast(idx)
 
 		switch rp.(type) {
@@ -224,7 +224,7 @@ func encodeURI(uri string) (string, error) {
 				}
 				builder.WriteString(doEncodeURI(uri[startPos:loc[0]]))
 
-				builder.WriteString(uri[loc[0]:loc[1]])
+				builder.WriteString(uri[loc[0]:loc[1]]) // skips pathVars
 
 				if i == len(indices)-1 {
 					builder.WriteString(doEncodeURI(uri[loc[1]:]))
@@ -262,7 +262,7 @@ func (p *mappingsParser) parsePolicy(v myjson.Object) (*Policy, error) {
 	}
 
 	cntCommands := p.countCommands(v, mapPolicyCommands...)
-	if cntCommands == 0 {
+	if cntCommands == 0 { // sets the default command when no command found in the policy
 		policy.Returns = &Returns{
 			StatusCode: myhttp.StatusOk,
 		}
@@ -272,7 +272,7 @@ func (p *mappingsParser) parsePolicy(v myjson.Object) (*Policy, error) {
 		if err != nil {
 			return nil, err
 		}
-	} else {
+	} else { // multiple commands are not allowed in the same policy
 		return nil, &parserError{
 			filename: p.filename,
 			jsonPath: p.jsonPath,
@@ -503,7 +503,7 @@ func (p *mappingsParser) parseForwards(v myjson.Object) (*Forwards, error) {
 
 	p.jsonPath.SetLast(pPath)
 	path, err := v.GetString(pPath)
-	if err != nil || !forwardPathRegexp.MatchString(string(path)) {
+	if err != nil || !pathRegexp.MatchString(string(path)) { // checks path
 		return nil, newParserError(p.filename, p.jsonPath)
 	}
 	forwards.Path = string(path)
@@ -529,7 +529,7 @@ func (p *mappingsParser) parseRedirects(v myjson.Object) (*Returns, error) {
 
 	p.jsonPath.SetLast(pPath)
 	path, err := v.GetString(pPath)
-	if err != nil || len(string(path)) == 0 {
+	if err != nil || !pathRegexp.MatchString(string(path)) { // checks path
 		return nil, newParserError(p.filename, p.jsonPath)
 	}
 	returns.Headers = []*NameValuesPair{
@@ -563,7 +563,7 @@ func (p *mappingsParser) parseLatency(v interface{}) (*Interval, error) {
 		}, nil
 	case myjson.Array:
 		va := v.(myjson.Array)
-		if len(va) == 1 {
+		if len(va) == 1 { // treats 1-element array as number
 			va0 := va[0]
 			switch va0.(type) {
 			case myjson.Number:
@@ -571,8 +571,8 @@ func (p *mappingsParser) parseLatency(v interface{}) (*Interval, error) {
 			}
 		} else if len(va) == 2 {
 			if myjson.IsAllNumber(va) {
-				va0 := int64(va[0].(myjson.Number))
-				va1 := int64(va[1].(myjson.Number))
+				va0 := int64(va[0].(myjson.Number)) // 0 as min
+				va1 := int64(va[1].(myjson.Number)) // 1 as max
 				if va1 >= va0 {
 					return &Interval{
 						Min: va0,
@@ -586,6 +586,9 @@ func (p *mappingsParser) parseLatency(v interface{}) (*Interval, error) {
 	return nil, newParserError(p.filename, p.jsonPath)
 }
 
+// numbers all pathVars, giving each pathVar an independent index.
+// changes pathVars' names to the corresponding indices.
+// pathVars with same names share the same index.
 func (p *mappingsParser) renamePathVars(mapping *Mapping) {
 	newURI, var2Idx := numberPathVars(mapping.URI)
 	mapping.URI = newURI
@@ -619,7 +622,7 @@ func (p *mappingsParser) numberForPathVars(l int, when *When, var2Idx map[string
 				Values: v.Values,
 			}
 		} else {
-			newPVars[i] = v
+			panic("Shouldn't happen")
 		}
 	}
 	return newPVars
@@ -634,7 +637,7 @@ func (p *mappingsParser) numberForPathVarRegexps(when *When, var2Idx map[string]
 				Regexp: v.Regexp,
 			}
 		} else {
-			newPVarRegexps[i] = v
+			panic("Shouldn't happen")
 		}
 	}
 	return newPVarRegexps
@@ -646,11 +649,11 @@ func (p *mappingsParser) sortPathVars(newPVars []*NameValuesPair) {
 		var a, b int
 		a, err = strconv.Atoi(newPVars[i].Name)
 		if err != nil {
-			a = 0
+			panic("Shouldn't happen")
 		}
 		b, err = strconv.Atoi(newPVars[j].Name)
 		if err != nil {
-			b = 0
+			panic("Shouldn't happen")
 		}
 		return a < b
 	})
@@ -662,11 +665,11 @@ func (p *mappingsParser) sortPathVarRegexps(newPVars []*NameRegexpPair) {
 		var a, b int
 		a, err = strconv.Atoi(newPVars[i].Name)
 		if err != nil {
-			a = 0
+			panic("Shouldn't happen")
 		}
 		b, err = strconv.Atoi(newPVars[j].Name)
 		if err != nil {
-			b = 0
+			panic("Shouldn't happen")
 		}
 		return a < b
 	})
@@ -691,6 +694,7 @@ func numberPathVars(uri string) (n string, m map[string]int) {
 	return
 }
 
+// divides matchers into normal, regexp, json
 func divideIntoWhenMatchers(v myjson.Object) (myjson.Object,
 	map[string]myjson.ExtRegexp, map[string]myjson.ExtJSONMatcher) {
 
