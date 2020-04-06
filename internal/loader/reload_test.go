@@ -123,7 +123,7 @@ func TestFileWatcher(t *testing.T) {
 	time.Sleep(watchInterval * 2)
 	assert.Equal(int32(0), atomic.LoadInt32(w1.watching))
 
-	require.Nil(os.Chdir(filepath.Join(oldWd, "testdata")))
+	require.Nil(myos.Chdir(filepath.Join(oldWd, "testdata")))
 	time.Sleep(watchInterval * 2)
 	w2, e2 := newWdWatcher([]string{"mappings-0.json"})
 	require.Nil(e2)
