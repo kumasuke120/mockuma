@@ -4,7 +4,7 @@ import "fmt"
 
 const (
 	AppName       = "MocKuma"
-	VersionNumber = "1.1.7"
+	VersionNumber = "1.1.8"
 	author        = "kumasuke120<bearcomingx@gmail.com>"
 	github        = "https://github.com/kumasuke120/mockuma"
 )
