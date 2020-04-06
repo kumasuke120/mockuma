@@ -39,13 +39,11 @@ func GetWd() string {
 }
 
 func Chdir(dir string) (err error) {
-	if dir == theWd {
+	if dir == GetWd() {
 		return
 	}
 
 	err = os.Chdir(dir)
-	if GetWd() != dir {
-		setWd(dir)
-	}
+	setWd(dir)
 	return
 }
