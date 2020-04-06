@@ -63,7 +63,7 @@ func (l *Loader) beforeLoadZip() error {
 
 	err := l.Clean()
 	if err != nil {
-		log.Println("[loader  ] cannot clean temporary directories: " + err.Error())
+		log.Println("[loader  ] fail to clean temporary directories: " + err.Error())
 	}
 
 	dir, err := unzip(l.filename)
@@ -71,7 +71,6 @@ func (l *Loader) beforeLoadZip() error {
 		return err
 	}
 	l.tempDirs = append(l.tempDirs, dir)
-	log.Println("[loader  ] specified mapfile has been extracted to: " + dir)
 
 	err = chdirBasedOnDir(dir)
 	if err != nil {
@@ -144,7 +143,7 @@ func chdirBasedOnDir(dir string) error {
 			return err
 		}
 
-		log.Println("[loader  ] working directory has been changed to:", dir)
+		log.Println("[loader  ] chdir    : working directory changed:", dir)
 	}
 
 	return nil

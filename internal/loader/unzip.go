@@ -17,7 +17,7 @@ func unzip(filename string) (string, error) {
 	}
 	defer func() {
 		if err := r.Close(); err != nil {
-			log.Println("[loader  ] cannot close zip reader")
+			log.Println("[loader  ] fail to close zip reader")
 		}
 	}()
 
@@ -27,11 +27,13 @@ func unzip(filename string) (string, error) {
 	}
 
 	for _, f := range r.File {
-		s, err := unzipToDir(f, dir)
+		err := unzipToDir(f, dir)
 		if err != nil {
-			return s, err
+			return "", err
 		}
 	}
+	log.Println("[loader  ] unzip    : archive extracted to:", dir)
+
 	return dir, nil
 }
 
@@ -40,14 +42,14 @@ func createTempDir() (string, error) {
 	return ioutil.TempDir(os.TempDir(), dirPat)
 }
 
-func unzipToDir(f *zip.File, dir string) (string, error) {
+func unzipToDir(f *zip.File, dir string) error {
 	srcFR, err := f.Open()
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer func() {
 		if err := srcFR.Close(); err != nil {
-			log.Println("[loader  ] cannot close a file in the zip reader")
+			log.Println("[loader  ] fail to close a file in the zip reader")
 		}
 	}()
 
@@ -55,27 +57,27 @@ func unzipToDir(f *zip.File, dir string) (string, error) {
 	if f.FileInfo().IsDir() {
 		err := os.MkdirAll(dst, f.Mode())
 		if err != nil {
-			return "", err
+			return err
 		}
 	} else {
 		err := os.MkdirAll(filepath.Dir(dst), f.Mode())
 		if err != nil {
-			return "", err
+			return err
 		}
 		dstF, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
-			return "", err
+			return err
 		}
 		defer func() {
 			if err := dstF.Close(); err != nil {
-				log.Fatalln("[loader  ] fail to close the newly-created file in temporary directory")
+				log.Fatalln("[loader  ] cannot close the newly-created file in temporary directory")
 			}
 		}()
 
 		_, err = io.Copy(dstF, srcFR)
 		if err != nil {
-			return "", err
+			return err
 		}
 	}
-	return "", nil
+	return nil
 }
