@@ -10,7 +10,7 @@ Tester may also use this tool with its command-like mapping configuration, writi
 and testing it.
 
 ### Features
-- maps responses based on requests's parameters/headers
+- maps responses based on requests' parameters/headers
 - reloads automatically mappings when changed
 - renders multiple mappings with user-defined templates and variables 
 - supports references static files
