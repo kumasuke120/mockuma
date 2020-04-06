@@ -42,15 +42,17 @@ func main() {
 		ld := loader.New(*mapfile)
 		mappings := loadMappings(ld)
 
-		shutdown.Add(func() { // adds a shutdown hook
+		// adds a shutdown hook
+		shutdown.Add(func() {
 			if err := ld.Clean(); err != nil {
-				log.Println("[main    ] cannot clean temporary directories: " + err.Error())
+				log.Println("[main    ] fail to clean temporary directories: " + err.Error())
 			}
 		})
 
+		// starts mock server
 		s := server.NewMockServer(*port)
 		if err := ld.EnableAutoReload(s.SetMappings); err != nil {
-			log.Fatalln("[main    ] fail to enable automatic reloading:", err)
+			log.Fatalln("[main    ] cannot enable automatic reloading:", err)
 		}
 		go s.ListenAndServe(mappings)
 
@@ -64,7 +66,7 @@ func loadMappings(ld *loader.Loader) *mckmaps.MockuMappings {
 		log.Fatalln("[main    ] cannot load mockuMappings:", err)
 	}
 	if mappings.IsEmpty() {
-		log.Fatalln("[main    ] the given mockuMappings is empty")
+		log.Fatalln("[main    ] cannot started with the given empty mockuMappings")
 	}
 	return mappings
 }

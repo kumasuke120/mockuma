@@ -145,13 +145,13 @@ func (w *fileWatcher) doWatch() (stop bool) {
 				if abs, err := filepath.Abs(name); err == nil {
 					name = abs
 				} else {
-					log.Fatalln("[loader  ] fail to retrieve absolute path:", err)
+					log.Fatalln("[loader  ] cannot retrieve absolute path:", err)
 				}
 			}
 
 			if event.Op&fsnotify.Create == fsnotify.Create {
 				if err := w.addWatchRecursively(name); err != nil { // adds the newly-created file
-					log.Fatalln("[loader  ] fail to add new file for automatic reloading:", err)
+					log.Fatalln("[loader  ] cannot add new file for automatic reloading:", err)
 				}
 			}
 			if w.isConcernedFile(name) {
@@ -241,7 +241,7 @@ func (l *autoReloadListener) onFileChange(path string) {
 
 	mappings, err := l.l.Load()
 	if err != nil {
-		log.Println("[loader  ] cannot load mockuMappings after changing:", err)
+		log.Println("[loader  ] fail to load mockuMappings after changing:", err)
 		return
 	}
 
@@ -251,7 +251,7 @@ func (l *autoReloadListener) onFileChange(path string) {
 
 	// starts a new watcher goroutine, preventing from exiting
 	if err := l.l.EnableAutoReload(l.callback); err != nil {
-		log.Fatalln("[loader  ] fail to enable automatic reloading:", err)
+		log.Fatalln("[loader  ] cannot enable automatic reloading:", err)
 	}
 	go l.callback(mappings)
 
