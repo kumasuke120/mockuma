@@ -6,6 +6,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewPath(t *testing.T) {
+	assert.Panics(t, func() {
+		NewPath([]string{"a", "b"})
+	})
+}
+
 func TestParsePath(t *testing.T) {
 	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
@@ -19,11 +25,31 @@ func TestParsePath(t *testing.T) {
 	assert.Nil(e2)
 	assert.Equal("$.first[1].second", p2.String())
 
-	_, e3 := ParsePath("$$.first.second")
+	ps3 := "$$.first.second"
+	_, e3 := ParsePath(ps3)
 	assert.NotNil(e3)
+	assert.Contains(e3.Error(), ps3)
 
 	_, e4 := ParsePath("$.first[1")
 	assert.NotNil(e4)
+
+	_, e5 := ParsePath(" $")
+	assert.NotNil(e5)
+
+	_, e6 := ParsePath("")
+	assert.NotNil(e6)
+
+	_, e7 := ParsePath("$.!!")
+	assert.NotNil(e7)
+
+	_, e8 := ParsePath("$[.]")
+	assert.NotNil(e8)
+
+	_, e9 := ParsePath("$['abc'[")
+	assert.NotNil(e9)
+
+	_, e10 := ParsePath("$[1abc]")
+	assert.NotNil(e10)
 }
 
 func TestObject_SetByPath(t *testing.T) {
