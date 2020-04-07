@@ -98,6 +98,8 @@ func (bm *boundMatcher) isMethodNotAllowed() bool {
 }
 
 func (bm *boundMatcher) matchPolicy() *mckmaps.Policy {
+	bm.cacheBody()
+
 	err := bm.r.ParseForm()
 	if err != nil {
 		log.Println("[server  ] fail to parse form:", err)
@@ -129,7 +131,25 @@ func (bm *boundMatcher) matchPolicy() *mckmaps.Policy {
 		policy = p
 		break
 	}
+
+	// resets body for later use in executor
+	bm.resetBodyFromCache()
+
 	return policy
+}
+
+func (bm *boundMatcher) cacheBody() {
+	body, err := ioutil.ReadAll(bm.r.Body)
+	if err == nil {
+		bm.bodyCache = body
+		bm.resetBodyFromCache()
+	}
+}
+
+func (bm *boundMatcher) resetBodyFromCache() {
+	if bm.bodyCache != nil {
+		bm.r.Body = ioutil.NopCloser(bytes.NewReader(bm.bodyCache))
+	}
 }
 
 func (bm *boundMatcher) pathVarsMatch(when *mckmaps.When) bool {
@@ -188,15 +208,6 @@ func (bm *boundMatcher) headersMatch(when *mckmaps.When) bool {
 
 func (bm *boundMatcher) bodyMatches(when *mckmaps.When) bool {
 	body := bm.bodyCache
-	if body == nil {
-		_body, err := ioutil.ReadAll(bm.r.Body)
-		bm.r.Body = ioutil.NopCloser(bytes.NewReader(_body))
-		if err == nil {
-			bm.bodyCache = _body
-			body = _body
-		}
-	}
-
 	if when.Body != nil {
 		return bytes.Equal(when.Body, body)
 	} else if when.BodyRegexp != nil {
