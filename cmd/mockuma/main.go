@@ -6,6 +6,7 @@ import (
 	"flag"
 	"log"
 	"math/rand"
+	"syscall"
 	"time"
 
 	"github.com/kumasuke120/mockuma/internal"
@@ -56,7 +57,7 @@ func main() {
 		}
 		go s.ListenAndServe(mappings)
 
-		shutdown.Listen()
+		shutdown.Listen(syscall.SIGINT, syscall.SIGTERM)
 	}
 }
 
