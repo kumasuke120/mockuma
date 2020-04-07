@@ -38,7 +38,7 @@ func unzip(filename string) (string, error) {
 }
 
 func createTempDir() (string, error) {
-	dirPat := fmt.Sprintf("mockuma_%d_*", os.Getpid())
+	dirPat := fmt.Sprintf("mockuma-%d-*", os.Getpid())
 	return ioutil.TempDir(os.TempDir(), dirPat)
 }
 
