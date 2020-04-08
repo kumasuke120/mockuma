@@ -195,7 +195,7 @@ func (w *fileWatcher) notifyAll(name string) {
 
 func (w *fileWatcher) cancel() {
 	atomic.StoreInt32(w.watching, 0)
-	time.Sleep(watchInterval)
+	time.Sleep(watchInterval * 2)
 }
 
 func (l *Loader) EnableAutoReload(callback func(mappings *mckmaps.MockuMappings)) error {
@@ -247,14 +247,18 @@ func (l *autoReloadListener) onFileChange(path string) {
 	l.w.cancel() // omits later events
 
 	// loads mappings
-	if mappings, err := l.l.Load(); err == nil {
-		go l.callback(mappings)
-	} else {
+	var mappings *mckmaps.MockuMappings
+	var err error
+	if mappings, err = l.l.Load(); err != nil {
 		log.Println("[loader  ] fail to load mockuMappings after changing:", err)
 	}
 
 	// starts a new watcher goroutine, preventing from exiting
-	if err := l.l.EnableAutoReload(l.callback); err != nil {
+	if err = l.l.EnableAutoReload(l.callback); err != nil {
 		log.Fatalln("[loader  ] cannot enable automatic reloading:", err)
+	}
+
+	if mappings != nil {
+		go l.callback(mappings)
 	}
 }

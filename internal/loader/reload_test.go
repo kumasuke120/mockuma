@@ -52,11 +52,11 @@ func TestFileWatcher(t *testing.T) {
 	require.Nil(myos.InitWd())
 	oldWd := myos.GetWd()
 
-	dir, err := ioutil.TempDir("", "test-wd")
+	dir, err := ioutil.TempDir("", "test-wd-*")
 	require.Nil(err)
 	require.Nil(myos.Chdir(dir))
 
-	f1, e1 := ioutil.TempFile(dir, "fileWatcher")
+	f1, e1 := ioutil.TempFile(dir, "fileWatcher-*")
 	require.Nil(e1)
 	n1 := f1.Name()
 	fmt.Println(n1)
@@ -148,12 +148,11 @@ func TestLoader_EnableAutoReload(t *testing.T) {
 	require.Nil(myos.InitWd())
 	oldWd := myos.GetWd()
 
-	dir, err := ioutil.TempDir("", "test-autoReload")
+	dir, err := ioutil.TempDir("", "test-autoReload-*")
 	require.Nil(err)
-	f1, e1 := ioutil.TempFile(dir, "enableAutoReload")
+	f1, e1 := ioutil.TempFile(dir, "enableAutoReload-*")
 	require.Nil(e1)
 	n1 := f1.Name()
-	fmt.Println(n1)
 
 	_, e1 = f1.Write([]byte(`{"type":"main","include":{"mappings":[]}}`))
 	require.Nil(e1)
