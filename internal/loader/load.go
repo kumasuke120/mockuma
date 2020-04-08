@@ -17,13 +17,14 @@ var defaultMapfile = []string{
 }
 
 type Loader struct {
-	mux      sync.Mutex
-	oldWd    string
-	filename string
-	watcher  *fileWatcher
-	loaded   *mckmaps.MockuMappings
-	zipMode  bool
-	tempDirs []string
+	mux          sync.Mutex
+	oldWd        string
+	filename     string
+	loadFilename string
+	watcher      *fileWatcher
+	loaded       *mckmaps.MockuMappings
+	zipMode      bool
+	tempDirs     []string
 }
 
 func New(filename string) *Loader {
@@ -35,32 +36,39 @@ func (l *Loader) Load() (*mckmaps.MockuMappings, error) {
 	l.mux.Lock()
 	defer l.mux.Unlock()
 
-	if l.filename == "" {
-		return l.loadDefault()
-	} else if filepath.Ext(l.filename) == ".zip" {
-		err := l.beforeLoadZip()
-		if err != nil {
-			return nil, err
-		}
-		return l.loadDefault()
+	err := l.absFilename() // gets absolute path for chdir and fsnotify
+	if err != nil {
+		return nil, err
 	}
 
-	return l.loadFromFile(l.filename, true)
+	l.zipMode = filepath.Ext(l.filename) == ".zip"
+	if l.zipMode {
+		err = l.beforeLoadZip()
+	} else {
+		err = l.beforeLoadNormal()
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return l.loadFromFile(l.loadFilename)
 }
 
-func (l *Loader) loadDefault() (m *mckmaps.MockuMappings, e error) {
-	for _, f := range defaultMapfile {
-		if _, e = os.Stat(f); !os.IsNotExist(e) {
-			m, e = l.loadFromFile(f, false)
-			return
-		}
+func (l *Loader) absFilename() error {
+	if l.filename == "" {
+		return nil
 	}
-	return
+
+	_filename, err := filepath.Abs(l.filename)
+	if err != nil {
+		return err
+	}
+	l.filename = _filename
+
+	return nil
 }
 
 func (l *Loader) beforeLoadZip() error {
-	l.zipMode = true
-
 	err := l.Clean()
 	if err != nil {
 		log.Println("[loader  ] fail to clean temporary directories: " + err.Error())
@@ -77,25 +85,48 @@ func (l *Loader) beforeLoadZip() error {
 		return err
 	}
 
+	def, err := l.getExistentDefault()
+	if err != nil {
+		return err
+	}
+	l.loadFilename = def
+
 	return nil
 }
 
-func (l *Loader) loadFromFile(filename string, chdir bool) (*mckmaps.MockuMappings, error) {
-	var err error
-
-	filename, err = filepath.Abs(filename) // gets absolute path before chdir
-	if err != nil {
-		return nil, err
+func (l *Loader) beforeLoadNormal() error {
+	if l.filename == "" {
+		def, err := l.getExistentDefault()
+		if err != nil {
+			return err
+		}
+		l.loadFilename = def
+	} else {
+		l.loadFilename = l.filename
 	}
-	if chdir { // only changes once before any actual parsing
-		if err = chdirBasedOnFilename(filename); err != nil {
-			return nil, err
+
+	// only changes once before any actual parsing
+	if err := chdirBasedOnFilename(l.loadFilename); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (l *Loader) getExistentDefault() (string, error) {
+	var err error
+	for _, f := range defaultMapfile {
+		if _, err = os.Stat(f); !os.IsNotExist(err) { // if file exists
+			f, err = filepath.Abs(f)
+			return f, err
 		}
 	}
+	return "", err
+}
 
+func (l *Loader) loadFromFile(filename string) (*mckmaps.MockuMappings, error) {
 	parser := mckmaps.NewParser(filename)
-	var mappings *mckmaps.MockuMappings
-	mappings, err = parser.Parse()
+	mappings, err := parser.Parse()
 	if err == nil { // saves loaded mappings if succeeded
 		l.loaded = mappings
 	}
@@ -107,10 +138,8 @@ func (l *Loader) Clean() error {
 		return nil
 	}
 
-	// releases the directory and watcher for removing
+	// releases the directory for removing
 	if l.watcher != nil {
-		l.watcher.cancel()
-
 		err := myos.Chdir(l.oldWd)
 		if err != nil {
 			return err

@@ -239,21 +239,21 @@ type autoReloadListener struct {
 func (l *autoReloadListener) onFileChange(path string) {
 	log.Println("[loader  ] changed  :", path)
 
-	mappings, err := l.l.Load()
-	if err != nil {
-		log.Println("[loader  ] fail to load mockuMappings after changing:", err)
-		return
-	}
-
 	// there can be only one goroutine reloading at the same time
 	l.reloadMux.Lock()
 	defer l.reloadMux.Unlock()
+
+	l.w.cancel() // omits later events
+
+	// loads mappings
+	if mappings, err := l.l.Load(); err == nil {
+		go l.callback(mappings)
+	} else {
+		log.Println("[loader  ] fail to load mockuMappings after changing:", err)
+	}
 
 	// starts a new watcher goroutine, preventing from exiting
 	if err := l.l.EnableAutoReload(l.callback); err != nil {
 		log.Fatalln("[loader  ] cannot enable automatic reloading:", err)
 	}
-	go l.callback(mappings)
-
-	l.w.cancel()
 }
