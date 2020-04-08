@@ -17,12 +17,15 @@ var defaultMapfile = []string{
 }
 
 type Loader struct {
-	mux          sync.Mutex
+	loadMux sync.Mutex
+	loaded  *mckmaps.MockuMappings
+
+	wtcMux  sync.Mutex
+	watcher *fileWatcher
+
 	oldWd        string
 	filename     string
 	loadFilename string
-	watcher      *fileWatcher
-	loaded       *mckmaps.MockuMappings
 	zipMode      bool
 	tempDirs     []string
 }
@@ -33,9 +36,6 @@ func New(filename string) *Loader {
 }
 
 func (l *Loader) Load() (*mckmaps.MockuMappings, error) {
-	l.mux.Lock()
-	defer l.mux.Unlock()
-
 	err := l.absFilename() // gets absolute path for chdir and fsnotify
 	if err != nil {
 		return nil, err
@@ -128,7 +128,7 @@ func (l *Loader) loadFromFile(filename string) (*mckmaps.MockuMappings, error) {
 	parser := mckmaps.NewParser(filename)
 	mappings, err := parser.Parse()
 	if err == nil { // saves loaded mappings if succeeded
-		l.loaded = mappings
+		l.setLoaded(mappings)
 	}
 	return mappings, err
 }
@@ -139,10 +139,7 @@ func (l *Loader) Clean() error {
 	}
 
 	// releases the directory for removing
-	l.mux.Lock()
-	if l.watcher != nil {
-		l.mux.Unlock()
-
+	if l.getWatcher() != nil {
 		err := myos.Chdir(l.oldWd)
 		if err != nil {
 			return err
@@ -159,6 +156,30 @@ func (l *Loader) Clean() error {
 	l.tempDirs = nil
 
 	return nil
+}
+
+func (l *Loader) getLoaded() *mckmaps.MockuMappings {
+	l.loadMux.Lock()
+	defer l.loadMux.Unlock()
+	return l.loaded
+}
+
+func (l *Loader) setLoaded(loaded *mckmaps.MockuMappings) {
+	l.loadMux.Lock()
+	defer l.loadMux.Unlock()
+	l.loaded = loaded
+}
+
+func (l *Loader) getWatcher() *fileWatcher {
+	l.wtcMux.Lock()
+	defer l.wtcMux.Unlock()
+	return l.watcher
+}
+
+func (l *Loader) setWatcher(watcher *fileWatcher) {
+	l.wtcMux.Lock()
+	defer l.wtcMux.Unlock()
+	l.watcher = watcher
 }
 
 func chdirBasedOnFilename(filename string) error {

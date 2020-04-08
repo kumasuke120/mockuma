@@ -199,20 +199,19 @@ func (w *fileWatcher) cancel() {
 }
 
 func (l *Loader) EnableAutoReload(callback func(mappings *mckmaps.MockuMappings)) error {
-	l.mux.Lock()
-	defer l.mux.Unlock()
-
-	if l.loaded == nil {
+	loaded := l.getLoaded()
+	if loaded == nil {
 		panic("mockuMappings has not been loaded")
 	}
 
 	var err error
 
+	var watcher *fileWatcher
 	if l.zipMode {
 		wd := filepath.Dir(l.filename)
-		l.watcher, err = newWatcher([]string{l.filename}, wd)
+		watcher, err = newWatcher([]string{l.filename}, wd)
 	} else {
-		l.watcher, err = newWdWatcher(l.loaded.Filenames)
+		watcher, err = newWdWatcher(loaded.Filenames)
 	}
 	if err != nil {
 		return err
@@ -220,11 +219,13 @@ func (l *Loader) EnableAutoReload(callback func(mappings *mckmaps.MockuMappings)
 
 	listener := &autoReloadListener{
 		l:        l,
-		w:        l.watcher,
+		w:        watcher,
 		callback: callback,
 	}
-	l.watcher.addListener(listener)
-	go l.watcher.watch()
+	watcher.addListener(listener)
+	go watcher.watch()
+
+	l.setWatcher(watcher)
 
 	return nil
 }

@@ -218,7 +218,7 @@ func TestLoader_EnableAutoReload2(t *testing.T) {
 	assert.Nil(err)
 
 	go func() {
-		ld.watcher.watcher.Events <- fsnotify.Event{
+		ld.getWatcher().watcher.Events <- fsnotify.Event{
 			Name: abs,
 			Op:   fsnotify.Write,
 		}
