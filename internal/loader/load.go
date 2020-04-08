@@ -139,7 +139,10 @@ func (l *Loader) Clean() error {
 	}
 
 	// releases the directory for removing
+	l.mux.Lock()
 	if l.watcher != nil {
+		l.mux.Unlock()
+
 		err := myos.Chdir(l.oldWd)
 		if err != nil {
 			return err
