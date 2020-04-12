@@ -8,12 +8,14 @@ import (
 	"regexp"
 
 	"github.com/kumasuke120/mockuma/internal/mckmaps"
+	"github.com/kumasuke120/mockuma/internal/myhttp"
 	"github.com/kumasuke120/mockuma/internal/myjson"
 )
 
 type pathMatcher struct {
 	directPath  map[string][]*mckmaps.Mapping
 	patternPath map[*regexp.Regexp][]*mckmaps.Mapping
+	corsConf    *mckmaps.CORSConfig
 }
 
 var pathVarRegexp = regexp.MustCompile(`{(\d+)}`)
@@ -37,6 +39,7 @@ func newPathMatcher(mappings *mckmaps.MockuMappings) *pathMatcher {
 	return &pathMatcher{
 		directPath:  directPath,
 		patternPath: patternPath,
+		corsConf:    mappings.CORS,
 	}
 }
 
@@ -51,50 +54,78 @@ type boundMatcher struct {
 	uriPattern *regexp.Regexp
 
 	matchedMapping *mckmaps.Mapping
-	is405          bool
+	matchState     matchState
 	bodyCache      []byte
 }
 
-func (bm *boundMatcher) matches() bool {
+type matchState int
+
+const (
+	MatchExact = iota
+	MatchURI
+	MatchCORS
+	MatchHead
+	MatchNone
+)
+
+func (bm *boundMatcher) match() matchState {
 	bm.uri = bm.r.URL.Path
+
+	var possibleMappings []*mckmaps.Mapping
 
 	// matching for direct path
 	if mappingsOfURI, ok := bm.m.directPath[bm.uri]; ok {
-		matched := bm.anyMethodMatches(mappingsOfURI)
-		if matched != nil {
-			bm.matchedMapping = matched
-			return true
-		}
-		bm.is405 = true
+		possibleMappings = mappingsOfURI
 	}
 
-	// matching for pattern path
-	for pattern, mappingsOfURI := range bm.m.patternPath {
-		if pattern.MatchString(bm.uri) {
-			matched := bm.anyMethodMatches(mappingsOfURI)
-			if matched != nil {
-				bm.uriPattern = pattern
-				bm.matchedMapping = matched
-				return true
+	if len(possibleMappings) == 0 {
+		// matching for pattern path
+		for pattern, mappingsOfURI := range bm.m.patternPath {
+			if pattern.MatchString(bm.uri) {
+				possibleMappings = mappingsOfURI
 			}
-			bm.is405 = true
 		}
 	}
 
-	return false
+	if len(possibleMappings) != 0 { // if finds any mapping
+		// TODO CHECK CORS
+		if matched := bm.matchByMethod(possibleMappings); matched != nil {
+			bm.matchedMapping = matched
+			bm.matchState = MatchExact
+		} else if matched := bm.matchHead(possibleMappings); matched != nil {
+			bm.matchedMapping = matched
+			bm.matchState = MatchHead
+		} else {
+			bm.matchedMapping = nil
+			bm.matchState = MatchURI
+		}
+	} else {
+		bm.matchedMapping = nil
+		bm.matchState = MatchNone
+	}
+
+	return bm.matchState
 }
 
-func (bm *boundMatcher) anyMethodMatches(mappingsOfURI []*mckmaps.Mapping) *mckmaps.Mapping {
-	for _, mappingOfURI := range mappingsOfURI {
-		if mappingOfURI.Method.Matches(bm.r.Method) {
-			return mappingOfURI
+func (bm *boundMatcher) matchByMethod(mappings []*mckmaps.Mapping) *mckmaps.Mapping {
+	return matchByMethod(mappings, myhttp.ToHTTPMethod(bm.r.Method))
+}
+
+func (bm *boundMatcher) matchHead(mappings []*mckmaps.Mapping) *mckmaps.Mapping {
+	if myhttp.ToHTTPMethod(bm.r.Method) != myhttp.MethodHead {
+		return nil
+	}
+
+	return matchByMethod(mappings, myhttp.MethodGet)
+}
+
+func matchByMethod(mappings []*mckmaps.Mapping, method myhttp.HTTPMethod) *mckmaps.Mapping {
+	for _, m := range mappings {
+		if m.Method.Matches(method) {
+			return m
 		}
 	}
 	return nil
-}
-
-func (bm *boundMatcher) isMethodNotAllowed() bool {
-	return bm.is405
 }
 
 func (bm *boundMatcher) matchPolicy() *mckmaps.Policy {

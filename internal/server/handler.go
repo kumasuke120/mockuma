@@ -60,18 +60,22 @@ func (h *mockHandler) matchNewExecutor(r *http.Request, w http.ResponseWriter) *
 	matcher := h.pathMatcher.bind(r)
 	executor := &policyExecutor{h: h, r: r, w: &w}
 
-	if matcher.matches() {
+	switch matcher.match() {
+	case MatchExact:
+		fallthrough
+	case MatchHead:
 		policy := matcher.matchPolicy()
 		if policy != nil {
 			executor.policy = policy
 		} else {
 			executor.policy = pNoPolicyMatched
 		}
-	} else if matcher.isMethodNotAllowed() {
+	case MatchURI:
 		executor.policy = pMethodNotAllowed
-	} else {
+	case MatchNone:
 		executor.policy = pNotFound
 	}
+
 	return executor
 }
 

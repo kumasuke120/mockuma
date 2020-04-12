@@ -63,8 +63,8 @@ func ToHTTPMethod(method string) HTTPMethod {
 	}
 }
 
-func (m HTTPMethod) Matches(s string) bool {
-	return m == MethodAny || m == ToHTTPMethod(s)
+func (m HTTPMethod) Matches(method HTTPMethod) bool {
+	return m == MethodAny || m == method
 }
 
 func (m HTTPMethod) String() string {

@@ -27,9 +27,9 @@ func TestHTTPMethod_Matches(t *testing.T) {
 	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
 
-	assert.True(MethodGet.Matches("GET"))
-	assert.True(MethodAny.Matches("POST"))
-	assert.False(MethodPost.Matches("GET"))
+	assert.True(MethodGet.Matches(MethodGet))
+	assert.True(MethodAny.Matches(MethodPost))
+	assert.False(MethodPost.Matches(MethodGet))
 }
 
 func TestHTTPMethod_String(t *testing.T) {
