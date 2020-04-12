@@ -73,3 +73,16 @@ func TestToString(t *testing.T) {
 		assert.Equal(String("1"), s3)
 	}
 }
+
+func TestToBoolean(t *testing.T) {
+	//noinspection GoImportUsedAsName
+	assert := assert.New(t)
+
+	_, e1 := ToBoolean(nil)
+	assert.NotNil(e1)
+
+	b2, e2 := toBoolean(Boolean(true), "b")
+	if assert.Nil(e2) {
+		assert.Equal(Boolean(true), b2)
+	}
+}

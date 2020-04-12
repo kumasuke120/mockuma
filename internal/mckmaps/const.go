@@ -22,10 +22,21 @@ const (
 const (
 	aType    = "type"
 	aInclude = "include"
+	aCORS    = "cors"
 
 	aMapURI      = "uri"
 	aMapMethod   = "method"
 	aMapPolicies = "policies"
+)
+
+const (
+	corsEnabled         = "enabled"
+	corsWithCredentials = "withCredentials"
+	corsMaxAge          = "maxAge"
+	corsAllowedOrigins  = "allowedOrigins"
+	corsAllowedMethods  = "allowedMethods"
+	corsAllowedHeaders  = "allowedHeaders"
+	corsExposedHeaders  = "exposedHeaders"
 )
 
 const (

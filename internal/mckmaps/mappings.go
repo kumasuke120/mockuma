@@ -116,7 +116,7 @@ func (p *mappingsParser) parse() ([]*Mapping, error) {
 		p.jsonPath.SetLast(aType)
 		_type, err := jsonObject.GetString(aType)
 		if err != nil || string(_type) != tMappings {
-			return nil, newParserError(p.filename, p.jsonPath)
+			return nil, p.newJSONParseError(p.jsonPath)
 		}
 
 		p.jsonPath.SetLast(tMappings)
@@ -126,7 +126,7 @@ func (p *mappingsParser) parse() ([]*Mapping, error) {
 		rawMappings = p.json.(myjson.Array)
 	default:
 		p.jsonPath = myjson.NewPath()
-		return nil, newParserError(p.filename, p.jsonPath)
+		return nil, p.newJSONParseError(p.jsonPath)
 	}
 
 	p.jsonPath.Append(0)
@@ -142,7 +142,7 @@ func (p *mappingsParser) parse() ([]*Mapping, error) {
 			}
 			mappings = append(mappings, mapping)
 		default:
-			return nil, newParserError(p.filename, p.jsonPath)
+			return nil, p.newJSONParseError(p.jsonPath)
 		}
 	}
 	p.jsonPath.RemoveLast()
@@ -158,7 +158,7 @@ func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
 	p.jsonPath.SetLast(aMapURI)
 	uri, err := v.GetString(aMapURI)
 	if err != nil {
-		return nil, newParserError(p.filename, p.jsonPath)
+		return nil, p.newJSONParseError(p.jsonPath)
 	}
 	_uri, err := encodeURI(string(uri)) // encodes non-ascii characters
 	if err != nil {
@@ -170,13 +170,13 @@ func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
 	if v.Has(aMapMethod) {
 		method, err := v.GetString(aMapMethod)
 		if err != nil {
-			return nil, newParserError(p.filename, p.jsonPath)
+			return nil, p.newJSONParseError(p.jsonPath)
 		}
 		_method := string(method)
 		if methodRegexp.MatchString(_method) {
 			mapping.Method = myhttp.ToHTTPMethod(_method)
 		} else {
-			return nil, newParserError(p.filename, p.jsonPath)
+			return nil, p.newJSONParseError(p.jsonPath)
 		}
 	} else {
 		mapping.Method = myhttp.MethodAny
@@ -196,7 +196,7 @@ func (p *mappingsParser) parseMapping(v myjson.Object) (*Mapping, error) {
 			}
 			policies = append(policies, policy)
 		default:
-			return nil, newParserError(p.filename, p.jsonPath)
+			return nil, p.newJSONParseError(p.jsonPath)
 		}
 	}
 	p.jsonPath.RemoveLast()
@@ -252,7 +252,7 @@ func (p *mappingsParser) parsePolicy(v myjson.Object) (*Policy, error) {
 	if v.Has(mapPolicyWhen) {
 		rawWhen, err := v.GetObject(mapPolicyWhen)
 		if err != nil {
-			return nil, newParserError(p.filename, p.jsonPath)
+			return nil, p.newJSONParseError(p.jsonPath)
 		}
 		when, err = p.parseWhen(rawWhen)
 		if err != nil {
@@ -290,7 +290,7 @@ func (p *mappingsParser) parseCommand(dst *Policy, v myjson.Object) error {
 		p.jsonPath.SetLast(mapPolicyReturns)
 		rawReturns, err := v.GetObject(mapPolicyReturns)
 		if err != nil {
-			return newParserError(p.filename, p.jsonPath)
+			return p.newJSONParseError(p.jsonPath)
 		}
 		returns, err := p.parseReturns(rawReturns)
 		if err != nil {
@@ -302,7 +302,7 @@ func (p *mappingsParser) parseCommand(dst *Policy, v myjson.Object) error {
 		p.jsonPath.SetLast(mapPolicyRedirects)
 		rawRedirects, err := v.GetObject(mapPolicyRedirects)
 		if err != nil {
-			return newParserError(p.filename, p.jsonPath)
+			return p.newJSONParseError(p.jsonPath)
 		}
 		redirects, err := p.parseRedirects(rawRedirects)
 		if err != nil {
@@ -314,7 +314,7 @@ func (p *mappingsParser) parseCommand(dst *Policy, v myjson.Object) error {
 		p.jsonPath.SetLast(mapPolicyForwards)
 		rawForwards, err := v.GetObject(mapPolicyForwards)
 		if err != nil {
-			return newParserError(p.filename, p.jsonPath)
+			return p.newJSONParseError(p.jsonPath)
 		}
 		forwards, err := p.parseForwards(rawForwards)
 		if err != nil {
@@ -348,7 +348,7 @@ func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 	case myjson.Object:
 		v = _v.(myjson.Object)
 	default:
-		return nil, newParserError(p.filename, p.jsonPath)
+		return nil, p.newJSONParseError(p.jsonPath)
 	}
 
 	when := new(When)
@@ -357,7 +357,7 @@ func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 	if v.Has(pHeaders) {
 		rawHeaders, err := v.GetObject(pHeaders)
 		if err != nil {
-			return nil, newParserError(p.filename, p.jsonPath)
+			return nil, p.newJSONParseError(p.jsonPath)
 		}
 
 		normalHeaders, regexpHeaders, jsonMHeaders := divideIntoWhenMatchers(rawHeaders)
@@ -370,7 +370,7 @@ func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 	if v.Has(pParams) {
 		rawParams, err := v.GetObject(pParams)
 		if err != nil {
-			return nil, newParserError(p.filename, p.jsonPath)
+			return nil, p.newJSONParseError(p.jsonPath)
 		}
 
 		normalParams, regexpParams, jsonMHeaders := divideIntoWhenMatchers(rawParams)
@@ -383,14 +383,14 @@ func (p *mappingsParser) parseWhen(v myjson.Object) (*When, error) {
 	if v.Has(pPathVars) {
 		rawPathVars, err := v.GetObject(pPathVars)
 		if err != nil {
-			return nil, newParserError(p.filename, p.jsonPath)
+			return nil, p.newJSONParseError(p.jsonPath)
 		}
 
 		normalPathVars, regexpPathVars, jsonMPathVars := divideIntoWhenMatchers(rawPathVars)
 		when.PathVars = parseAsNameValuesPairs(normalPathVars)
 		when.PathVarRegexps = parseAsNameRegexpPairs(regexpPathVars)
 		if len(jsonMPathVars) != 0 {
-			return nil, newParserError(p.filename, p.jsonPath)
+			return nil, p.newJSONParseError(p.jsonPath)
 		}
 	}
 
@@ -430,7 +430,7 @@ func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
 	if v.Has(pStatusCode) {
 		statusCode, err := v.GetNumber(pStatusCode)
 		if err != nil {
-			return nil, newParserError(p.filename, p.jsonPath)
+			return nil, p.newJSONParseError(p.jsonPath)
 		}
 		returns.StatusCode = myhttp.StatusCode(int(statusCode))
 	} else {
@@ -441,7 +441,7 @@ func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
 	if v.Has(pHeaders) {
 		rawHeaders, err := v.GetObject(pHeaders)
 		if err != nil {
-			return nil, newParserError(p.filename, p.jsonPath)
+			return nil, p.newJSONParseError(p.jsonPath)
 		}
 		returns.Headers = parseAsNameValuesPairs(rawHeaders)
 	}
@@ -450,7 +450,7 @@ func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
 	rawBody := v.Get(pBody)
 	body, err := p.parseReturnsBody(rawBody)
 	if err != nil {
-		return nil, newParserError(p.filename, p.jsonPath)
+		return nil, p.newJSONParseError(p.jsonPath)
 	}
 	returns.Body = body
 
@@ -459,7 +459,7 @@ func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
 		rawLatency := v.Get(pLatency)
 		latency, err := p.parseLatency(rawLatency)
 		if err != nil {
-			return nil, newParserError(p.filename, p.jsonPath)
+			return nil, p.newJSONParseError(p.jsonPath)
 		}
 		returns.Latency = latency
 	}
@@ -471,7 +471,7 @@ func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
 func (p *mappingsParser) parseJSONToBytes(v interface{}) ([]byte, error) {
 	bytes, err := myjson.Marshal(v)
 	if err != nil {
-		return nil, newParserError(p.filename, p.jsonPath)
+		return nil, p.newJSONParseError(p.jsonPath)
 	}
 	return bytes, nil
 }
@@ -493,7 +493,7 @@ func (p *mappingsParser) parseReturnsBody(v interface{}) ([]byte, error) {
 		return p.parseJSONToBytes(v)
 	}
 
-	return nil, newParserError(p.filename, p.jsonPath)
+	return nil, p.newJSONParseError(p.jsonPath)
 }
 
 func (p *mappingsParser) parseForwards(v myjson.Object) (*Forwards, error) {
@@ -504,7 +504,7 @@ func (p *mappingsParser) parseForwards(v myjson.Object) (*Forwards, error) {
 	p.jsonPath.SetLast(pPath)
 	path, err := v.GetString(pPath)
 	if err != nil || !pathRegexp.MatchString(string(path)) { // checks path
-		return nil, newParserError(p.filename, p.jsonPath)
+		return nil, p.newJSONParseError(p.jsonPath)
 	}
 	forwards.Path = string(path)
 
@@ -513,7 +513,7 @@ func (p *mappingsParser) parseForwards(v myjson.Object) (*Forwards, error) {
 		rawLatency := v.Get(pLatency)
 		latency, err := p.parseLatency(rawLatency)
 		if err != nil {
-			return nil, newParserError(p.filename, p.jsonPath)
+			return nil, p.newJSONParseError(p.jsonPath)
 		}
 		forwards.Latency = latency
 	}
@@ -530,7 +530,7 @@ func (p *mappingsParser) parseRedirects(v myjson.Object) (*Returns, error) {
 	p.jsonPath.SetLast(pPath)
 	path, err := v.GetString(pPath)
 	if err != nil || !pathRegexp.MatchString(string(path)) { // checks path
-		return nil, newParserError(p.filename, p.jsonPath)
+		return nil, p.newJSONParseError(p.jsonPath)
 	}
 	returns.Headers = []*NameValuesPair{
 		{
@@ -544,7 +544,7 @@ func (p *mappingsParser) parseRedirects(v myjson.Object) (*Returns, error) {
 		rawLatency := v.Get(pLatency)
 		latency, err := p.parseLatency(rawLatency)
 		if err != nil {
-			return nil, newParserError(p.filename, p.jsonPath)
+			return nil, p.newJSONParseError(p.jsonPath)
 		}
 		returns.Latency = latency
 	}
@@ -583,7 +583,7 @@ func (p *mappingsParser) parseLatency(v interface{}) (*Interval, error) {
 		}
 	}
 
-	return nil, newParserError(p.filename, p.jsonPath)
+	return nil, p.newJSONParseError(p.jsonPath)
 }
 
 // numbers all pathVars, giving each pathVar an independent index.
