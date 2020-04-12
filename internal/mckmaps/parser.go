@@ -43,7 +43,7 @@ type CORSConfig struct {
 	ExposedHeaders  []string
 }
 
-func defaultEnabledCORSConfig() *CORSConfig {
+func defaultEnabledCORS() *CORSConfig {
 	return &CORSConfig{
 		Enabled:         true,
 		WithCredentials: true,
@@ -65,6 +65,10 @@ func defaultEnabledCORSConfig() *CORSConfig {
 		},
 		ExposedHeaders: nil,
 	}
+}
+
+func defaultDisabledCORS() *CORSConfig {
+	return &CORSConfig{Enabled: false}
 }
 
 var loadedFilenames []string
@@ -288,12 +292,16 @@ func (p *mainParser) parse() (*MockuMappings, error) {
 	}
 
 	p.jsonPath.SetLast(aCORS)
-	var cors *CORSConfig = nil
+	var cors *CORSConfig
 	_cors := p.json.Get(aCORS)
 	switch _cors.(type) {
+	case nil:
+		cors = defaultDisabledCORS()
 	case myjson.Boolean:
 		if _cors.(myjson.Boolean) {
-			cors = defaultEnabledCORSConfig()
+			cors = defaultEnabledCORS()
+		} else {
+			cors = defaultDisabledCORS()
 		}
 	case myjson.Object:
 		_corsV := _cors.(myjson.Object)
@@ -319,7 +327,7 @@ func (p *mainParser) parseCORS(v myjson.Object) (*CORSConfig, error) {
 	}
 
 	if enabled {
-		cors := defaultEnabledCORSConfig()
+		cors := defaultEnabledCORS()
 
 		p.jsonPath.SetLast(corsWithCredentials)
 		wc, err := v.GetBoolean(corsEnabled)
@@ -370,7 +378,7 @@ func (p *mainParser) parseCORS(v myjson.Object) (*CORSConfig, error) {
 		return cors, nil
 	}
 
-	return nil, nil
+	return defaultDisabledCORS(), nil
 }
 
 func (p *mainParser) getAsStringSlice(name string) ([]string, error) {

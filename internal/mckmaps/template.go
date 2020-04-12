@@ -44,7 +44,7 @@ func (p *templateParser) parse() (*template, error) {
 		case myjson.Object:
 			p.json = json.(myjson.Object)
 		default:
-			return nil, newParserError(p.filename, p.jsonPath)
+			return nil, p.newJSONParseError(p.jsonPath)
 		}
 	}
 
@@ -52,7 +52,7 @@ func (p *templateParser) parse() (*template, error) {
 	p.jsonPath.SetLast(aType)
 	_type, err := p.json.GetString(aType)
 	if err != nil || string(_type) != tTemplate {
-		return nil, newParserError(p.filename, p.jsonPath)
+		return nil, p.newJSONParseError(p.jsonPath)
 	}
 
 	template := new(template)
@@ -67,7 +67,7 @@ func (p *templateParser) parse() (*template, error) {
 	case myjson.String:
 		template.content = v
 	default:
-		return nil, newParserError(p.filename, p.jsonPath)
+		return nil, p.newJSONParseError(p.jsonPath)
 	}
 	template.filename = p.filename
 
