@@ -6,6 +6,7 @@ const (
 	HeaderAccessControlRequestHeaders = "Access-Control-Request-Headers"
 	HeaderOrigin                      = "Origin"
 	HeaderServer                      = "Server"
+	HeaderContentLength               = "Content-Length"
 	HeaderContentType                 = "Content-Type"
 	HeaderLocation                    = "Location"
 	HeaderXForwardedFor               = "X-Forwarded-For"

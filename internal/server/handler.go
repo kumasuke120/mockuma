@@ -61,9 +61,10 @@ func (h *mockHandler) matchNewExecutor(r *http.Request, w http.ResponseWriter) *
 	executor := &policyExecutor{h: h, r: r, w: &w}
 
 	switch matcher.match() {
-	case MatchExact:
-		fallthrough
 	case MatchHead:
+		executor.returnHead = true
+		fallthrough
+	case MatchExact:
 		policy := matcher.matchPolicy()
 		if policy != nil {
 			executor.policy = policy

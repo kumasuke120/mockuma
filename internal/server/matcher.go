@@ -15,7 +15,6 @@ import (
 type pathMatcher struct {
 	directPath  map[string][]*mckmaps.Mapping
 	patternPath map[*regexp.Regexp][]*mckmaps.Mapping
-	corsConf    *mckmaps.CORSConfig
 }
 
 var pathVarRegexp = regexp.MustCompile(`{(\d+)}`)
@@ -39,7 +38,6 @@ func newPathMatcher(mappings *mckmaps.MockuMappings) *pathMatcher {
 	return &pathMatcher{
 		directPath:  directPath,
 		patternPath: patternPath,
-		corsConf:    mappings.CORS,
 	}
 }
 
@@ -63,7 +61,6 @@ type matchState int
 const (
 	MatchExact = iota
 	MatchURI
-	MatchCORS
 	MatchHead
 	MatchNone
 )
@@ -72,25 +69,24 @@ func (bm *boundMatcher) match() matchState {
 	bm.uri = bm.r.URL.Path
 
 	var possibleMappings []*mckmaps.Mapping
-
-	// matching for direct path
-	if mappingsOfURI, ok := bm.m.directPath[bm.uri]; ok {
+	if mappingsOfURI, ok := bm.m.directPath[bm.uri]; ok { // matching for direct path
 		possibleMappings = mappingsOfURI
 	}
 
+	var possibleUriPattern *regexp.Regexp
 	if len(possibleMappings) == 0 {
-		// matching for pattern path
-		for pattern, mappingsOfURI := range bm.m.patternPath {
+		for pattern, mappingsOfURI := range bm.m.patternPath { // matching for pattern path
 			if pattern.MatchString(bm.uri) {
 				possibleMappings = mappingsOfURI
+				possibleUriPattern = pattern
 			}
 		}
 	}
 
 	if len(possibleMappings) != 0 { // if finds any mapping
-		// TODO CHECK CORS
 		if matched := bm.matchByMethod(possibleMappings); matched != nil {
 			bm.matchedMapping = matched
+			bm.uriPattern = possibleUriPattern
 			bm.matchState = MatchExact
 		} else if matched := bm.matchHead(possibleMappings); matched != nil {
 			bm.matchedMapping = matched

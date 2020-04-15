@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,6 +25,7 @@ type policyExecutor struct {
 	w      *http.ResponseWriter
 	policy *mckmaps.Policy
 
+	returnHead   bool
 	fromForwards bool
 	statusCode   int
 }
@@ -73,11 +75,21 @@ func (e *policyExecutor) executeReturns() error {
 
 func (e *policyExecutor) writeResponseForReturns(returns *mckmaps.Returns) error {
 	e.writeHeaders(returns.Headers)
-	(*e.w).WriteHeader(int(returns.StatusCode)) // statusCode must be written after headers
-	err := e.writeBody(returns.Body)
-	if err != nil {
-		return err
+
+	if e.returnHead {
+		(*e.w).Header().Set(myhttp.HeaderContentLength, strconv.Itoa(len(returns.Body)))
 	}
+
+	// writes the statusCode, which must be written after headers
+	(*e.w).WriteHeader(int(returns.StatusCode))
+
+	if !e.returnHead {
+		err := e.writeBody(returns.Body)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
