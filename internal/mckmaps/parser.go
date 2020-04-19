@@ -39,6 +39,13 @@ type Config struct {
 	MatchTrailingSlash bool
 }
 
+func defaultConfig() *Config {
+	return &Config{
+		CORS:               defaultDisabledCORS(),
+		MatchTrailingSlash: false,
+	}
+}
+
 type CORSOptions struct {
 	Enabled          bool
 	AllowCredentials bool
@@ -208,7 +215,7 @@ func (p *Parser) Parse() (r *MockuMappings, e error) {
 		parser := &mappingsParser{json: json, Parser: *p}
 		mappings, _err := parser.parse()
 		if _err == nil {
-			r, e = &MockuMappings{Mappings: mappings}, _err
+			r, e = &MockuMappings{Mappings: mappings, Config: defaultConfig()}, _err
 		} else {
 			r, e = nil, _err
 		}
@@ -404,7 +411,7 @@ func (p *mainParser) parseInclude(err error) ([]*Mapping, error) {
 func (p *mainParser) parseConfig(v interface{}) (c *Config, err error) {
 	switch v.(type) {
 	case nil:
-		c = &Config{CORS: defaultDisabledCORS(), MatchTrailingSlash: false}
+		c = defaultConfig()
 	case myjson.Object:
 		vo := v.(myjson.Object)
 		p.jsonPath.Append("")
