@@ -12,5 +12,8 @@
       "books/*.mappings.json",
       "repo/*.mappings.json"
     ]
+  },
+  "config": {
+    "cors": true
   }
 }
