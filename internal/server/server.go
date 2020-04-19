@@ -29,8 +29,16 @@ func (s *MockServer) ListenAndServe(mappings *mckmaps.MockuMappings) {
 		panic("parameter 'mappings' should not be nil")
 	}
 
-	handler := newMockHandler(mappings)
-	handler.listAllMappings()
+	mH := newMockHandler(mappings)
+	mH.listAllMappings()
+
+	var handler http.Handler
+	corsOption := mappings.Config.CORS
+	if corsOption.Enabled {
+		handler = corsOption.ToCors().Handler(mH)
+	} else {
+		handler = mH
+	}
 
 	addr := fmt.Sprintf(":%d", s.port)
 	server := &http.Server{Addr: addr, Handler: handler}

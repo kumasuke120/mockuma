@@ -48,7 +48,7 @@ func TestPolicyExecutor_executor(t *testing.T) {
 	exe1 := &policyExecutor{
 		r:      httptest.NewRequest("GET", "/TestPolicyExecutor_executor", nil),
 		w:      &rw1,
-		policy: newStatusJSONPolicy(myhttp.StatusOk, "OK"),
+		policy: newStatusJSONPolicy(myhttp.StatusOK, "OK"),
 	}
 	e1 := exe1.execute()
 	if assert.Nil(e1) {
@@ -78,7 +78,7 @@ func TestPolicyExecutor_executor(t *testing.T) {
 		policy: &mckmaps.Policy{
 			CmdType: mckmaps.CmdTypeReturns,
 			Returns: &mckmaps.Returns{
-				StatusCode: myhttp.StatusOk,
+				StatusCode: myhttp.StatusOK,
 				Latency: &mckmaps.Interval{
 					Min: 100,
 					Max: 100,
@@ -86,7 +86,7 @@ func TestPolicyExecutor_executor(t *testing.T) {
 				Headers: []*mckmaps.NameValuesPair{
 					{Name: myhttp.HeaderContentType, Values: []string{myhttp.ContentTypeJSON}},
 				},
-				Body: []byte(fmt.Sprintf(`{"statusCode": %d, "message": "%s"}`, myhttp.StatusOk, "test")),
+				Body: []byte(fmt.Sprintf(`{"statusCode": %d, "message": "%s"}`, myhttp.StatusOK, "test")),
 			},
 		},
 	}

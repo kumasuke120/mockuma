@@ -18,7 +18,7 @@ var mappings = &mckmaps.MockuMappings{
 		{
 			URI:      "/hello",
 			Method:   myhttp.MethodPost,
-			Policies: []*mckmaps.Policy{newStatusJSONPolicy(myhttp.StatusOk, "OK")},
+			Policies: []*mckmaps.Policy{newStatusJSONPolicy(myhttp.StatusOK, "OK")},
 		},
 		{
 			URI:    "/m",
@@ -53,7 +53,7 @@ var mappings = &mckmaps.MockuMappings{
 					},
 					CmdType: mckmaps.CmdTypeReturns,
 					Returns: &mckmaps.Returns{
-						StatusCode: myhttp.StatusOk,
+						StatusCode: myhttp.StatusOK,
 						Body:       []byte(""),
 					},
 				},
@@ -118,7 +118,7 @@ var mappings = &mckmaps.MockuMappings{
 					},
 					CmdType: mckmaps.CmdTypeReturns,
 					Returns: &mckmaps.Returns{
-						StatusCode: myhttp.StatusOk,
+						StatusCode: myhttp.StatusOK,
 						Headers: []*mckmaps.NameValuesPair{
 							{
 								Name:   "Server",

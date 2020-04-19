@@ -13,6 +13,7 @@ import (
 )
 
 type pathMatcher struct {
+	mappings    *mckmaps.MockuMappings
 	directPath  map[string][]*mckmaps.Mapping
 	patternPath map[*regexp.Regexp][]*mckmaps.Mapping
 }
@@ -36,6 +37,7 @@ func newPathMatcher(mappings *mckmaps.MockuMappings) *pathMatcher {
 	}
 
 	return &pathMatcher{
+		mappings:    mappings,
 		directPath:  directPath,
 		patternPath: patternPath,
 	}
@@ -48,6 +50,7 @@ func (m *pathMatcher) bind(r *http.Request) *boundMatcher {
 type boundMatcher struct {
 	m          *pathMatcher
 	r          *http.Request
+	method     myhttp.HTTPMethod
 	uri        string
 	uriPattern *regexp.Regexp
 
@@ -62,11 +65,13 @@ const (
 	MatchExact = iota
 	MatchURI
 	MatchHead
+	MatchCORSOptions
 	MatchNone
 )
 
 func (bm *boundMatcher) match() matchState {
 	bm.uri = bm.r.URL.Path
+	bm.method = myhttp.ToHTTPMethod(bm.r.Method)
 
 	var possibleMappings []*mckmaps.Mapping
 	if mappingsOfURI, ok := bm.m.directPath[bm.uri]; ok { // matching for direct path
@@ -91,6 +96,9 @@ func (bm *boundMatcher) match() matchState {
 		} else if matched := bm.matchHead(possibleMappings); matched != nil {
 			bm.matchedMapping = matched
 			bm.matchState = MatchHead
+		} else if bm.matchCORSOptions() {
+			bm.matchedMapping = nil
+			bm.matchState = MatchCORSOptions
 		} else {
 			bm.matchedMapping = nil
 			bm.matchState = MatchURI
@@ -104,15 +112,19 @@ func (bm *boundMatcher) match() matchState {
 }
 
 func (bm *boundMatcher) matchByMethod(mappings []*mckmaps.Mapping) *mckmaps.Mapping {
-	return matchByMethod(mappings, myhttp.ToHTTPMethod(bm.r.Method))
+	return matchByMethod(mappings, bm.method)
 }
 
 func (bm *boundMatcher) matchHead(mappings []*mckmaps.Mapping) *mckmaps.Mapping {
-	if myhttp.ToHTTPMethod(bm.r.Method) != myhttp.MethodHead {
+	if bm.method != myhttp.MethodHead {
 		return nil
 	}
 
 	return matchByMethod(mappings, myhttp.MethodGet)
+}
+
+func (bm *boundMatcher) matchCORSOptions() bool {
+	return bm.m.mappings.Config.CORS.Enabled && bm.method == myhttp.MethodOptions
 }
 
 func matchByMethod(mappings []*mckmaps.Mapping, method myhttp.HTTPMethod) *mckmaps.Mapping {

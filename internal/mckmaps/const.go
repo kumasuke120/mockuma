@@ -22,7 +22,9 @@ const (
 const (
 	aType    = "type"
 	aInclude = "include"
-	aCORS    = "cors"
+	aConfig  = "config"
+
+	aConfigCORS = "cors"
 
 	aMapURI      = "uri"
 	aMapMethod   = "method"
@@ -30,13 +32,13 @@ const (
 )
 
 const (
-	corsEnabled         = "enabled"
-	corsWithCredentials = "withCredentials"
-	corsMaxAge          = "maxAge"
-	corsAllowedOrigins  = "allowedOrigins"
-	corsAllowedMethods  = "allowedMethods"
-	corsAllowedHeaders  = "allowedHeaders"
-	corsExposedHeaders  = "exposedHeaders"
+	corsEnabled          = "enabled"
+	corsAllowCredentials = "allowCredentials"
+	corsMaxAge           = "maxAge"
+	corsAllowedOrigins   = "allowedOrigins"
+	corsAllowedMethods   = "allowedMethods"
+	corsAllowedHeaders   = "allowedHeaders"
+	corsExposedHeaders   = "exposedHeaders"
 )
 
 const (

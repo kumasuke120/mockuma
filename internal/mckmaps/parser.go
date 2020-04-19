@@ -11,12 +11,13 @@ import (
 	"github.com/kumasuke120/mockuma/internal/myjson"
 	"github.com/kumasuke120/mockuma/internal/myos"
 	"github.com/kumasuke120/mockuma/internal/types"
+	"github.com/rs/cors"
 )
 
 type MockuMappings struct {
 	Mappings  []*Mapping
-	CORS      *CORSConfig
 	Filenames []string
+	Config    *Config
 }
 
 func (m *MockuMappings) IsEmpty() bool {
@@ -33,22 +34,26 @@ func (m *MockuMappings) GroupMethodsByURI() map[string][]myhttp.HTTPMethod {
 	return result
 }
 
-type CORSConfig struct {
-	Enabled         bool
-	WithCredentials bool
-	MaxAge          int64
-	AllowedOrigins  []string
-	AllowedMethods  []myhttp.HTTPMethod
-	AllowedHeaders  []string
-	ExposedHeaders  []string
+type Config struct {
+	CORS *CORSOptions
 }
 
-func defaultEnabledCORS() *CORSConfig {
-	return &CORSConfig{
-		Enabled:         true,
-		WithCredentials: true,
-		MaxAge:          1800,
-		AllowedOrigins:  []string{"*"},
+type CORSOptions struct {
+	Enabled          bool
+	AllowCredentials bool
+	MaxAge           int64
+	AllowedOrigins   []string
+	AllowedMethods   []myhttp.HTTPMethod
+	AllowedHeaders   []string
+	ExposedHeaders   []string
+}
+
+func defaultEnabledCORS() *CORSOptions {
+	return &CORSOptions{
+		Enabled:          true,
+		AllowCredentials: true,
+		MaxAge:           1800,
+		AllowedOrigins:   []string{"*"},
 		AllowedMethods: []myhttp.HTTPMethod{
 			myhttp.MethodGet,
 			myhttp.MethodPost,
@@ -67,8 +72,57 @@ func defaultEnabledCORS() *CORSConfig {
 	}
 }
 
-func defaultDisabledCORS() *CORSConfig {
-	return &CORSConfig{Enabled: false}
+func defaultDisabledCORS() *CORSOptions {
+	return &CORSOptions{Enabled: false}
+}
+
+func (c *CORSOptions) ToCors() *cors.Cors {
+	if c.Enabled {
+		ac := c.AllowedMethods
+		if !myhttp.MethodsAnyMatches(ac, myhttp.MethodOptions) {
+			ac = append(ac, myhttp.MethodOptions)
+		}
+
+		// makes github.com/rs/cors returns the Origin of a request
+		// as the value of response header Access-Control-Allow-Origin
+		// when Access-Control-Allow-Credentials is 'true' and all
+		// origins are allowed
+		var ao []string
+		var aof func(string) bool
+		if c.allowsAllOrigins() {
+			if c.AllowCredentials {
+				ao = nil
+				aof = func(string) bool { return true }
+			} else {
+				ao = []string{"*"}
+				aof = nil
+			}
+		}
+
+		return cors.New(cors.Options{
+			AllowCredentials: c.AllowCredentials,
+			MaxAge:           int(c.MaxAge),
+			AllowedOrigins:   ao,
+			AllowOriginFunc:  aof,
+			AllowedMethods:   myhttp.MethodsToStringSlice(ac),
+			AllowedHeaders:   c.AllowedHeaders,
+			ExposedHeaders:   c.ExposedHeaders,
+		})
+	}
+
+	return nil
+}
+
+func (c *CORSOptions) allowsAllOrigins() bool {
+	if len(c.AllowedOrigins) == 0 {
+		return true
+	}
+	for _, o := range c.AllowedOrigins {
+		if "*" == o { // allows all origins
+			return true
+		}
+	}
+	return false
 }
 
 var loadedFilenames []string
@@ -170,7 +224,7 @@ func (p *Parser) Parse() (r *MockuMappings, e error) {
 	}
 
 	p.reset()
-	r = p.sortMappings(r)
+	p.sortMappings(r)
 	return
 }
 
@@ -227,13 +281,12 @@ func (p *Parser) reset() {
 	loadedFilenames = nil
 }
 
-func (p *Parser) sortMappings(mappings *MockuMappings) *MockuMappings {
+func (p *Parser) sortMappings(mappings *MockuMappings) {
 	if mappings == nil {
-		return nil
+		return
 	}
 
 	uri2mappings := make(map[string][]*Mapping)
-
 	var uriOrder []string
 	uriOrderContains := make(map[string]bool)
 	for _, m := range mappings.Mappings {
@@ -246,13 +299,13 @@ func (p *Parser) sortMappings(mappings *MockuMappings) *MockuMappings {
 			uriOrder = append(uriOrder, m.URI)
 		}
 	}
-
 	ms := make([]*Mapping, 0, len(mappings.Mappings))
 	for _, uri := range uriOrder {
 		mappingsOfURI := uri2mappings[uri]
 		ms = append(ms, mappingsOfURI...)
 	}
-	return &MockuMappings{Mappings: ms, Filenames: mappings.Filenames}
+
+	mappings.Mappings = ms
 }
 
 func appendToMappingsOfURI(dst []*Mapping, m *Mapping) []*Mapping {
@@ -291,35 +344,60 @@ func (p *mainParser) parse() (*MockuMappings, error) {
 		return nil, err
 	}
 
-	p.jsonPath.SetLast(aCORS)
-	var cors *CORSConfig
-	_cors := p.json.Get(aCORS)
-	switch _cors.(type) {
-	case nil:
-		cors = defaultDisabledCORS()
-	case myjson.Boolean:
-		if _cors.(myjson.Boolean) {
-			cors = defaultEnabledCORS()
-		} else {
-			cors = defaultDisabledCORS()
-		}
-	case myjson.Object:
-		_corsV := _cors.(myjson.Object)
+	p.jsonPath.SetLast(aConfig)
+	rawConf := p.json.Get(aConfig)
+	cc, err := p.parseConfig(rawConf)
+	if err != nil {
+		return nil, err
+	}
 
+	return &MockuMappings{Mappings: mappings, Config: cc}, nil
+}
+
+func (p *mainParser) parseConfig(v interface{}) (c *Config, err error) {
+	switch v.(type) {
+	case nil:
+		c = &Config{CORS: defaultDisabledCORS()}
+	case myjson.Object:
+		vo := v.(myjson.Object)
 		p.jsonPath.Append("")
-		cors, err = p.parseCORS(_corsV)
-		if err != nil {
-			return nil, err
+
+		p.jsonPath.SetLast(aConfigCORS)
+		var co *CORSOptions
+		_co := vo.Get(aConfigCORS)
+		switch _co.(type) {
+		case nil:
+			co = defaultDisabledCORS()
+		case myjson.Boolean:
+			if _co.(myjson.Boolean) {
+				co = defaultEnabledCORS()
+			} else {
+				co = defaultDisabledCORS()
+			}
+		case myjson.Object:
+			_corsV := _co.(myjson.Object)
+
+			p.jsonPath.Append("")
+			co, err = p.parseCORSOptions(_corsV)
+			if err != nil {
+				return
+			}
+			p.jsonPath.RemoveLast()
+		default:
+			err = p.newJSONParseError(p.jsonPath)
+			return
 		}
+
+		c = &Config{CORS: co}
 		p.jsonPath.RemoveLast()
 	default:
 		return nil, p.newJSONParseError(p.jsonPath)
 	}
 
-	return &MockuMappings{Mappings: mappings, CORS: cors}, nil
+	return
 }
 
-func (p *mainParser) parseCORS(v myjson.Object) (*CORSConfig, error) {
+func (p *mainParser) parseCORSOptions(v myjson.Object) (*CORSOptions, error) {
 	p.jsonPath.SetLast(corsEnabled)
 	enabled, err := v.GetBoolean(corsEnabled)
 	if err != nil {
@@ -327,28 +405,28 @@ func (p *mainParser) parseCORS(v myjson.Object) (*CORSConfig, error) {
 	}
 
 	if enabled {
-		cors := defaultEnabledCORS()
+		cc := defaultEnabledCORS()
 
-		p.jsonPath.SetLast(corsWithCredentials)
-		wc, err := v.GetBoolean(corsEnabled)
+		p.jsonPath.SetLast(corsAllowCredentials)
+		ac, err := v.GetBoolean(corsEnabled)
 		if err != nil {
 			return nil, p.newJSONParseError(p.jsonPath)
 		}
-		cors.WithCredentials = bool(wc)
+		cc.AllowCredentials = bool(ac)
 
 		p.jsonPath.SetLast(corsMaxAge)
 		ma, err := p.json.GetNumber(corsMaxAge)
 		if err != nil {
 			return nil, p.newJSONParseError(p.jsonPath)
 		}
-		cors.MaxAge = int64(ma)
+		cc.MaxAge = int64(ma)
 
 		p.jsonPath.SetLast(corsAllowedOrigins)
 		ao, err := p.getAsStringSlice(corsAllowedOrigins)
 		if err != nil {
 			return nil, err
 		}
-		cors.AllowedOrigins = ao
+		cc.AllowedOrigins = ao
 
 		p.jsonPath.SetLast(corsAllowedMethods)
 		_am, err := p.getAsStringSlice(corsAllowedMethods)
@@ -359,23 +437,23 @@ func (p *mainParser) parseCORS(v myjson.Object) (*CORSConfig, error) {
 		for idx, v := range _am {
 			am[idx] = myhttp.ToHTTPMethod(v)
 		}
-		cors.AllowedMethods = am
+		cc.AllowedMethods = am
 
 		p.jsonPath.SetLast(corsAllowedHeaders)
 		ah, err := p.getAsStringSlice(corsAllowedHeaders)
 		if err != nil {
 			return nil, err
 		}
-		cors.AllowedHeaders = ah
+		cc.AllowedHeaders = ah
 
 		p.jsonPath.SetLast(corsExposedHeaders)
 		eh, err := p.getAsStringSlice(corsExposedHeaders)
 		if err != nil {
 			return nil, err
 		}
-		cors.ExposedHeaders = eh
+		cc.ExposedHeaders = eh
 
-		return cors, nil
+		return cc, nil
 	}
 
 	return defaultDisabledCORS(), nil

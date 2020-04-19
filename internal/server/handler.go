@@ -18,6 +18,10 @@ var (
 	pMethodNotAllowed    = newStatusJSONPolicy(myhttp.StatusMethodNotAllowed, "Method Not Allowed")
 	pInternalServerError = newStatusJSONPolicy(myhttp.StatusInternalServerError, "Internal Server Error")
 	pBadGateway          = newStatusJSONPolicy(myhttp.StatusBadGateway, "Bad Gateway")
+	pEmptyOK             = &mckmaps.Policy{
+		CmdType: mckmaps.CmdTypeReturns,
+		Returns: &mckmaps.Returns{StatusCode: myhttp.StatusOK},
+	}
 )
 
 func newStatusJSONPolicy(statusCode myhttp.StatusCode, message string) *mckmaps.Policy {
@@ -71,6 +75,8 @@ func (h *mockHandler) matchNewExecutor(r *http.Request, w http.ResponseWriter) *
 		} else {
 			executor.policy = pNoPolicyMatched
 		}
+	case MatchCORSOptions:
+		executor.policy = pEmptyOK
 	case MatchURI:
 		executor.policy = pMethodNotAllowed
 	case MatchNone:

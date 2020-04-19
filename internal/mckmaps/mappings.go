@@ -264,7 +264,7 @@ func (p *mappingsParser) parsePolicy(v myjson.Object) (*Policy, error) {
 	cntCommands := p.countCommands(v, mapPolicyCommands...)
 	if cntCommands == 0 { // sets the default command when no command found in the policy
 		policy.Returns = &Returns{
-			StatusCode: myhttp.StatusOk,
+			StatusCode: myhttp.StatusOK,
 		}
 		policy.CmdType = CmdTypeReturns
 	} else if cntCommands == 1 {
@@ -434,7 +434,7 @@ func (p *mappingsParser) parseReturns(v myjson.Object) (*Returns, error) {
 		}
 		returns.StatusCode = myhttp.StatusCode(int(statusCode))
 	} else {
-		returns.StatusCode = myhttp.StatusOk
+		returns.StatusCode = myhttp.StatusOK
 	}
 
 	p.jsonPath.SetLast(pHeaders)

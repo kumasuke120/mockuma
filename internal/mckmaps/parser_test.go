@@ -90,7 +90,7 @@ func TestParser_Parse(t *testing.T) {
 				{
 					CmdType: mapPolicyReturns,
 					Returns: &Returns{
-						StatusCode: myhttp.StatusOk,
+						StatusCode: myhttp.StatusOK,
 						Body:       []byte("m1"),
 					},
 				},
@@ -111,7 +111,7 @@ func TestParser_Parse(t *testing.T) {
 					},
 					CmdType: mapPolicyReturns,
 					Returns: &Returns{
-						StatusCode: myhttp.StatusOk,
+						StatusCode: myhttp.StatusOK,
 						Body:       []byte("m2:1"),
 					},
 				},
@@ -126,7 +126,7 @@ func TestParser_Parse(t *testing.T) {
 					},
 					CmdType: mapPolicyReturns,
 					Returns: &Returns{
-						StatusCode: myhttp.StatusOk,
+						StatusCode: myhttp.StatusOK,
 						Body:       []byte("m2:2"),
 					},
 				},
@@ -141,7 +141,7 @@ func TestParser_Parse(t *testing.T) {
 					},
 					CmdType: mapPolicyReturns,
 					Returns: &Returns{
-						StatusCode: myhttp.StatusOk,
+						StatusCode: myhttp.StatusOK,
 						Body:       []byte("m2:3"),
 					},
 				},
@@ -221,6 +221,6 @@ func TestParser_sortMappings(t *testing.T) {
 		},
 	}}
 	p1 := &Parser{filename: ""}
-	actual1 := p1.sortMappings(testdata1)
-	assert.Equal(expected1, actual1)
+	p1.sortMappings(testdata1)
+	assert.Equal(expected1, testdata1)
 }

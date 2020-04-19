@@ -23,7 +23,7 @@ const (
 type StatusCode int
 
 const (
-	StatusOk = StatusCode(http.StatusOK)
+	StatusOK = StatusCode(http.StatusOK)
 
 	StatusFound = StatusCode(http.StatusFound)
 
@@ -67,6 +67,23 @@ func (m HTTPMethod) Matches(method HTTPMethod) bool {
 	return m == MethodAny || m == method
 }
 
+func MethodsAnyMatches(methods []HTTPMethod, method HTTPMethod) bool {
+	for _, m := range methods {
+		if method.Matches(m) {
+			return true
+		}
+	}
+	return false
+}
+
 func (m HTTPMethod) String() string {
 	return string(m)
+}
+
+func MethodsToStringSlice(methods []HTTPMethod) []string {
+	r := make([]string, len(methods))
+	for i, e := range methods {
+		r[i] = e.String()
+	}
+	return r
 }
