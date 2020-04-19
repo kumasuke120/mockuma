@@ -44,11 +44,12 @@ func newPathMatcher(mappings *mckmaps.MockuMappings) *pathMatcher {
 }
 
 func (m *pathMatcher) bind(r *http.Request) *boundMatcher {
-	return &boundMatcher{m: m, r: r}
+	return &boundMatcher{m: m, r: r, conf: m.mappings.Config}
 }
 
 type boundMatcher struct {
 	m          *pathMatcher
+	conf       *mckmaps.Config
 	r          *http.Request
 	method     myhttp.HTTPMethod
 	uri        string
@@ -62,53 +63,76 @@ type boundMatcher struct {
 type matchState int
 
 const (
-	MatchExact = iota
-	MatchURI
-	MatchHead
-	MatchCORSOptions
-	MatchNone
+	matchExact = iota
+	matchURI
+	matchHead
+	matchCORSOptions
+	matchNone
 )
 
-func (bm *boundMatcher) match() matchState {
+func (bm *boundMatcher) matches() bool {
 	bm.uri = bm.r.URL.Path
 	bm.method = myhttp.ToHTTPMethod(bm.r.Method)
 
 	var possibleMappings []*mckmaps.Mapping
-	if mappingsOfURI, ok := bm.m.directPath[bm.uri]; ok { // matching for direct path
-		possibleMappings = mappingsOfURI
-	}
+	possibleMappings = bm.matchURIDirect()
 
-	var possibleUriPattern *regexp.Regexp
+	var possibleURIPattern *regexp.Regexp
 	if len(possibleMappings) == 0 {
-		for pattern, mappingsOfURI := range bm.m.patternPath { // matching for pattern path
-			if pattern.MatchString(bm.uri) {
-				possibleMappings = mappingsOfURI
-				possibleUriPattern = pattern
-			}
-		}
+		possibleMappings, possibleURIPattern = bm.matchURIPattern()
 	}
 
 	if len(possibleMappings) != 0 { // if finds any mapping
 		if matched := bm.matchByMethod(possibleMappings); matched != nil {
 			bm.matchedMapping = matched
-			bm.uriPattern = possibleUriPattern
-			bm.matchState = MatchExact
+			bm.uriPattern = possibleURIPattern
+			bm.matchState = matchExact
 		} else if matched := bm.matchHead(possibleMappings); matched != nil {
 			bm.matchedMapping = matched
-			bm.matchState = MatchHead
+			bm.matchState = matchHead
 		} else if bm.matchCORSOptions() {
 			bm.matchedMapping = nil
-			bm.matchState = MatchCORSOptions
+			bm.matchState = matchCORSOptions
 		} else {
 			bm.matchedMapping = nil
-			bm.matchState = MatchURI
+			bm.matchState = matchURI
 		}
 	} else {
 		bm.matchedMapping = nil
-		bm.matchState = MatchNone
+		bm.matchState = matchNone
 	}
 
-	return bm.matchState
+	return bm.matchState != matchNone
+}
+
+func (bm *boundMatcher) matchURIDirect() (pm []*mckmaps.Mapping) {
+	if mappingsOfURI, ok := bm.m.directPath[bm.uri]; ok { // matching for direct path
+		pm = mappingsOfURI
+	} else if bm.conf.MatchTrailingSlash { // matches /path to /path/
+		if mappingsOfURI, ok := bm.m.directPath[bm.uri+"/"]; ok {
+			bm.uri += "/"
+			pm = mappingsOfURI
+		}
+	}
+	return
+}
+
+func (bm *boundMatcher) matchURIPattern() (pm []*mckmaps.Mapping, pp *regexp.Regexp) {
+	for pattern, mappingsOfURI := range bm.m.patternPath { // matching for pattern path
+		if pattern.MatchString(bm.uri) {
+			pm = mappingsOfURI
+			pp = pattern
+		} else if bm.conf.MatchTrailingSlash && pattern.MatchString(bm.uri+"/") {
+			bm.uri += "/"
+			pm = mappingsOfURI
+			pp = pattern
+		}
+	}
+	return
+}
+
+func (bm *boundMatcher) headMatches() bool {
+	return bm.matchState == matchHead
 }
 
 func (bm *boundMatcher) matchByMethod(mappings []*mckmaps.Mapping) *mckmaps.Mapping {
@@ -124,7 +148,7 @@ func (bm *boundMatcher) matchHead(mappings []*mckmaps.Mapping) *mckmaps.Mapping 
 }
 
 func (bm *boundMatcher) matchCORSOptions() bool {
-	return bm.m.mappings.Config.CORS.Enabled && bm.method == myhttp.MethodOptions
+	return bm.conf.CORS.Enabled && bm.method == myhttp.MethodOptions
 }
 
 func matchByMethod(mappings []*mckmaps.Mapping, method myhttp.HTTPMethod) *mckmaps.Mapping {
@@ -137,6 +161,25 @@ func matchByMethod(mappings []*mckmaps.Mapping, method myhttp.HTTPMethod) *mckma
 }
 
 func (bm *boundMatcher) matchPolicy() *mckmaps.Policy {
+	switch bm.matchState {
+	case matchHead:
+		fallthrough
+	case matchExact:
+		p := bm.matchExactPolicy()
+		if p == nil {
+			return pNoPolicyMatched
+		} else {
+			return p
+		}
+	case matchCORSOptions:
+		return pEmptyOK
+	case matchURI:
+		return pMethodNotAllowed
+	}
+	return pNotFound
+}
+
+func (bm *boundMatcher) matchExactPolicy() *mckmaps.Policy {
 	bm.cacheBody()
 
 	err := bm.r.ParseForm()

@@ -35,7 +35,8 @@ func (m *MockuMappings) GroupMethodsByURI() map[string][]myhttp.HTTPMethod {
 }
 
 type Config struct {
-	CORS *CORSOptions
+	CORS               *CORSOptions
+	MatchTrailingSlash bool
 }
 
 type CORSOptions struct {
@@ -79,7 +80,7 @@ func defaultDisabledCORS() *CORSOptions {
 func (c *CORSOptions) ToCors() *cors.Cors {
 	if c.Enabled {
 		ac := c.AllowedMethods
-		if !myhttp.MethodsAnyMatches(ac, myhttp.MethodOptions) {
+		if !myhttp.MethodsAnyMatches(ac, myhttp.MethodOptions) { // always allows OPTIONS
 			ac = append(ac, myhttp.MethodOptions)
 		}
 
@@ -354,41 +355,81 @@ func (p *mainParser) parse() (*MockuMappings, error) {
 	return &MockuMappings{Mappings: mappings, Config: cc}, nil
 }
 
+func (p *mainParser) parseInclude(err error) ([]*Mapping, error) {
+	include, err := p.json.GetObject(aInclude)
+	if err != nil {
+		return nil, p.newJSONParseError(p.jsonPath)
+	}
+
+	p.jsonPath.Append(tMappings)
+	filenamesOfMappings, err := include.GetArray(tMappings)
+	if err != nil {
+		return nil, p.newJSONParseError(p.jsonPath)
+	}
+
+	p.jsonPath.Append("")
+	var mappings []*Mapping
+	for idx, filename := range filenamesOfMappings {
+		p.jsonPath.SetLast(idx)
+
+		_filename, err := myjson.ToString(filename)
+		if err != nil {
+			return nil, p.newJSONParseError(p.jsonPath)
+		}
+
+		f := string(_filename)
+		glob, err := filepath.Glob(f)
+		if err != nil {
+			return nil, p.newJSONParseError(myjson.NewPath(aInclude, tMappings, idx))
+		}
+
+		for _, g := range glob {
+			parser := &mappingsParser{Parser: Parser{filename: g}}
+			partOfMappings, err := parser.parse() // parses mappings for each included file
+			if err != nil {
+				return nil, err
+			}
+
+			mappings = append(mappings, partOfMappings...)
+		}
+
+		recordLoadedFile(f)
+	}
+	p.jsonPath.RemoveLast()
+	p.jsonPath.RemoveLast()
+
+	return mappings, nil
+}
+
 func (p *mainParser) parseConfig(v interface{}) (c *Config, err error) {
 	switch v.(type) {
 	case nil:
-		c = &Config{CORS: defaultDisabledCORS()}
+		c = &Config{CORS: defaultDisabledCORS(), MatchTrailingSlash: false}
 	case myjson.Object:
 		vo := v.(myjson.Object)
 		p.jsonPath.Append("")
 
 		p.jsonPath.SetLast(aConfigCORS)
 		var co *CORSOptions
-		_co := vo.Get(aConfigCORS)
-		switch _co.(type) {
-		case nil:
-			co = defaultDisabledCORS()
-		case myjson.Boolean:
-			if _co.(myjson.Boolean) {
-				co = defaultEnabledCORS()
-			} else {
-				co = defaultDisabledCORS()
-			}
-		case myjson.Object:
-			_corsV := _co.(myjson.Object)
-
-			p.jsonPath.Append("")
-			co, err = p.parseCORSOptions(_corsV)
-			if err != nil {
-				return
-			}
-			p.jsonPath.RemoveLast()
-		default:
-			err = p.newJSONParseError(p.jsonPath)
+		co, err = p.parseCORSOptions(vo)
+		if err != nil {
 			return
 		}
 
-		c = &Config{CORS: co}
+		p.jsonPath.SetLast(aConfigMatchTrailingSlash)
+		var mts bool
+		if vo.Has(aConfigMatchTrailingSlash) {
+			_mts, _err := vo.GetBoolean(aConfigMatchTrailingSlash)
+			if _err != nil {
+				err = p.newJSONParseError(p.jsonPath)
+				return
+			}
+			mts = bool(_mts)
+		} else {
+			mts = false
+		}
+
+		c = &Config{CORS: co, MatchTrailingSlash: mts}
 		p.jsonPath.RemoveLast()
 	default:
 		return nil, p.newJSONParseError(p.jsonPath)
@@ -397,7 +438,33 @@ func (p *mainParser) parseConfig(v interface{}) (c *Config, err error) {
 	return
 }
 
-func (p *mainParser) parseCORSOptions(v myjson.Object) (*CORSOptions, error) {
+func (p *mainParser) parseCORSOptions(v myjson.Object) (co *CORSOptions, err error) {
+	_co := v.Get(aConfigCORS)
+	switch _co.(type) {
+	case nil:
+		co = defaultDisabledCORS()
+	case myjson.Boolean:
+		if _co.(myjson.Boolean) {
+			co = defaultEnabledCORS()
+		} else {
+			co = defaultDisabledCORS()
+		}
+	case myjson.Object:
+		_corsV := _co.(myjson.Object)
+		p.jsonPath.Append("")
+		co, err = p.parseActualCORSOptions(_corsV)
+		if err != nil {
+			return
+		}
+		p.jsonPath.RemoveLast()
+	default:
+		err = p.newJSONParseError(p.jsonPath)
+		return
+	}
+	return
+}
+
+func (p *mainParser) parseActualCORSOptions(v myjson.Object) (*CORSOptions, error) {
 	p.jsonPath.SetLast(corsEnabled)
 	enabled, err := v.GetBoolean(corsEnabled)
 	if err != nil {
@@ -477,51 +544,6 @@ func (p *mainParser) getAsStringSlice(name string) ([]string, error) {
 	return result, nil
 }
 
-func (p *mainParser) parseInclude(err error) ([]*Mapping, error) {
-	include, err := p.json.GetObject(aInclude)
-	if err != nil {
-		return nil, p.newJSONParseError(p.jsonPath)
-	}
-
-	p.jsonPath.Append(tMappings)
-	filenamesOfMappings, err := include.GetArray(tMappings)
-	if err != nil {
-		return nil, p.newJSONParseError(p.jsonPath)
-	}
-
-	p.jsonPath.Append("")
-	var mappings []*Mapping
-	for idx, filename := range filenamesOfMappings {
-		p.jsonPath.SetLast(idx)
-
-		_filename, err := myjson.ToString(filename)
-		if err != nil {
-			return nil, p.newJSONParseError(p.jsonPath)
-		}
-
-		f := string(_filename)
-		glob, err := filepath.Glob(f)
-		if err != nil {
-			return nil, p.newJSONParseError(myjson.NewPath(aInclude, tMappings, idx))
-		}
-
-		for _, g := range glob {
-			parser := &mappingsParser{Parser: Parser{filename: g}}
-			partOfMappings, err := parser.parse() // parses mappings for each included file
-			if err != nil {
-				return nil, err
-			}
-
-			mappings = append(mappings, partOfMappings...)
-		}
-
-		recordLoadedFile(f)
-	}
-	p.jsonPath.RemoveLast()
-	p.jsonPath.RemoveLast()
-
-	return mappings, nil
-}
 func ensureJSONArray(v interface{}) myjson.Array {
 	switch v.(type) {
 	case myjson.Array:

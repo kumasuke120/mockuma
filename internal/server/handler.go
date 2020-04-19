@@ -11,32 +11,6 @@ import (
 	"github.com/kumasuke120/mockuma/internal/myhttp"
 )
 
-// default policies
-var (
-	pNotFound            = newStatusJSONPolicy(myhttp.StatusNotFound, "Not Found")
-	pNoPolicyMatched     = newStatusJSONPolicy(myhttp.StatusBadRequest, "No policy matched")
-	pMethodNotAllowed    = newStatusJSONPolicy(myhttp.StatusMethodNotAllowed, "Method Not Allowed")
-	pInternalServerError = newStatusJSONPolicy(myhttp.StatusInternalServerError, "Internal Server Error")
-	pBadGateway          = newStatusJSONPolicy(myhttp.StatusBadGateway, "Bad Gateway")
-	pEmptyOK             = &mckmaps.Policy{
-		CmdType: mckmaps.CmdTypeReturns,
-		Returns: &mckmaps.Returns{StatusCode: myhttp.StatusOK},
-	}
-)
-
-func newStatusJSONPolicy(statusCode myhttp.StatusCode, message string) *mckmaps.Policy {
-	return &mckmaps.Policy{
-		CmdType: mckmaps.CmdTypeReturns,
-		Returns: &mckmaps.Returns{
-			StatusCode: statusCode,
-			Headers: []*mckmaps.NameValuesPair{
-				{Name: myhttp.HeaderContentType, Values: []string{myhttp.ContentTypeJSON}},
-			},
-			Body: []byte(fmt.Sprintf(`{"statusCode": %d, "message": "%s"}`, statusCode, message)),
-		},
-	}
-}
-
 var HeaderValueServer = fmt.Sprintf("%s/%s", internal.AppName, internal.VersionNumber)
 
 type mockHandler struct {
@@ -61,25 +35,13 @@ func (h *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *mockHandler) matchNewExecutor(r *http.Request, w http.ResponseWriter) *policyExecutor {
-	matcher := h.pathMatcher.bind(r)
 	executor := &policyExecutor{h: h, r: r, w: &w}
 
-	switch matcher.match() {
-	case MatchHead:
-		executor.returnHead = true
-		fallthrough
-	case MatchExact:
-		policy := matcher.matchPolicy()
-		if policy != nil {
-			executor.policy = policy
-		} else {
-			executor.policy = pNoPolicyMatched
-		}
-	case MatchCORSOptions:
-		executor.policy = pEmptyOK
-	case MatchURI:
-		executor.policy = pMethodNotAllowed
-	case MatchNone:
+	matcher := h.pathMatcher.bind(r)
+	if matcher.matches() {
+		executor.returnHead = matcher.headMatches()
+		executor.policy = matcher.matchPolicy()
+	} else {
 		executor.policy = pNotFound
 	}
 

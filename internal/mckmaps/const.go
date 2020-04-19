@@ -24,7 +24,8 @@ const (
 	aInclude = "include"
 	aConfig  = "config"
 
-	aConfigCORS = "cors"
+	aConfigCORS               = "cors"
+	aConfigMatchTrailingSlash = "matchTrailingSlash"
 
 	aMapURI      = "uri"
 	aMapMethod   = "method"
