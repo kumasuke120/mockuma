@@ -50,6 +50,6 @@ func TestHTTPMethod_String(t *testing.T) {
 }
 
 func TestMethodsToStringSlice(t *testing.T) {
-	methods := []HTTPMethod{MethodOptions, MethodHead}
+	methods := []HTTPMethod{MethodOptions, MethodGet}
 	assert.Equal(t, []string{"OPTIONS", "GET"}, MethodsToStringSlice(methods))
 }

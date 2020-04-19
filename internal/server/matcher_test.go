@@ -157,6 +157,11 @@ var mappings = &mckmaps.MockuMappings{
 			},
 		},
 	},
+	Config: &mckmaps.Config{
+		CORS: &mckmaps.CORSOptions{
+			Enabled: false,
+		},
+	},
 }
 
 func TestNewPathMatcher(t *testing.T) {
@@ -197,7 +202,7 @@ func TestPathMatcher_matches(t *testing.T) {
 	matcher := newPathMatcher(mappings)
 	bound := matcher.bind(httptest.NewRequest("POST", "/hello", nil))
 	assert.True(bound.matches())
-	assert.Equal(matchExact, bound.matchState)
+	assert.Equal(matchState(matchExact), bound.matchState)
 	assert.Equal(mappings.Mappings[0], bound.matchedMapping)
 }
 
@@ -209,26 +214,26 @@ func TestPathMatcher_matchPolicy(t *testing.T) {
 
 	bound1 := matcher.bind(httptest.NewRequest("", "/m?p1=v1&p2=v1&p2=v2", nil))
 	assert.True(bound1.matches())
-	assert.Equal(matchExact, bound1.matchState)
+	assert.Equal(matchState(matchExact), bound1.matchState)
 	assert.Equal(mappings.Mappings[1].Policies[0], bound1.matchPolicy())
 
 	bound2 := matcher.bind(httptest.NewRequest("", "/m?r1=123", nil))
 	assert.True(bound2.matches())
-	assert.Equal(matchExact, bound2.matchState)
+	assert.Equal(matchState(matchExact), bound2.matchState)
 	assert.Equal(mappings.Mappings[1].Policies[1], bound2.matchPolicy())
 	bound2 = matcher.bind(httptest.NewRequest("", "/m?r1=12", nil))
 	assert.True(bound2.matches())
-	assert.Equal(matchExact, bound2.matchState)
-	assert.Nil(bound2.matchPolicy())
+	assert.Equal(matchState(matchExact), bound2.matchState)
+	assert.Equal(pNoPolicyMatched, bound2.matchPolicy())
 
 	bound3 := matcher.bind(httptest.NewRequest("", "/m?j={}", nil))
 	assert.True(bound3.matches())
-	assert.Equal(matchExact, bound3.matchState)
+	assert.Equal(matchState(matchExact), bound3.matchState)
 	assert.Equal(mappings.Mappings[1].Policies[2], bound3.matchPolicy())
 	bound3 = matcher.bind(httptest.NewRequest("", "/m?j=120", nil))
 	assert.True(bound3.matches())
-	assert.Equal(matchExact, bound3.matchState)
-	assert.Nil(bound3.matchPolicy())
+	assert.Equal(matchState(matchExact), bound3.matchState)
+	assert.Equal(pNoPolicyMatched, bound3.matchPolicy())
 
 	req4 := httptest.NewRequest("", "/m", nil)
 	req4.Header.Add("X-H1", "v1")
@@ -236,74 +241,74 @@ func TestPathMatcher_matchPolicy(t *testing.T) {
 	req4.Header.Add("X-H2", "v2")
 	bound4 := matcher.bind(req4)
 	assert.True(bound4.matches())
-	assert.Equal(matchExact, bound4.matchState)
+	assert.Equal(matchState(matchExact), bound4.matchState)
 	assert.Equal(mappings.Mappings[1].Policies[3], bound4.matchPolicy())
 
 	req5p1 := httptest.NewRequest("", "/m", nil)
 	req5p1.Header.Add("X-R1", "123")
 	bound5 := matcher.bind(req5p1)
 	assert.True(bound5.matches())
-	assert.Equal(matchExact, bound5.matchState)
+	assert.Equal(matchState(matchExact), bound5.matchState)
 	assert.Equal(mappings.Mappings[1].Policies[4], bound5.matchPolicy())
 	req5p2 := httptest.NewRequest("", "/m", nil)
 	req5p2.Header.Add("X-R1", "12")
 	bound5 = matcher.bind(req5p2)
 	assert.True(bound5.matches())
-	assert.Equal(matchExact, bound5.matchState)
-	assert.Nil(bound5.matchPolicy())
+	assert.Equal(matchState(matchExact), bound5.matchState)
+	assert.Equal(pNoPolicyMatched, bound5.matchPolicy())
 
 	req6p1 := httptest.NewRequest("", "/m", nil)
 	req6p1.Header.Add("X-J1", "{}")
 	bound6 := matcher.bind(req6p1)
 	assert.True(bound6.matches())
-	assert.Equal(matchExact, bound6.matchState)
+	assert.Equal(matchState(matchExact), bound6.matchState)
 	assert.Equal(mappings.Mappings[1].Policies[5], bound6.matchPolicy())
 	req6p2 := httptest.NewRequest("", "/m", nil)
 	req6p2.Header.Add("X-J1", "120")
 	bound6 = matcher.bind(req6p2)
 	assert.True(bound6.matches())
-	assert.Equal(matchExact, bound6.matchState)
-	assert.Nil(bound6.matchPolicy())
+	assert.Equal(matchState(matchExact), bound6.matchState)
+	assert.Equal(pNoPolicyMatched, bound6.matchPolicy())
 
 	bound7 := matcher.bind(httptest.NewRequest("POST", "/m", strings.NewReader("123")))
 	assert.True(bound7.matches())
-	assert.Equal(matchExact, bound7.matchState)
+	assert.Equal(matchState(matchExact), bound7.matchState)
 	assert.Equal(mappings.Mappings[2].Policies[0], bound7.matchPolicy())
 
 	bound8 := matcher.bind(httptest.NewRequest("POST", "/m", strings.NewReader("120")))
 	assert.True(bound8.matches())
-	assert.Equal(matchExact, bound8.matchState)
+	assert.Equal(matchState(matchExact), bound8.matchState)
 	assert.Equal(mappings.Mappings[2].Policies[1], bound8.matchPolicy())
 	bound8 = matcher.bind(httptest.NewRequest("POST", "/m", strings.NewReader("95")))
 	assert.True(bound8.matches())
-	assert.Equal(matchExact, bound8.matchState)
-	assert.Nil(bound8.matchPolicy())
+	assert.Equal(matchState(matchExact), bound8.matchState)
+	assert.Equal(pNoPolicyMatched, bound8.matchPolicy())
 
 	bound9 := matcher.bind(httptest.NewRequest("POST", "/m", strings.NewReader("{}")))
 	assert.True(bound9.matches())
-	assert.Equal(matchExact, bound9.matchState)
+	assert.Equal(matchState(matchExact), bound9.matchState)
 	assert.Equal(mappings.Mappings[2].Policies[2], bound9.matchPolicy())
 
 	bound10 := matcher.bind(httptest.NewRequest("", "/hello", nil))
 	assert.True(bound10.matches())
-	assert.Equal(matchURI, bound10.matchState)
+	assert.Equal(matchState(matchURI), bound10.matchState)
 
 	bound11 := matcher.bind(httptest.NewRequest("PUT", "/p/v0/m1", nil))
 	assert.True(bound11.matches())
-	assert.Equal(matchExact, bound11.matchState)
+	assert.Equal(matchState(matchExact), bound11.matchState)
 	assert.Equal(mappings.Mappings[3].Policies[0], bound11.matchPolicy())
 
 	bound12 := matcher.bind(httptest.NewRequest("PUT", "/p/v0/ma", nil))
 	assert.True(bound12.matches())
-	assert.Equal(matchExact, bound12.matchState)
-	assert.Nil(bound12.matchPolicy())
+	assert.Equal(matchState(matchExact), bound12.matchState)
+	assert.Equal(pNoPolicyMatched, bound12.matchPolicy())
 
 	bound13 := matcher.bind(httptest.NewRequest("", "/p/v0/m1", nil))
 	assert.True(bound13.matches())
-	assert.Equal(matchURI, bound13.matchState)
+	assert.Equal(matchState(matchURI), bound13.matchState)
 
 	bound14 := matcher.bind(httptest.NewRequest("PUT", "/p/v1/m1", nil))
 	assert.True(bound14.matches())
-	assert.Equal(matchExact, bound14.matchState)
-	assert.Nil(bound14.matchPolicy())
+	assert.Equal(matchState(matchExact), bound14.matchState)
+	assert.Equal(pNoPolicyMatched, bound14.matchPolicy())
 }

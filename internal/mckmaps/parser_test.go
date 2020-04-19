@@ -155,6 +155,7 @@ func TestParser_Parse(t *testing.T) {
 	expected1 := &MockuMappings{
 		Mappings:  expectedMappings,
 		Filenames: []string{fn1},
+		Config:    defaultConfig(),
 	}
 	parser1 := NewParser(path1)
 	actual1, e1 := parser1.Parse()
@@ -166,6 +167,7 @@ func TestParser_Parse(t *testing.T) {
 	expected2 := &MockuMappings{
 		Mappings:  expectedMappings,
 		Filenames: []string{fn2, fn1},
+		Config:    defaultConfig(),
 	}
 	parser2 := NewParser(fn2)
 	actual2, e2 := parser2.Parse()
