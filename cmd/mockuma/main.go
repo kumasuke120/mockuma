@@ -18,7 +18,8 @@ import (
 )
 
 var port = flag.Int("p", 3214,
-	"sets the port number on which Mockuma listen")
+	"sets a path which leads to a MockuMappings configuration file. The specified file could be a "+
+		"json file or a zip archive which contains several MockuMappings files.")
 var mapfile = flag.String("mapfile", "",
 	"sets the name of a json file which defines mockuMappings")
 var showVersion = flag.Bool("version", false, "shows the version information for MocKuma")
