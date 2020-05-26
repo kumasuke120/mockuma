@@ -84,6 +84,8 @@ func defaultDisabledCORS() *CORSOptions {
 	return &CORSOptions{Enabled: false}
 }
 
+var anyStrToTrue = func(string) bool { return true }
+
 func (c *CORSOptions) ToCors() *cors.Cors {
 	if c.Enabled {
 		ac := c.AllowedMethods
@@ -100,7 +102,7 @@ func (c *CORSOptions) ToCors() *cors.Cors {
 		if c.allowsAllOrigins() {
 			if c.AllowCredentials {
 				ao = nil
-				aof = func(string) bool { return true }
+				aof = anyStrToTrue
 			} else {
 				ao = []string{"*"}
 				aof = nil

@@ -2,12 +2,15 @@ package mckmaps
 
 import (
 	"errors"
+	"fmt"
+	"net/http"
 	"path/filepath"
 	"testing"
 
 	"github.com/kumasuke120/mockuma/internal/myhttp"
 	"github.com/kumasuke120/mockuma/internal/myjson"
 	"github.com/kumasuke120/mockuma/internal/myos"
+	"github.com/rs/cors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -225,4 +228,39 @@ func TestParser_sortMappings(t *testing.T) {
 	p1 := &Parser{filename: ""}
 	p1.sortMappings(testdata1)
 	assert.Equal(expected1, testdata1)
+}
+
+func TestCORSOptions_ToCors(t *testing.T) {
+	//noinspection GoImportUsedAsName
+	assert := assert.New(t)
+
+	co0 := defaultDisabledCORS()
+	assert.Nil(co0.ToCors())
+
+	co1 := defaultEnabledCORS()
+	expect1 := cors.New(cors.Options{
+		AllowCredentials: co1.AllowCredentials,
+		MaxAge:           int(co1.MaxAge),
+		AllowedOrigins:   nil,
+		AllowOriginFunc:  anyStrToTrue,
+		AllowedMethods:   myhttp.MethodsToStringSlice(co1.AllowedMethods),
+		AllowedHeaders:   co1.AllowedHeaders,
+		ExposedHeaders:   co1.ExposedHeaders,
+	})
+	// normal reflect.DeepEqual won't pass
+	assert.Equal(fmt.Sprintf("%v", expect1), fmt.Sprintf("%v", co1.ToCors()))
+
+	co2 := defaultEnabledCORS()
+	co2.AllowedMethods = []myhttp.HTTPMethod{myhttp.MethodGet}
+	co2.AllowCredentials = false
+	co2.AllowedOrigins = []string{"*"}
+	expect2 := cors.New(cors.Options{
+		AllowCredentials: co2.AllowCredentials,
+		MaxAge:           int(co2.MaxAge),
+		AllowedOrigins:   co2.AllowedOrigins,
+		AllowedMethods:   []string{http.MethodGet, http.MethodOptions},
+		AllowedHeaders:   co2.AllowedHeaders,
+		ExposedHeaders:   co2.ExposedHeaders,
+	})
+	assert.Equal(fmt.Sprintf("%v", expect2), fmt.Sprintf("%v", co2.ToCors()))
 }
