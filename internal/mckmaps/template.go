@@ -12,6 +12,7 @@ import (
 
 type template struct {
 	content  interface{}
+	defaults *vars
 	filename string
 }
 
@@ -34,7 +35,7 @@ func (p *templateParser) parse() (*template, error) {
 		}
 	}
 
-	if needLoading {
+	if needLoading { // loads file raw content
 		json, err := p.load(true, ppRemoveComment, ppRenderTemplate)
 		if err != nil {
 			return nil, err
@@ -59,16 +60,28 @@ func (p *templateParser) parse() (*template, error) {
 
 	p.jsonPath.SetLast(tTemplate)
 	v := p.json.Get(tTemplate)
-	switch v.(type) {
-	case myjson.Object:
-		template.content = v
-	case myjson.Array:
-		template.content = v
-	case myjson.String:
-		template.content = v
-	default:
-		return nil, p.newJSONParseError(p.jsonPath)
+	content, err := p.parseContent(v)
+	if err != nil {
+		return nil, err
 	}
+	template.content = content
+
+	p.jsonPath.SetLast(tVars)
+	var defaults *vars
+	if p.json.Has(tVars) {
+		vo, err := p.json.GetObject(tVars)
+		if err != nil {
+			return nil, p.newJSONParseError(p.jsonPath)
+		}
+		defaults, err = p.parseDefaults(vo)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		defaults = &vars{table: map[string]interface{}{}}
+	}
+	template.defaults = defaults
+
 	template.filename = p.filename
 
 	if needLoading { // removes the current file with checking
@@ -79,6 +92,27 @@ func (p *templateParser) parse() (*template, error) {
 		}
 	}
 	return template, nil
+}
+
+func (p *templateParser) parseContent(v interface{}) (interface{}, error) {
+	switch v.(type) {
+	case myjson.Object:
+		return v, nil
+	case myjson.Array:
+		return v, nil
+	case myjson.String:
+		return v, nil
+	default:
+		return nil, p.newJSONParseError(p.jsonPath)
+	}
+}
+
+func (p *templateParser) parseDefaults(v myjson.Object) (*vars, error) {
+	r, err := parseVars(v)
+	if err != nil {
+		return nil, p.newJSONParseError(p.jsonPath)
+	}
+	return r, nil
 }
 
 func (p *templateParser) checkCyclicReference() error {
@@ -228,8 +262,7 @@ func (t *template) renderPlainString(jsonPath *myjson.Path,
 	}
 }
 
-func (t *template) renderString(jsonPath *myjson.Path,
-	v myjson.String, vars *vars) (interface{}, error) {
+func (t *template) renderString(jsonPath *myjson.Path, v myjson.String, vars *vars) (interface{}, error) {
 	s := rsReady
 
 	runes := []rune(v)
@@ -283,7 +316,7 @@ func (t *template) renderString(jsonPath *myjson.Path,
 						return "", &renderError{filename: t.filename, jsonPath: jsonPath}
 					}
 
-					v, err := renderTextString(vars, varName, varFormat)
+					v, err := t.renderTextString(vars, varName, varFormat)
 					if err != nil {
 						return nil, &renderError{filename: t.filename, jsonPath: jsonPath}
 					}
@@ -335,8 +368,12 @@ func (t *template) renderString(jsonPath *myjson.Path,
 			return nil, &renderError{filename: t.filename, jsonPath: jsonPath}
 		}
 
-		varV := vars.table[varName]
-		return varV, nil
+		if vVal, vSet := t.getVarValue(vars, varName); vSet {
+			return vVal, nil
+		} else {
+			// undefined var
+			return nil, &renderError{filename: t.filename, jsonPath: jsonPath}
+		}
 	}
 
 	return myjson.String(builder.String()), nil
@@ -344,33 +381,43 @@ func (t *template) renderString(jsonPath *myjson.Path,
 
 var validVarFormat = regexp.MustCompile("^%([-+@0 ])?(\\d+)?\\.?(\\d+)?[tdeEfgsqxX]$")
 
-func renderTextString(vars *vars, varName string, varFormat string) (string, error) {
-	varV := vars.table[varName]
-
+func (t *template) renderTextString(vars *vars, varName string, varFormat string) (string, error) {
 	if varFormat != "" && !validVarFormat.MatchString(varFormat) {
 		return "", errors.New("invalid format for var")
 	}
 
-	switch varV.(type) {
+	vVal, vSet := t.getVarValue(vars, varName)
+	if vSet && vVal == nil { // value set but is nil, e.g. { "key": null }
+		vVal = myjson.String("")
+	}
+	switch vVal.(type) {
 	case myjson.String:
 		if varFormat == "" {
 			varFormat = "%s"
 		}
-		return fmt.Sprintf(varFormat, string(varV.(myjson.String))), nil
+		return fmt.Sprintf(varFormat, string(vVal.(myjson.String))), nil
 	case myjson.Number:
 		if varFormat == "" {
-			return fmt.Sprintf("%v", varV), nil
+			return fmt.Sprintf("%v", vVal), nil
 		} else if varFormat[len(varFormat)-1] == 'd' {
-			return fmt.Sprintf(varFormat, int(float64(varV.(myjson.Number)))), nil
+			return fmt.Sprintf(varFormat, int(float64(vVal.(myjson.Number)))), nil
 		} else {
-			return fmt.Sprintf(varFormat, float64(varV.(myjson.Number))), nil
+			return fmt.Sprintf(varFormat, float64(vVal.(myjson.Number))), nil
 		}
 	case myjson.Boolean:
 		if varFormat == "" {
 			varFormat = "%v"
 		}
-		return fmt.Sprintf(varFormat, bool(varV.(myjson.Boolean))), nil
+		return fmt.Sprintf(varFormat, bool(vVal.(myjson.Boolean))), nil
 	default:
 		return "", errors.New("invalid json type for template rendering")
 	}
+}
+
+func (t *template) getVarValue(vars *vars, varName string) (vVal interface{}, vSet bool) {
+	if vVal, vSet = vars.table[varName]; !vSet {
+		// finds in defaults if not found
+		vVal, vSet = t.defaults.table[varName]
+	}
+	return
 }

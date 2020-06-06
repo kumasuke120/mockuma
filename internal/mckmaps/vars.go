@@ -128,13 +128,15 @@ func (p *varsCSVParser) parse() ([]*vars, error) {
 		for i, c := range line {
 			if i < len(varNames) {
 				var col interface{}
-				json, err := myjson.Unmarshal([]byte(c))
-				if err != nil {
-					col = myjson.String(c) // treats the non-valid json as a pure string
-				} else {
-					col = json
+				if "undefined" != c { // pre-defined keyword which denotes non-existent value
+					json, err := myjson.Unmarshal([]byte(c))
+					if err != nil {
+						col = myjson.String(c) // treats the non-valid json as a pure string
+					} else {
+						col = json
+					}
+					table[varNames[i]] = col
 				}
-				table[varNames[i]] = col
 			}
 		}
 
