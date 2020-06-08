@@ -18,11 +18,20 @@ type mockHandler struct {
 	pathMatcher *pathMatcher
 }
 
-func newMockHandler(mappings *mckmaps.MockuMappings) *mockHandler {
-	handler := new(mockHandler)
-	handler.mappings = mappings
-	handler.pathMatcher = newPathMatcher(mappings)
-	return handler
+func newMockHandler(mappings *mckmaps.MockuMappings) http.Handler {
+	h := new(mockHandler)
+	h.mappings = mappings
+	h.pathMatcher = newPathMatcher(mappings)
+
+	h.listAllMappings()
+
+	corsOption := mappings.Config.CORS
+	if corsOption.Enabled {
+		log.Println("[handler ] enabled  : cors handler")
+		return corsOption.ToCors().Handler(h)
+	} else {
+		return h
+	}
 }
 
 func (h *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
