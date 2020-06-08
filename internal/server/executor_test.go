@@ -115,7 +115,7 @@ func TestPolicyExecutor_executor(t *testing.T) {
 	assert.Nil(e4)
 	assert.Equal(http.StatusOK, rr4.Code)
 
-	handler := newMockHandler(mappings)
+	handler := newMockHandler(mappings).(*mockHandler)
 	rr5 := httptest.NewRecorder()
 	var rw5 http.ResponseWriter = rr5
 	exe5 := &policyExecutor{

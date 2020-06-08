@@ -164,6 +164,34 @@ var mappings = &mckmaps.MockuMappings{
 	},
 }
 
+var mappingsWithCORS = &mckmaps.MockuMappings{
+	Mappings: mappings.Mappings,
+	Config: &mckmaps.Config{
+		CORS: &mckmaps.CORSOptions{
+			Enabled:          true,
+			AllowCredentials: true,
+			MaxAge:           1800,
+			AllowedOrigins:   []string{"*"},
+			AllowedMethods: []myhttp.HTTPMethod{
+				myhttp.MethodGet,
+				myhttp.MethodPost,
+				myhttp.MethodHead,
+				myhttp.MethodOptions,
+			},
+			AllowedHeaders: []string{
+				myhttp.HeaderOrigin,
+				myhttp.HeaderAccept,
+				myhttp.HeaderXRequestWith,
+				myhttp.HeaderContentType,
+				myhttp.HeaderAccessControlRequestMethod,
+				myhttp.HeaderAccessControlRequestHeaders,
+			},
+			ExposedHeaders: nil,
+		},
+		MatchTrailingSlash: false,
+	},
+}
+
 func TestNewPathMatcher(t *testing.T) {
 	matcher := newPathMatcher(mappings)
 
