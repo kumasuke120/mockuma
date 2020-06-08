@@ -37,5 +37,11 @@
       "@template": "renderTemplate.template.json",
       "@vars": "renderTemplate-2.vars.csv"
     }
-  ]
+  ],
+  "defaults": {
+    "@template": "renderTemplate-defaults.template.json",
+    "vars": {
+      "v1": 1
+    }
+  }
 }

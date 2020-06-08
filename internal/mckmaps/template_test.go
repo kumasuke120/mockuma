@@ -29,6 +29,7 @@ func TestTemplateParser_parse(t *testing.T) {
 				"v":   myjson.String("@{v}"),
 				"v-v": myjson.String("@{v}-@{v}"),
 			},
+			defaults: &vars{table: map[string]interface{}{}},
 			filename: fp1,
 		}
 		assert.Equal(expected1, p1)
@@ -47,6 +48,7 @@ func TestTemplateParser_parse(t *testing.T) {
 					"v-v": myjson.String("@{v}-@{v}"),
 				},
 			},
+			defaults: &vars{table: map[string]interface{}{}},
 			filename: fp2,
 		}
 		assert.Equal(expected2, p2)
@@ -69,6 +71,7 @@ func TestTemplateParser_parse(t *testing.T) {
 					"v-v": myjson.String("@{v}-@{v}"),
 				},
 			},
+			defaults: &vars{table: map[string]interface{}{}},
 			filename: fp3,
 		}
 		assert.Equal(expected3, p3)

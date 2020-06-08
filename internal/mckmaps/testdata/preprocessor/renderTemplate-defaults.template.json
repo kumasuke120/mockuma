@@ -1,0 +1,11 @@
+{
+  "type": "template",
+  "template": {
+    "v1": "@{v1}",
+    "v2": "@{v2}",
+    "v-verbose": "v1 = @{v1}, v2 = @{v2}"
+  },
+  "vars": {
+    "v2": 2
+  }
+}
