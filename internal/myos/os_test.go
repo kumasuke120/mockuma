@@ -35,13 +35,13 @@ func TestChdir(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	setWd("TestChdir")
-
 	wd, err := os.Getwd()
 	require.Nil(err)
 
-	err = Chdir(wd)
-	if assert.Nil(err) {
-		assert.Equal(wd, theWd)
+	for i := 0; i < 2; i++ {
+		err = Chdir(wd)
+		if assert.Nil(err) {
+			assert.Equal(wd, theWd)
+		}
 	}
 }
