@@ -170,7 +170,27 @@ func TestParser_Parse(t *testing.T) {
 	expected2 := &MockuMappings{
 		Mappings:  expectedMappings,
 		Filenames: []string{fn2, fn1},
-		Config:    defaultConfig(),
+		Config: &Config{
+			MatchTrailingSlash: true,
+			CORS: &CORSOptions{
+				Enabled:          true,
+				AllowCredentials: true,
+				MaxAge:           1600,
+				AllowedOrigins:   []string{"*"},
+				AllowedMethods: []myhttp.HTTPMethod{
+					myhttp.MethodGet,
+					myhttp.MethodPost,
+				},
+				AllowedHeaders: []string{
+					myhttp.HeaderOrigin,
+					myhttp.HeaderAccept,
+					myhttp.HeaderXRequestWith,
+					myhttp.HeaderContentType,
+					myhttp.HeaderAccessControlRequestMethod,
+					myhttp.HeaderAccessControlRequestHeaders,
+				},
+			},
+		},
 	}
 	parser2 := NewParser(fn2)
 	actual2, e2 := parser2.Parse()

@@ -4,5 +4,17 @@
     "mappings": [
       "parser-single.json"
     ]
+  },
+  "config": {
+    "cors": {
+      "enabled": true,
+      "allowedOrigins": "*",
+      "allowedMethods": [
+        "GET",
+        "POST"
+      ],
+      "maxAge": 1600
+    },
+    "matchTrailingSlash": true
   }
 }

@@ -490,44 +490,54 @@ func (p *mainParser) parseActualCORSOptions(v myjson.Object) (*CORSOptions, erro
 		}
 		cc.AllowCredentials = bool(ac)
 
-		p.jsonPath.SetLast(corsMaxAge)
-		ma, err := p.json.GetNumber(corsMaxAge)
-		if err != nil {
-			return nil, p.newJSONParseError(p.jsonPath)
+		if v.Has(corsMaxAge) {
+			p.jsonPath.SetLast(corsMaxAge)
+			ma, err := p.json.GetNumber(corsMaxAge)
+			if err != nil {
+				return nil, p.newJSONParseError(p.jsonPath)
+			}
+			cc.MaxAge = int64(ma)
 		}
-		cc.MaxAge = int64(ma)
 
-		p.jsonPath.SetLast(corsAllowedOrigins)
-		ao, err := p.getAsStringSlice(corsAllowedOrigins)
-		if err != nil {
-			return nil, err
+		if v.Has(corsAllowedOrigins) {
+			p.jsonPath.SetLast(corsAllowedOrigins)
+			ao, err := p.getAsStringSlice(v, corsAllowedOrigins)
+			if err != nil {
+				return nil, err
+			}
+			cc.AllowedOrigins = ao
 		}
-		cc.AllowedOrigins = ao
 
-		p.jsonPath.SetLast(corsAllowedMethods)
-		_am, err := p.getAsStringSlice(corsAllowedMethods)
-		if err != nil {
-			return nil, err
+		if v.Has(corsAllowedMethods) {
+			p.jsonPath.SetLast(corsAllowedMethods)
+			_am, err := p.getAsStringSlice(v, corsAllowedMethods)
+			if err != nil {
+				return nil, err
+			}
+			am := make([]myhttp.HTTPMethod, len(_am))
+			for idx, v := range _am {
+				am[idx] = myhttp.ToHTTPMethod(v)
+			}
+			cc.AllowedMethods = am
 		}
-		am := make([]myhttp.HTTPMethod, len(_am))
-		for idx, v := range _am {
-			am[idx] = myhttp.ToHTTPMethod(v)
-		}
-		cc.AllowedMethods = am
 
-		p.jsonPath.SetLast(corsAllowedHeaders)
-		ah, err := p.getAsStringSlice(corsAllowedHeaders)
-		if err != nil {
-			return nil, err
+		if v.Has(corsAllowedHeaders) {
+			p.jsonPath.SetLast(corsAllowedHeaders)
+			ah, err := p.getAsStringSlice(v, corsAllowedHeaders)
+			if err != nil {
+				return nil, err
+			}
+			cc.AllowedHeaders = ah
 		}
-		cc.AllowedHeaders = ah
 
-		p.jsonPath.SetLast(corsExposedHeaders)
-		eh, err := p.getAsStringSlice(corsExposedHeaders)
-		if err != nil {
-			return nil, err
+		if v.Has(corsExposedHeaders) {
+			p.jsonPath.SetLast(corsExposedHeaders)
+			eh, err := p.getAsStringSlice(v, corsExposedHeaders)
+			if err != nil {
+				return nil, err
+			}
+			cc.ExposedHeaders = eh
 		}
-		cc.ExposedHeaders = eh
 
 		return cc, nil
 	}
@@ -535,11 +545,11 @@ func (p *mainParser) parseActualCORSOptions(v myjson.Object) (*CORSOptions, erro
 	return defaultDisabledCORS(), nil
 }
 
-func (p *mainParser) getAsStringSlice(name string) ([]string, error) {
+func (p *mainParser) getAsStringSlice(v myjson.Object, name string) ([]string, error) {
 	p.jsonPath.Append("")
 
 	var result []string
-	for idx, e := range ensureJSONArray(p.json.Get(name)) {
+	for idx, e := range ensureJSONArray(v.Get(name)) {
 		p.jsonPath.SetLast(idx)
 
 		s, err := myjson.ToString(e)
