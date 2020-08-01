@@ -17,16 +17,32 @@ func TestNewMockServer(t *testing.T) {
 }
 
 func TestMockServer_Start(t *testing.T) {
+	//noinspection GoImportUsedAsName
+	assert := assert.New(t)
+
 	s := NewMockServer(3214)
+
+	assert.Panics(func() {
+		s.ListenAndServe(nil)
+	})
+
 	go func() {
 		time.Sleep(2 * time.Second)
-		s.shutdown()
+		assert.True(s.shutdown())
 	}()
 	s.ListenAndServe(mappings)
 }
 
 func TestMockServer_SetMappings(t *testing.T) {
+	//noinspection GoImportUsedAsName
+	assert := assert.New(t)
+
 	s := NewMockServer(3214)
+
+	assert.Panics(func() {
+		s.SetMappings(nil)
+	})
+
 	s.SetMappings(mappings)
 
 	var wg sync.WaitGroup
@@ -38,7 +54,7 @@ func TestMockServer_SetMappings(t *testing.T) {
 		time.Sleep(1 * time.Second)
 		s.SetMappings(mappings)
 		time.Sleep(2 * time.Second)
-		s.shutdown()
+		assert.True(s.shutdown())
 	}()
 	wg.Wait()
 }
