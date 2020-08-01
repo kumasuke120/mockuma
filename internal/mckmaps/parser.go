@@ -492,7 +492,7 @@ func (p *mainParser) parseActualCORSOptions(v myjson.Object) (*CORSOptions, erro
 
 		if v.Has(corsMaxAge) {
 			p.jsonPath.SetLast(corsMaxAge)
-			ma, err := p.json.GetNumber(corsMaxAge)
+			ma, err := v.GetNumber(corsMaxAge)
 			if err != nil {
 				return nil, p.newJSONParseError(p.jsonPath)
 			}
