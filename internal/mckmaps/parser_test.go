@@ -198,6 +198,64 @@ func TestParser_Parse(t *testing.T) {
 		assert.Equal(expected2, actual2)
 	}
 
+	fn3 := "parser-multi-2.json"
+	expected3 := &MockuMappings{
+		Mappings:  expectedMappings,
+		Filenames: []string{fn3, fn1},
+		Config: &Config{
+			MatchTrailingSlash: false,
+			CORS: &CORSOptions{
+				Enabled:          true,
+				AllowCredentials: false,
+				MaxAge:           1800,
+				AllowedOrigins:   []string{"*"},
+				AllowedMethods: []myhttp.HTTPMethod{
+					myhttp.MethodGet,
+					myhttp.MethodPost,
+					myhttp.MethodHead,
+					myhttp.MethodOptions,
+				},
+				AllowedHeaders: []string{"X-Auth-Token"},
+				ExposedHeaders: []string{"Content-Length"},
+			},
+		},
+	}
+	parser3 := NewParser(fn3)
+	actual3, e3 := parser3.Parse()
+	if assert.Nil(e3) {
+		assert.Equal(expected3, actual3)
+	}
+
+	fn4 := "parser-multi-3.json"
+	expected4 := &MockuMappings{
+		Mappings:  expectedMappings,
+		Filenames: []string{fn4, fn1},
+		Config: &Config{
+			MatchTrailingSlash: false,
+			CORS:               defaultEnabledCORS(),
+		},
+	}
+	parser4 := NewParser(fn4)
+	actual4, e4 := parser4.Parse()
+	if assert.Nil(e4) {
+		assert.Equal(expected4, actual4)
+	}
+
+	fn5 := "parser-multi-4.json"
+	expected5 := &MockuMappings{
+		Mappings:  expectedMappings,
+		Filenames: []string{fn5, fn1},
+		Config: &Config{
+			MatchTrailingSlash: false,
+			CORS:               defaultDisabledCORS(),
+		},
+	}
+	parser5 := NewParser(fn5)
+	actual5, e5 := parser5.Parse()
+	if assert.Nil(e5) {
+		assert.Equal(expected5, actual5)
+	}
+
 	require.Nil(myos.Chdir(oldWd))
 }
 

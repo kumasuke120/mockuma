@@ -1,0 +1,16 @@
+{
+  "type": "main",
+  "include": {
+    "mappings": [
+      "parser-single.json"
+    ]
+  },
+  "config": {
+    "cors": {
+      "enabled": true,
+      "allowedHeaders": "X-Auth-Token",
+      "allowCredentials": false,
+      "exposedHeaders": "Content-Length"
+    }
+  }
+}

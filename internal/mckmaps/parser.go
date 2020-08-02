@@ -483,12 +483,14 @@ func (p *mainParser) parseActualCORSOptions(v myjson.Object) (*CORSOptions, erro
 	if enabled {
 		cc := defaultEnabledCORS()
 
-		p.jsonPath.SetLast(corsAllowCredentials)
-		ac, err := v.GetBoolean(corsEnabled)
-		if err != nil {
-			return nil, p.newJSONParseError(p.jsonPath)
+		if v.Has(corsAllowCredentials) {
+			p.jsonPath.SetLast(corsAllowCredentials)
+			ac, err := v.GetBoolean(corsAllowCredentials)
+			if err != nil {
+				return nil, p.newJSONParseError(p.jsonPath)
+			}
+			cc.AllowCredentials = bool(ac)
 		}
-		cc.AllowCredentials = bool(ac)
 
 		if v.Has(corsMaxAge) {
 			p.jsonPath.SetLast(corsMaxAge)
