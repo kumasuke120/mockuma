@@ -339,4 +339,9 @@ func TestPathMatcher_matchPolicy(t *testing.T) {
 	assert.True(bound14.matches())
 	assert.Equal(matchState(matchExact), bound14.matchState)
 	assert.Equal(pNoPolicyMatched, bound14.matchPolicy())
+
+	bound15 := matcher.bind(httptest.NewRequest("HEAD", "/m?r1=123", nil))
+	assert.True(bound15.matches())
+	assert.Equal(matchState(matchHead), bound15.matchState)
+	assert.Equal(mappings.Mappings[1].Policies[1], bound15.matchPolicy())
 }
