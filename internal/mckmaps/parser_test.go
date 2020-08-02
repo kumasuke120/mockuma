@@ -256,6 +256,57 @@ func TestParser_Parse(t *testing.T) {
 		assert.Equal(expected5, actual5)
 	}
 
+	fn6 := "parser-multi-5.json"
+	parser6 := NewParser(fn6)
+	_, e6 := parser6.Parse()
+	if assert.NotNil(e6) {
+		ep6 := e6.(*parserError).jsonPath.String()
+		assert.Equal("$.config.cors", ep6)
+	}
+
+	fn7 := "parser-multi-6.json"
+	parser7 := NewParser(fn7)
+	_, e7 := parser7.Parse()
+	assert.NotNil(e7)
+
+	fn8 := "parser-multi-7.json"
+	expected8 := &MockuMappings{
+		Mappings:  expectedMappings,
+		Filenames: []string{fn8, fn1},
+		Config: &Config{
+			MatchTrailingSlash: false,
+			CORS:               defaultDisabledCORS(),
+		},
+	}
+	parser8 := NewParser(fn8)
+	actual8, e8 := parser8.Parse()
+	if assert.Nil(e8) {
+		assert.Equal(expected8, actual8)
+	}
+
+	fn9 := "parser-multi-8.json"
+	parser9 := NewParser(fn9)
+	_, e9 := parser9.Parse()
+	if assert.NotNil(e9) {
+		ep9 := e9.(*parserError).jsonPath.String()
+		assert.Equal("$.config", ep9)
+	}
+
+	fn10 := "parser-multi-9.json"
+	expected10 := &MockuMappings{
+		Mappings:  expectedMappings,
+		Filenames: []string{fn10, fn1},
+		Config: &Config{
+			MatchTrailingSlash: true,
+			CORS:               defaultDisabledCORS(),
+		},
+	}
+	parser10 := NewParser(fn10)
+	actual10, e10 := parser10.Parse()
+	if assert.Nil(e10) {
+		assert.Equal(expected10, actual10)
+	}
+
 	require.Nil(myos.Chdir(oldWd))
 }
 
