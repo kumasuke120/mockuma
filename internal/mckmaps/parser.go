@@ -204,6 +204,8 @@ func (p *Parser) newJSONParseError(jsonPath *myjson.Path) *parserError {
 }
 
 func (p *Parser) Parse() (r *MockuMappings, e error) {
+	defer p.reset()
+
 	var json interface{}
 	if json, e = p.load(true, ppRemoveComment, ppRenderTemplate); e != nil {
 		return
@@ -233,7 +235,6 @@ func (p *Parser) Parse() (r *MockuMappings, e error) {
 		r.Filenames = relPaths
 	}
 
-	p.reset()
 	p.sortMappings(r)
 	return
 }
@@ -289,6 +290,7 @@ func (p *Parser) reset() {
 	ppParseRegexp.reset()
 
 	loadedFilenames = nil
+	parsingTemplates = nil
 }
 
 func (p *Parser) sortMappings(mappings *MockuMappings) {
