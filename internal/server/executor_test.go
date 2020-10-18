@@ -178,4 +178,17 @@ func TestPolicyExecutor_executor(t *testing.T) {
 	}
 	e8 := exe8.execute()
 	assert.NotNil(e8)
+
+	rr9 := httptest.NewRecorder()
+	var rw9 http.ResponseWriter = rr9
+	exe9 := &policyExecutor{
+		r:          httptest.NewRequest("GET", "/TestPolicyExecutor_executor", nil),
+		w:          &rw9,
+		policy:     newJSONPolicy(myhttp.StatusOK, "OK"),
+		returnHead: true,
+	}
+	e9 := exe9.execute()
+	if assert.Nil(e9) {
+		assert.Empty(rr9.Body.String())
+	}
 }
