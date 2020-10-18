@@ -39,7 +39,7 @@ func GetWd() string {
 }
 
 func Chdir(dir string) (err error) {
-	if dir == GetWd() {
+	if dir == GetWd() { // omits needless settings
 		return
 	}
 

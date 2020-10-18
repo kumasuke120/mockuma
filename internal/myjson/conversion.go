@@ -79,6 +79,19 @@ func toString(v interface{}, name string) (String, error) {
 	}
 }
 
+func ToBoolean(v interface{}) (Boolean, error) {
+	return toBoolean(v, "")
+}
+
+func toBoolean(v interface{}, name string) (Boolean, error) {
+	switch v.(type) {
+	case Boolean:
+		return v.(Boolean), nil
+	default:
+		return false, &valueError{name: name}
+	}
+}
+
 func NewArray(v ...interface{}) Array {
 	return toMyJSONArray(v)
 }

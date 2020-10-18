@@ -12,5 +12,9 @@
       "books/*.mappings.json",
       "repo/*.mappings.json"
     ]
+  },
+  "config": {
+    "cors": true,
+    "matchTrailingSlash": true
   }
 }

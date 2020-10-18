@@ -2,12 +2,15 @@ package mckmaps
 
 import (
 	"errors"
+	"fmt"
+	"net/http"
 	"path/filepath"
 	"testing"
 
 	"github.com/kumasuke120/mockuma/internal/myhttp"
 	"github.com/kumasuke120/mockuma/internal/myjson"
 	"github.com/kumasuke120/mockuma/internal/myos"
+	"github.com/rs/cors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -90,7 +93,7 @@ func TestParser_Parse(t *testing.T) {
 				{
 					CmdType: mapPolicyReturns,
 					Returns: &Returns{
-						StatusCode: myhttp.StatusOk,
+						StatusCode: myhttp.StatusOK,
 						Body:       []byte("m1"),
 					},
 				},
@@ -111,7 +114,7 @@ func TestParser_Parse(t *testing.T) {
 					},
 					CmdType: mapPolicyReturns,
 					Returns: &Returns{
-						StatusCode: myhttp.StatusOk,
+						StatusCode: myhttp.StatusOK,
 						Body:       []byte("m2:1"),
 					},
 				},
@@ -126,7 +129,7 @@ func TestParser_Parse(t *testing.T) {
 					},
 					CmdType: mapPolicyReturns,
 					Returns: &Returns{
-						StatusCode: myhttp.StatusOk,
+						StatusCode: myhttp.StatusOK,
 						Body:       []byte("m2:2"),
 					},
 				},
@@ -141,7 +144,7 @@ func TestParser_Parse(t *testing.T) {
 					},
 					CmdType: mapPolicyReturns,
 					Returns: &Returns{
-						StatusCode: myhttp.StatusOk,
+						StatusCode: myhttp.StatusOK,
 						Body:       []byte("m2:3"),
 					},
 				},
@@ -155,6 +158,7 @@ func TestParser_Parse(t *testing.T) {
 	expected1 := &MockuMappings{
 		Mappings:  expectedMappings,
 		Filenames: []string{fn1},
+		Config:    defaultConfig(),
 	}
 	parser1 := NewParser(path1)
 	actual1, e1 := parser1.Parse()
@@ -166,11 +170,141 @@ func TestParser_Parse(t *testing.T) {
 	expected2 := &MockuMappings{
 		Mappings:  expectedMappings,
 		Filenames: []string{fn2, fn1},
+		Config: &Config{
+			MatchTrailingSlash: true,
+			CORS: &CORSOptions{
+				Enabled:          true,
+				AllowCredentials: true,
+				MaxAge:           1600,
+				AllowedOrigins:   []string{"*"},
+				AllowedMethods: []myhttp.HTTPMethod{
+					myhttp.MethodGet,
+					myhttp.MethodPost,
+				},
+				AllowedHeaders: []string{
+					myhttp.HeaderOrigin,
+					myhttp.HeaderAccept,
+					myhttp.HeaderXRequestWith,
+					myhttp.HeaderContentType,
+					myhttp.HeaderAccessControlRequestMethod,
+					myhttp.HeaderAccessControlRequestHeaders,
+				},
+			},
+		},
 	}
 	parser2 := NewParser(fn2)
 	actual2, e2 := parser2.Parse()
 	if assert.Nil(e2) {
 		assert.Equal(expected2, actual2)
+	}
+
+	fn3 := "parser-multi-2.json"
+	expected3 := &MockuMappings{
+		Mappings:  expectedMappings,
+		Filenames: []string{fn3, fn1},
+		Config: &Config{
+			MatchTrailingSlash: false,
+			CORS: &CORSOptions{
+				Enabled:          true,
+				AllowCredentials: false,
+				MaxAge:           1800,
+				AllowedOrigins:   []string{"*"},
+				AllowedMethods: []myhttp.HTTPMethod{
+					myhttp.MethodGet,
+					myhttp.MethodPost,
+					myhttp.MethodHead,
+					myhttp.MethodOptions,
+				},
+				AllowedHeaders: []string{"X-Auth-Token"},
+				ExposedHeaders: []string{"Content-Length"},
+			},
+		},
+	}
+	parser3 := NewParser(fn3)
+	actual3, e3 := parser3.Parse()
+	if assert.Nil(e3) {
+		assert.Equal(expected3, actual3)
+	}
+
+	fn4 := "parser-multi-3.json"
+	expected4 := &MockuMappings{
+		Mappings:  expectedMappings,
+		Filenames: []string{fn4, fn1},
+		Config: &Config{
+			MatchTrailingSlash: false,
+			CORS:               defaultEnabledCORS(),
+		},
+	}
+	parser4 := NewParser(fn4)
+	actual4, e4 := parser4.Parse()
+	if assert.Nil(e4) {
+		assert.Equal(expected4, actual4)
+	}
+
+	fn5 := "parser-multi-4.json"
+	expected5 := &MockuMappings{
+		Mappings:  expectedMappings,
+		Filenames: []string{fn5, fn1},
+		Config: &Config{
+			MatchTrailingSlash: false,
+			CORS:               defaultDisabledCORS(),
+		},
+	}
+	parser5 := NewParser(fn5)
+	actual5, e5 := parser5.Parse()
+	if assert.Nil(e5) {
+		assert.Equal(expected5, actual5)
+	}
+
+	fn6 := "parser-multi-5.json"
+	parser6 := NewParser(fn6)
+	_, e6 := parser6.Parse()
+	if assert.NotNil(e6) {
+		ep6 := e6.(*parserError).jsonPath.String()
+		assert.Equal("$.config.cors", ep6)
+	}
+
+	fn7 := "parser-multi-6.json"
+	parser7 := NewParser(fn7)
+	_, e7 := parser7.Parse()
+	assert.NotNil(e7)
+
+	fn8 := "parser-multi-7.json"
+	expected8 := &MockuMappings{
+		Mappings:  expectedMappings,
+		Filenames: []string{fn8, fn1},
+		Config: &Config{
+			MatchTrailingSlash: false,
+			CORS:               defaultDisabledCORS(),
+		},
+	}
+	parser8 := NewParser(fn8)
+	actual8, e8 := parser8.Parse()
+	if assert.Nil(e8) {
+		assert.Equal(expected8, actual8)
+	}
+
+	fn9 := "parser-multi-8.json"
+	parser9 := NewParser(fn9)
+	_, e9 := parser9.Parse()
+	if assert.NotNil(e9) {
+		ep9 := e9.(*parserError).jsonPath.String()
+		assert.Equal("$.config", ep9)
+	}
+
+	fn10 := "parser-multi-9.json"
+	expected10 := &MockuMappings{
+		Mappings:  expectedMappings,
+		Filenames: []string{fn10, fn1},
+		Config: &Config{
+			MatchTrailingSlash: true,
+			CORS:               defaultDisabledCORS(),
+		},
+	}
+	parser10 := NewParser(fn10)
+	actual10, e10 := parser10.Parse()
+	if assert.Nil(e10) {
+		assert.Equal(expected10, actual10)
 	}
 
 	require.Nil(myos.Chdir(oldWd))
@@ -221,6 +355,41 @@ func TestParser_sortMappings(t *testing.T) {
 		},
 	}}
 	p1 := &Parser{filename: ""}
-	actual1 := p1.sortMappings(testdata1)
-	assert.Equal(expected1, actual1)
+	p1.sortMappings(testdata1)
+	assert.Equal(expected1, testdata1)
+}
+
+func TestCORSOptions_ToCors(t *testing.T) {
+	//noinspection GoImportUsedAsName
+	assert := assert.New(t)
+
+	co0 := defaultDisabledCORS()
+	assert.Nil(co0.ToCors())
+
+	co1 := defaultEnabledCORS()
+	expect1 := cors.New(cors.Options{
+		AllowCredentials: co1.AllowCredentials,
+		MaxAge:           int(co1.MaxAge),
+		AllowedOrigins:   nil,
+		AllowOriginFunc:  anyStrToTrue,
+		AllowedMethods:   myhttp.MethodsToStringSlice(co1.AllowedMethods),
+		AllowedHeaders:   co1.AllowedHeaders,
+		ExposedHeaders:   co1.ExposedHeaders,
+	})
+	// normal reflect.DeepEqual won't pass
+	assert.Equal(fmt.Sprintf("%v", expect1), fmt.Sprintf("%v", co1.ToCors()))
+
+	co2 := defaultEnabledCORS()
+	co2.AllowedMethods = []myhttp.HTTPMethod{myhttp.MethodGet}
+	co2.AllowCredentials = false
+	co2.AllowedOrigins = []string{"*"}
+	expect2 := cors.New(cors.Options{
+		AllowCredentials: co2.AllowCredentials,
+		MaxAge:           int(co2.MaxAge),
+		AllowedOrigins:   co2.AllowedOrigins,
+		AllowedMethods:   []string{http.MethodGet, http.MethodOptions},
+		AllowedHeaders:   co2.AllowedHeaders,
+		ExposedHeaders:   co2.ExposedHeaders,
+	})
+	assert.Equal(fmt.Sprintf("%v", expect2), fmt.Sprintf("%v", co2.ToCors()))
 }

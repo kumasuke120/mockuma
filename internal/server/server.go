@@ -30,8 +30,6 @@ func (s *MockServer) ListenAndServe(mappings *mckmaps.MockuMappings) {
 	}
 
 	handler := newMockHandler(mappings)
-	handler.listAllMappings()
-
 	addr := fmt.Sprintf(":%d", s.port)
 	server := &http.Server{Addr: addr, Handler: handler}
 

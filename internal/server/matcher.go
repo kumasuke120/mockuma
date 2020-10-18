@@ -8,10 +8,12 @@ import (
 	"regexp"
 
 	"github.com/kumasuke120/mockuma/internal/mckmaps"
+	"github.com/kumasuke120/mockuma/internal/myhttp"
 	"github.com/kumasuke120/mockuma/internal/myjson"
 )
 
 type pathMatcher struct {
+	mappings    *mckmaps.MockuMappings
 	directPath  map[string][]*mckmaps.Mapping
 	patternPath map[*regexp.Regexp][]*mckmaps.Mapping
 }
@@ -35,69 +37,149 @@ func newPathMatcher(mappings *mckmaps.MockuMappings) *pathMatcher {
 	}
 
 	return &pathMatcher{
+		mappings:    mappings,
 		directPath:  directPath,
 		patternPath: patternPath,
 	}
 }
 
 func (m *pathMatcher) bind(r *http.Request) *boundMatcher {
-	return &boundMatcher{m: m, r: r}
+	return &boundMatcher{m: m, r: r, conf: m.mappings.Config}
 }
 
 type boundMatcher struct {
 	m          *pathMatcher
+	conf       *mckmaps.Config
 	r          *http.Request
+	method     myhttp.HTTPMethod
 	uri        string
 	uriPattern *regexp.Regexp
 
 	matchedMapping *mckmaps.Mapping
-	is405          bool
+	matchState     matchState
 	bodyCache      []byte
 }
 
+type matchState int
+
+const (
+	matchExact = iota
+	matchURI
+	matchHead
+	matchCORSOptions
+	matchNone
+)
+
 func (bm *boundMatcher) matches() bool {
 	bm.uri = bm.r.URL.Path
+	bm.method = myhttp.ToHTTPMethod(bm.r.Method)
 
-	// matching for direct path
-	if mappingsOfURI, ok := bm.m.directPath[bm.uri]; ok {
-		matched := bm.anyMethodMatches(mappingsOfURI)
-		if matched != nil {
+	var possibleMappings []*mckmaps.Mapping
+	possibleMappings = bm.matchURIDirect()
+
+	var possibleURIPattern *regexp.Regexp
+	if len(possibleMappings) == 0 {
+		possibleMappings, possibleURIPattern = bm.matchURIPattern()
+	}
+
+	if len(possibleMappings) != 0 { // if finds any mapping
+		if matched := bm.matchByMethod(possibleMappings); matched != nil {
 			bm.matchedMapping = matched
-			return true
+			bm.uriPattern = possibleURIPattern
+			bm.matchState = matchExact
+		} else if matched := bm.matchHead(possibleMappings); matched != nil {
+			bm.matchedMapping = matched
+			bm.matchState = matchHead
+		} else if bm.matchCORSOptions() {
+			bm.matchedMapping = nil
+			bm.matchState = matchCORSOptions
+		} else {
+			bm.matchedMapping = nil
+			bm.matchState = matchURI
 		}
-		bm.is405 = true
+	} else {
+		bm.matchedMapping = nil
+		bm.matchState = matchNone
 	}
 
-	// matching for pattern path
-	for pattern, mappingsOfURI := range bm.m.patternPath {
-		if pattern.MatchString(bm.uri) {
-			matched := bm.anyMethodMatches(mappingsOfURI)
-			if matched != nil {
-				bm.uriPattern = pattern
-				bm.matchedMapping = matched
-				return true
-			}
-			bm.is405 = true
-		}
-	}
-
-	return false
+	return bm.matchState != matchNone
 }
 
-func (bm *boundMatcher) anyMethodMatches(mappingsOfURI []*mckmaps.Mapping) *mckmaps.Mapping {
-	for _, mappingOfURI := range mappingsOfURI {
-		if mappingOfURI.Method.Matches(bm.r.Method) {
-			return mappingOfURI
+func (bm *boundMatcher) matchURIDirect() (pm []*mckmaps.Mapping) {
+	if mappingsOfURI, ok := bm.m.directPath[bm.uri]; ok { // matching for direct path
+		pm = mappingsOfURI
+	} else if bm.conf.MatchTrailingSlash { // matches /path to /path/
+		if mappingsOfURI, ok := bm.m.directPath[bm.uri+"/"]; ok {
+			bm.uri += "/"
+			pm = mappingsOfURI
+		}
+	}
+	return
+}
+
+func (bm *boundMatcher) matchURIPattern() (pm []*mckmaps.Mapping, pp *regexp.Regexp) {
+	for pattern, mappingsOfURI := range bm.m.patternPath { // matching for pattern path
+		if pattern.MatchString(bm.uri) {
+			pm = mappingsOfURI
+			pp = pattern
+		} else if bm.conf.MatchTrailingSlash && pattern.MatchString(bm.uri+"/") {
+			bm.uri += "/"
+			pm = mappingsOfURI
+			pp = pattern
+		}
+	}
+	return
+}
+
+func (bm *boundMatcher) headMatches() bool {
+	return bm.matchState == matchHead
+}
+
+func (bm *boundMatcher) matchByMethod(mappings []*mckmaps.Mapping) *mckmaps.Mapping {
+	return matchByMethod(mappings, bm.method)
+}
+
+func (bm *boundMatcher) matchHead(mappings []*mckmaps.Mapping) *mckmaps.Mapping {
+	if bm.method != myhttp.MethodHead {
+		return nil
+	}
+
+	return matchByMethod(mappings, myhttp.MethodGet)
+}
+
+func (bm *boundMatcher) matchCORSOptions() bool {
+	return bm.conf.CORS.Enabled && bm.method == myhttp.MethodOptions
+}
+
+func matchByMethod(mappings []*mckmaps.Mapping, method myhttp.HTTPMethod) *mckmaps.Mapping {
+	for _, m := range mappings {
+		if m.Method.Matches(method) {
+			return m
 		}
 	}
 	return nil
 }
 
-func (bm *boundMatcher) isMethodNotAllowed() bool {
-	return bm.is405
+func (bm *boundMatcher) matchPolicy() *mckmaps.Policy {
+	switch bm.matchState {
+	case matchHead:
+		fallthrough
+	case matchExact:
+		p := bm.matchExactPolicy()
+		if p == nil {
+			return pNoPolicyMatched
+		} else {
+			return p
+		}
+	case matchCORSOptions:
+		return pEmptyOK
+	case matchURI:
+		return pMethodNotAllowed
+	}
+	return pNotFound
 }
 
-func (bm *boundMatcher) matchPolicy() *mckmaps.Policy {
+func (bm *boundMatcher) matchExactPolicy() *mckmaps.Policy {
 	bm.cacheBody()
 
 	err := bm.r.ParseForm()

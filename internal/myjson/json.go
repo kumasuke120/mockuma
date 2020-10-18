@@ -75,6 +75,11 @@ func (o Object) GetString(name string) (String, error) {
 	return toString(v, name)
 }
 
+func (o Object) GetBoolean(name string) (Boolean, error) {
+	v := o.Get(name)
+	return toBoolean(v, name)
+}
+
 func (a Array) Has(idx int) bool {
 	return len(a) > idx && 0 <= idx
 }

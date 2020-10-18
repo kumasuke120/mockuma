@@ -41,7 +41,7 @@ func TestMappingsParser_parse(t *testing.T) {
 						{
 							CmdType: mapPolicyReturns,
 							Returns: &Returns{
-								StatusCode: myhttp.StatusOk,
+								StatusCode: myhttp.StatusOK,
 								Headers: []*NameValuesPair{
 									{
 										Name:   myhttp.HeaderContentType,
@@ -137,7 +137,7 @@ func TestMappingsParser_parse(t *testing.T) {
 						{
 							CmdType: mapPolicyReturns,
 							Returns: &Returns{
-								StatusCode: myhttp.StatusOk,
+								StatusCode: myhttp.StatusOK,
 								Body:       []byte(""),
 								Latency: &Interval{
 									Min: 100,
@@ -189,7 +189,7 @@ func TestMappingsParser_parse(t *testing.T) {
 								BodyRegexp: regexp.MustCompile("^.+$"),
 							},
 							CmdType: mapPolicyReturns,
-							Returns: &Returns{StatusCode: myhttp.StatusOk},
+							Returns: &Returns{StatusCode: myhttp.StatusOK},
 						},
 						{
 							When: &When{
@@ -198,21 +198,21 @@ func TestMappingsParser_parse(t *testing.T) {
 								}),
 							},
 							CmdType: mapPolicyReturns,
-							Returns: &Returns{StatusCode: myhttp.StatusOk},
+							Returns: &Returns{StatusCode: myhttp.StatusOK},
 						},
 						{
 							When: &When{
 								Body: []byte("123"),
 							},
 							CmdType: mapPolicyReturns,
-							Returns: &Returns{StatusCode: myhttp.StatusOk},
+							Returns: &Returns{StatusCode: myhttp.StatusOK},
 						},
 						{
 							When: &When{
 								Body: []byte("true"),
 							},
 							CmdType: mapPolicyReturns,
-							Returns: &Returns{StatusCode: myhttp.StatusOk},
+							Returns: &Returns{StatusCode: myhttp.StatusOK},
 						},
 					},
 				},
@@ -252,7 +252,7 @@ func TestMappingsParser_parse(t *testing.T) {
 								},
 							},
 							CmdType: mapPolicyReturns,
-							Returns: &Returns{StatusCode: myhttp.StatusOk},
+							Returns: &Returns{StatusCode: myhttp.StatusOK},
 						},
 					},
 				},
@@ -277,7 +277,7 @@ func TestMappingsParser_parse(t *testing.T) {
 								},
 							},
 							CmdType: mapPolicyReturns,
-							Returns: &Returns{StatusCode: myhttp.StatusOk},
+							Returns: &Returns{StatusCode: myhttp.StatusOK},
 						},
 					},
 				},

@@ -1,0 +1,11 @@
+{
+  "type": "main",
+  "include": {
+    "mappings": [
+      "parser-single.json"
+    ]
+  },
+  "config": {
+    "matchTrailingSlash": true
+  }
+}

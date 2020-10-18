@@ -27,9 +27,18 @@ func TestHTTPMethod_Matches(t *testing.T) {
 	//noinspection GoImportUsedAsName
 	assert := assert.New(t)
 
-	assert.True(MethodGet.Matches("GET"))
-	assert.True(MethodAny.Matches("POST"))
-	assert.False(MethodPost.Matches("GET"))
+	assert.True(MethodGet.Matches(MethodGet))
+	assert.True(MethodAny.Matches(MethodPost))
+	assert.False(MethodPost.Matches(MethodGet))
+}
+
+func TestMethodsAnyMatches(t *testing.T) {
+	//noinspection GoImportUsedAsName
+	assert := assert.New(t)
+
+	methods := []HTTPMethod{MethodOptions, MethodHead}
+	assert.True(MethodsAnyMatches(methods, MethodOptions))
+	assert.False(MethodsAnyMatches(methods, MethodPost))
 }
 
 func TestHTTPMethod_String(t *testing.T) {
@@ -38,4 +47,9 @@ func TestHTTPMethod_String(t *testing.T) {
 
 	assert.Equal("GET", MethodGet.String())
 	assert.Equal("OPTIONS", MethodOptions.String())
+}
+
+func TestMethodsToStringSlice(t *testing.T) {
+	methods := []HTTPMethod{MethodOptions, MethodGet}
+	assert.Equal(t, []string{"OPTIONS", "GET"}, MethodsToStringSlice(methods))
 }

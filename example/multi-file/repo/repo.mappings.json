@@ -2,14 +2,6 @@
   "type": "mappings",
   "mappings": [
     {
-      "uri": "/kumasuke120/mockuma",
-      "policies": {
-        "forwards": {
-          "path": "/kumasuke120/mockuma/"
-        }
-      }
-    },
-    {
       "uri": "/manifest.json",
       "policies": {
         "forwards": {

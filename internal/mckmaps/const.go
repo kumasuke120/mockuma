@@ -22,10 +22,24 @@ const (
 const (
 	aType    = "type"
 	aInclude = "include"
+	aConfig  = "config"
+
+	aConfigCORS               = "cors"
+	aConfigMatchTrailingSlash = "matchTrailingSlash"
 
 	aMapURI      = "uri"
 	aMapMethod   = "method"
 	aMapPolicies = "policies"
+)
+
+const (
+	corsEnabled          = "enabled"
+	corsAllowCredentials = "allowCredentials"
+	corsMaxAge           = "maxAge"
+	corsAllowedOrigins   = "allowedOrigins"
+	corsAllowedMethods   = "allowedMethods"
+	corsAllowedHeaders   = "allowedHeaders"
+	corsExposedHeaders   = "exposedHeaders"
 )
 
 const (

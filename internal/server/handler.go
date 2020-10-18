@@ -11,28 +11,6 @@ import (
 	"github.com/kumasuke120/mockuma/internal/myhttp"
 )
 
-// default policies
-var (
-	pNotFound            = newStatusJSONPolicy(myhttp.StatusNotFound, "Not Found")
-	pNoPolicyMatched     = newStatusJSONPolicy(myhttp.StatusBadRequest, "No policy matched")
-	pMethodNotAllowed    = newStatusJSONPolicy(myhttp.StatusMethodNotAllowed, "Method Not Allowed")
-	pInternalServerError = newStatusJSONPolicy(myhttp.StatusInternalServerError, "Internal Server Error")
-	pBadGateway          = newStatusJSONPolicy(myhttp.StatusBadGateway, "Bad Gateway")
-)
-
-func newStatusJSONPolicy(statusCode myhttp.StatusCode, message string) *mckmaps.Policy {
-	return &mckmaps.Policy{
-		CmdType: mckmaps.CmdTypeReturns,
-		Returns: &mckmaps.Returns{
-			StatusCode: statusCode,
-			Headers: []*mckmaps.NameValuesPair{
-				{Name: myhttp.HeaderContentType, Values: []string{myhttp.ContentTypeJSON}},
-			},
-			Body: []byte(fmt.Sprintf(`{"statusCode": %d, "message": "%s"}`, statusCode, message)),
-		},
-	}
-}
-
 var HeaderValueServer = fmt.Sprintf("%s/%s", internal.AppName, internal.VersionNumber)
 
 type mockHandler struct {
@@ -40,11 +18,20 @@ type mockHandler struct {
 	pathMatcher *pathMatcher
 }
 
-func newMockHandler(mappings *mckmaps.MockuMappings) *mockHandler {
-	handler := new(mockHandler)
-	handler.mappings = mappings
-	handler.pathMatcher = newPathMatcher(mappings)
-	return handler
+func newMockHandler(mappings *mckmaps.MockuMappings) http.Handler {
+	h := new(mockHandler)
+	h.mappings = mappings
+	h.pathMatcher = newPathMatcher(mappings)
+
+	h.listAllMappings()
+
+	corsOption := mappings.Config.CORS
+	if corsOption.Enabled {
+		log.Println("[handler ] enabled  : cors handler")
+		return corsOption.ToCors().Handler(h)
+	} else {
+		return h
+	}
 }
 
 func (h *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -57,21 +44,16 @@ func (h *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *mockHandler) matchNewExecutor(r *http.Request, w http.ResponseWriter) *policyExecutor {
-	matcher := h.pathMatcher.bind(r)
 	executor := &policyExecutor{h: h, r: r, w: &w}
 
+	matcher := h.pathMatcher.bind(r)
 	if matcher.matches() {
-		policy := matcher.matchPolicy()
-		if policy != nil {
-			executor.policy = policy
-		} else {
-			executor.policy = pNoPolicyMatched
-		}
-	} else if matcher.isMethodNotAllowed() {
-		executor.policy = pMethodNotAllowed
+		executor.returnHead = matcher.headMatches()
+		executor.policy = matcher.matchPolicy()
 	} else {
 		executor.policy = pNotFound
 	}
+
 	return executor
 }
 

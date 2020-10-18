@@ -35,7 +35,7 @@ func (p *varsJSONParser) parse() ([]*vars, error) {
 		case myjson.Object:
 			p.json = json.(myjson.Object)
 		default:
-			return nil, newParserError(p.filename, p.jsonPath)
+			return nil, p.newJSONParseError(p.jsonPath)
 		}
 	}
 
@@ -43,7 +43,7 @@ func (p *varsJSONParser) parse() ([]*vars, error) {
 	p.jsonPath.SetLast(aType)
 	_type, err := p.json.GetString(aType)
 	if err != nil || string(_type) != tVars {
-		return nil, newParserError(p.filename, p.jsonPath)
+		return nil, p.newJSONParseError(p.jsonPath)
 	}
 
 	p.jsonPath.SetLast(tVars)
@@ -66,11 +66,11 @@ func (p *varsJSONParser) parseVars(v myjson.Object) ([]*vars, error) {
 		}
 		rVars, err := myjson.ToObject(rawVars)
 		if err != nil {
-			return nil, newParserError(p.filename, p.jsonPath)
+			return nil, p.newJSONParseError(p.jsonPath)
 		}
 		varsSlice[idx], err = parseVars(rVars)
 		if err != nil {
-			return nil, newParserError(p.filename, p.jsonPath)
+			return nil, p.newJSONParseError(p.jsonPath)
 		}
 	}
 	return varsSlice, nil
@@ -128,13 +128,15 @@ func (p *varsCSVParser) parse() ([]*vars, error) {
 		for i, c := range line {
 			if i < len(varNames) {
 				var col interface{}
-				json, err := myjson.Unmarshal([]byte(c))
-				if err != nil {
-					col = myjson.String(c) // treats the non-valid json as a pure string
-				} else {
-					col = json
+				if "undefined" != c { // pre-defined keyword which denotes non-existent value
+					json, err := myjson.Unmarshal([]byte(c))
+					if err != nil {
+						col = myjson.String(c) // treats the non-valid json as a pure string
+					} else {
+						col = json
+					}
+					table[varNames[i]] = col
 				}
-				table[varNames[i]] = col
 			}
 		}
 

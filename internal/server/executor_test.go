@@ -48,7 +48,7 @@ func TestPolicyExecutor_executor(t *testing.T) {
 	exe1 := &policyExecutor{
 		r:      httptest.NewRequest("GET", "/TestPolicyExecutor_executor", nil),
 		w:      &rw1,
-		policy: newStatusJSONPolicy(myhttp.StatusOk, "OK"),
+		policy: newJSONPolicy(myhttp.StatusOK, "OK"),
 	}
 	e1 := exe1.execute()
 	if assert.Nil(e1) {
@@ -78,7 +78,7 @@ func TestPolicyExecutor_executor(t *testing.T) {
 		policy: &mckmaps.Policy{
 			CmdType: mckmaps.CmdTypeReturns,
 			Returns: &mckmaps.Returns{
-				StatusCode: myhttp.StatusOk,
+				StatusCode: myhttp.StatusOK,
 				Latency: &mckmaps.Interval{
 					Min: 100,
 					Max: 100,
@@ -86,7 +86,7 @@ func TestPolicyExecutor_executor(t *testing.T) {
 				Headers: []*mckmaps.NameValuesPair{
 					{Name: myhttp.HeaderContentType, Values: []string{myhttp.ContentTypeJSON}},
 				},
-				Body: []byte(fmt.Sprintf(`{"statusCode": %d, "message": "%s"}`, myhttp.StatusOk, "test")),
+				Body: []byte(fmt.Sprintf(`{"statusCode": %d, "message": "%s"}`, myhttp.StatusOK, "test")),
 			},
 		},
 	}
@@ -115,7 +115,7 @@ func TestPolicyExecutor_executor(t *testing.T) {
 	assert.Nil(e4)
 	assert.Equal(http.StatusOK, rr4.Code)
 
-	handler := newMockHandler(mappings)
+	handler := newMockHandler(mappings).(*mockHandler)
 	rr5 := httptest.NewRecorder()
 	var rw5 http.ResponseWriter = rr5
 	exe5 := &policyExecutor{
@@ -178,4 +178,17 @@ func TestPolicyExecutor_executor(t *testing.T) {
 	}
 	e8 := exe8.execute()
 	assert.NotNil(e8)
+
+	rr9 := httptest.NewRecorder()
+	var rw9 http.ResponseWriter = rr9
+	exe9 := &policyExecutor{
+		r:          httptest.NewRequest("GET", "/TestPolicyExecutor_executor", nil),
+		w:          &rw9,
+		policy:     newJSONPolicy(myhttp.StatusOK, "OK"),
+		returnHead: true,
+	}
+	e9 := exe9.execute()
+	if assert.Nil(e9) {
+		assert.Empty(rr9.Body.String())
+	}
 }
